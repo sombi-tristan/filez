@@ -97,6 +97,10 @@ function makeFetch({ serverData = {}, failOn = null, throwOn = null } = {}) {
     const u = new URL(url, 'http://x')
     const seg = u.pathname.split('/').pop()
     if (seg in CONFIG_KEY) {
+      if (failOn && failOn.api === seg) {
+        const status = failOn.status || 500
+        return { ok: false, status, async json() { return { error: 'boom' } } }
+      }
       const body = { [CONFIG_KEY[seg]]: serverData[seg] || [] }
       return { ok: true, status: 200, async json() { return body } }
     }
@@ -196,7 +200,7 @@ console.log('\n4. an old/version-less synced flag re-runs a full backfill (heals
 }
 
 // 5) A device already synced at the current version skips (no needless refetch).
-console.log('\n5. a device synced at the current version skips')
+console.log('\n5. a device synced at the current version skips the history backfill')
 {
   const d = deps(makeFetch({ serverData }))
   const mod = loadModule(d)
@@ -204,6 +208,68 @@ console.log('\n5. a device synced at the current version skips')
   const result = await mod.initialSync(ORG)
   check('skips as already-synced', result?.skipped === true && result?.reason === 'already-synced', `result=${JSON.stringify(result)}`)
   check('did not refetch (mirror stays empty)', (await d.db.dailySales.count()) === 0)
+}
+// ── Config tables ──────────────────────────────────────────────────────────────────────────
+//
+// Nozzles, tanks, banks, customers and lube products reach the mirror ONLY through
+// initialSync — useRemoteChanges polls the six entry tables and nothing else. So while the
+// history backfill is rightly gated by the synced flag, the config pull must not be: a
+// station set up AFTER a device first opened it would otherwise never see its own nozzles,
+// and every entry screen reads "No nozzles found" forever.
+
+const configData = {
+  nozzles: [{ id: 'n1', fuel_type: 'PMS', pump_number: 1 }, { id: 'n2', fuel_type: 'AGO', pump_number: 2 }],
+  tanks: [{ id: 't1', fuel_type: 'PMS', tank_number: 1 }],
+  banks: [{ id: 'b1', bank_name: 'GTB' }],
+  customers: [{ id: 'c1', name: 'Walk-in' }],
+  'lube-products': [{ id: 'p1', product_name: 'Engine Oil' }],
+}
+
+// 6) THE BUG: setup runs after the device already synced, so the flag is set and the config
+//    pull was being skipped along with the history.
+console.log('\n6. an already-synced device still picks up config saved after that sync')
+{
+  const d = deps(makeFetch({ serverData: { ...serverData, ...configData } }))
+  const mod = loadModule(d)
+  // Device opened the station before setup: synced at the current version, mirror empty.
+  await d.db.syncMeta.put({ key: `synced:${ORG}`, syncedAt: 1, version: mod.SYNC_VERSION })
+
+  await mod.initialSync(ORG)
+
+  check('nozzles landed locally', (await d.db.nozzles.count()) === 2, `local=${await d.db.nozzles.count()}`)
+  check('tanks landed locally', (await d.db.tanks.count()) === 1)
+  check('banks landed locally', (await d.db.banks.count()) === 1)
+  check('customers landed locally', (await d.db.customers.count()) === 1)
+  check('lube products landed locally', (await d.db.lubeProducts.count()) === 1)
+  check('the history backfill is still skipped', (await d.db.dailySales.count()) === 0,
+    `local=${await d.db.dailySales.count()}`)
+}
+
+// 7) A config endpoint that fails must leave what is already local alone. Refreshing config
+//    on every call means a transient 500 would otherwise wipe the station's setup from the
+//    mirror and hand the user an empty entry form.
+console.log('\n7. a failed config fetch leaves the existing local config alone')
+{
+  const d = deps(makeFetch({ serverData: { ...serverData, ...configData }, failOn: { api: 'nozzles', status: 500 } }))
+  const mod = loadModule(d)
+  await d.db.nozzles.bulkAdd([{ id: 'n1', orgId: ORG, fuel_type: 'PMS', pump_number: 1 }])
+  await d.db.syncMeta.put({ key: `synced:${ORG}`, syncedAt: 1, version: mod.SYNC_VERSION })
+
+  try { await mod.initialSync(ORG) } catch { /* a throw is acceptable; a wipe is not */ }
+
+  check('the local nozzle survived the failed fetch', (await d.db.nozzles.count()) === 1,
+    `local=${await d.db.nozzles.count()}`)
+}
+
+// 8) Customers are the one config table whose failure must be loud: reports label every row
+//    off them, so a silent empty set shows "Unknown" everywhere.
+console.log('\n8. a failed customers fetch still throws')
+{
+  const d = deps(makeFetch({ serverData: { ...serverData, ...configData }, failOn: { api: 'customers', status: 500 } }))
+  const mod = loadModule(d)
+  let threw = false
+  try { await mod.initialSync(ORG) } catch { threw = true }
+  check('initialSync throws so the caller retries', threw)
 }
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`)

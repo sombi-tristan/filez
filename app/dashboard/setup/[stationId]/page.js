@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { INPUT_BASE, INPUT, BTN_PRIMARY, BTN_FRAMED } from '@/components/ui'
+import { initialSync } from '@/lib/initialSync'
 import {
   Loader2, MapPin, Fuel, ChevronRight, ChevronLeft, Check,
   Plus, Trash2, ArrowRight, Landmark, CreditCard, Banknote,
@@ -208,6 +209,14 @@ export default function SetupWizardPage() {
       setSaving(false)
       return
     }
+
+    // Pull what was just saved into the local mirror before leaving. Every entry and report
+    // screen reads config from IndexedDB, and the dashboard layout's BackgroundSync has
+    // already run for this org — its ref still holds the id across the client-side push
+    // below, so without this the screens would read "No nozzles found" on a station that was
+    // set up seconds ago, until a hard reload. Not forced: config refreshes on every call,
+    // and re-running setup on an established station should not re-download its history.
+    try { await initialSync(stationId) } catch { /* offline — BackgroundSync retries */ }
 
     router.push(`/dashboard/stations/${stationId}`)
   }
