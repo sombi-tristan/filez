@@ -1,67 +1,33 @@
 'use client'
 
+// Must stay the first import: it answers /api/* inside the app, and every screen below fetches.
+import '@/lib/local/installFetch'
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Header from './Header'
 import StationSidebar from './StationSidebar'
 import Footer from './Footer'
-import AdminViewingBanner from './AdminViewingBanner'
-
 import NavigationLoader from './NavigationLoader'
-import { supabase } from '@/lib/supabaseClient'
+import { getSessionUserId } from '@/lib/local/session'
 
 export default function AppShell({ children }) {
-  const [user, setUser] = useState(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  const [ready, setReady] = useState(false)
 
+  // Desktop build: every screen except sign-in needs a signed-in person on this computer.
   useEffect(() => {
-    const load = async () => {
-      const res = await fetch('/api/auth/me')
-      if (!res.ok) return
-      const data = await res.json()
-      setUser(data.user)
+    const isAuthPage = pathname.startsWith('/auth') || pathname === '/'
+    if (!getSessionUserId() && !isAuthPage) {
+      router.replace('/auth/login')
+      return
     }
-    load()
-
-    // Force-update stale service workers and clear old API caches
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then(reg => {
-        if (!reg) return
-        reg.update()
-        const activate = (sw) => sw.postMessage({ type: 'SKIP_WAITING' })
-        if (reg.waiting) activate(reg.waiting)
-        reg.addEventListener('updatefound', () => {
-          const newSw = reg.installing
-          if (!newSw) return
-          newSw.addEventListener('statechange', () => {
-            if (newSw.state === 'installed' && reg.waiting) activate(reg.waiting)
-          })
-        })
-      })
-      // Caches left behind by the old worker. Until the runtimeCaching fix in
-      // next.config.mjs, a top-level `runtimeCaching` key was silently ignored and the
-      // worker ran next-pwa's default cache, which stored page documents, RSC payloads and
-      // API responses. The new worker never reads these, so every existing install is
-      // carrying dead weight (and a stale copy of the app) until they are removed.
-      // Safe to drop this list once the fix has been live long enough for everyone to
-      // have loaded the app at least once.
-      for (const name of ['apis', 'pages', 'pages-rsc', 'pages-rsc-prefetch', 'next-data', 'others']) {
-        caches.delete(name).catch(() => {})
-      }
-    }
-  }, [])
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    router.push('/')
-  }
+    setReady(true)
+  }, [pathname, router])
 
   const isAuth = pathname.startsWith('/auth')
   const isHome = pathname === '/'
-  const isAdmin = pathname.startsWith('/admin')
   /**
    * Reports opt out of the footer. Each one is a full-height workspace sized to
    * h-[calc(100dvh-3.5rem)], viewport minus the header, with its own bottom-pinned day tabs
@@ -72,16 +38,7 @@ export default function AppShell({ children }) {
 
   // Auth pages + homepage: no shell, just content
   if (isAuth || isHome) return <>{children}</>
-
-  // Admin pages: header only, no main sidebar (admin layout has its own)
-  if (isAdmin) return (
-    <div className="flex flex-col min-h-screen">
-      <Suspense fallback={null}><NavigationLoader /></Suspense>
-      <Suspense fallback={null}><Header /></Suspense>
-      <main className="flex-1">{children}</main>
-      <Footer app />
-    </div>
-  )
+  if (!ready) return null
 
   // Station pages: sidebar column + content column. The sidebar is `shrink-0` and lives in
   // normal flow, so this has to be a row, and the content column needs min-w-0 or a wide
@@ -95,9 +52,6 @@ export default function AppShell({ children }) {
       <div className="flex flex-col flex-1 min-w-0">
         <Suspense fallback={null}><NavigationLoader /></Suspense>
         <Suspense fallback={null}><Header onMenu={() => setDrawerOpen(true)} /></Suspense>
-        {/* Reads useSearchParams, so it shares the Suspense boundary the header needs.
-            Renders nothing unless a platform admin is inside a station they do not own. */}
-        <Suspense fallback={null}><AdminViewingBanner /></Suspense>
         <main className="flex-1">{children}</main>
         {!isReport && <Footer app />}
       </div>

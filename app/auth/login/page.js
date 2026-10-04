@@ -1,163 +1,182 @@
 'use client'
 
-import { Suspense, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import '@/lib/local/installFetch'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Mail, Lock, Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
+import { Loader2, Lock, User, Store, AtSign } from 'lucide-react'
 import { LABEL } from '@/components/ui'
-import { AUTH_INPUT, AUTH_SUBMIT, AUTH_LINK } from '../authStyles'
+import { AUTH_INPUT, AUTH_SUBMIT } from '../authStyles'
 
-const ERROR_MESSAGES = {
-  callback_failed: 'Email verification failed. Please try again or request a new link.',
-  verification_failed: 'Email verification link is invalid or expired. Please request a new one.',
-  missing_token: 'Invalid verification link. Please request a new one.',
-}
-
-function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+/**
+ * Desktop sign-in. Two modes:
+ *   first run  → create the station and the owner (name, username, PIN), then go to setup
+ *   afterwards → pick your name, enter your PIN
+ */
+export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const urlError = searchParams.get('error')
+  const [status, setStatus] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  // sign-in
+  const [userId, setUserId] = useState('')
+  const [pin, setPin] = useState('')
 
-    const trimmedEmail = email.trim().toLowerCase()
+  // first run
+  const [stationName, setStationName] = useState('')
+  const [ownerName, setOwnerName] = useState('')
+  const [username, setUsername] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
 
-    // Try Supabase auth first
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: trimmedEmail,
-      password,
-    })
-
-    if (!signInError) {
-      const next = searchParams.get('next') || '/dashboard'
-      router.push(next)
-      return
-    }
-
-    // If sign-in failed, try migrating legacy password
-    const migrateRes = await fetch('/api/auth/migrate-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: trimmedEmail, password }),
-    })
-
-    if (migrateRes.ok) {
-      // Password migrated — retry sign-in
-      const { error: retryError } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password,
+  useEffect(() => {
+    fetch('/api/local/status')
+      .then((r) => r.json())
+      .then((s) => {
+        setStatus(s)
+        if (s.users?.length === 1) setUserId(s.users[0].id)
       })
+      .catch(() => setError('Could not open the local database.'))
+  }, [])
 
-      if (!retryError) {
-        const next = searchParams.get('next') || '/dashboard'
-        router.push(next)
-        return
-      }
-
-      setError('Login failed after migration. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    // Both failed — show error
-    const migrateData = await migrateRes.json().catch(() => ({}))
-    if (migrateRes.status === 429) {
-      setError(migrateData.error || 'Too many attempts. Try again later.')
-    } else {
-      setError('Invalid email or password')
-    }
-    setLoading(false)
+  const goIn = (s) => {
+    router.replace(s?.onboardingComplete === false
+      ? `/dashboard/setup/${s.stationId}`
+      : `/dashboard/stations/${s.stationId}`)
   }
 
+  const signIn = async (e) => {
+    e.preventDefault()
+    setBusy(true); setError('')
+    const res = await fetch('/api/local/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, pin }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(body.error || 'Sign in failed'); setPin(''); return }
+    goIn(status)
+  }
+
+  const setup = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (newPin !== confirmPin) { setError('The two PINs do not match'); return }
+    setBusy(true)
+    const res = await fetch('/api/local/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stationName, ownerName, username, pin: newPin }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(body.error || 'Setup failed'); return }
+    router.replace(`/dashboard/setup/${body.stationId}`)
+  }
+
+  if (!status) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-content-muted">
+        {error || <Loader2 className="w-5 h-5 animate-spin" />}
+      </div>
+    )
+  }
+
+  const submitCls = `w-full py-2.5 font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${AUTH_SUBMIT}`
+  const errorBox = error && (
+    <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+  )
+
   return (
-    <div className="max-w-sm mx-auto px-4 py-20">
+    <div className="max-w-sm mx-auto px-4 py-16">
       <div className="text-center mb-8">
         <Image src="/icon-192.png" alt="StationMGR" width={48} height={48} className="mx-auto mb-3 rounded-lg" />
-        <h1 className="text-2xl font-bold text-content">Welcome back</h1>
-        <p className="text-sm text-content-muted mt-1">Sign in with your email and password</p>
+        <h1 className="text-2xl font-bold text-content">
+          {status.setupDone ? (status.stationName || 'StationMGR') : 'Set up StationMGR'}
+        </h1>
+        <p className="text-sm text-content-muted mt-1">
+          {status.setupDone
+            ? 'Choose your name and enter your PIN'
+            : 'Everything is stored on this computer. No internet needed.'}
+        </p>
       </div>
 
-      {urlError && ERROR_MESSAGES[urlError] && (
-        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-4 py-3 mb-4 text-sm text-red-800 dark:text-red-200">
-          {ERROR_MESSAGES[urlError]}
-        </div>
+      {status.setupDone ? (
+        <form onSubmit={signIn} className="space-y-4">
+          <div>
+            <label className={LABEL} htmlFor="who">Who is signing in?</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+              <select id="who" value={userId} onChange={(e) => { setUserId(e.target.value); setError('') }} className={AUTH_INPUT} required>
+                <option value="" disabled>Select your name</option>
+                {status.users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}{u.isOwner ? ' (owner)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={LABEL} htmlFor="pin">PIN</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+              <input id="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus
+                value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError('') }}
+                maxLength={8} className={AUTH_INPUT} placeholder="••••" required />
+            </div>
+          </div>
+          {errorBox}
+          <button type="submit" disabled={busy || !userId || pin.length < 4} className={submitCls}>
+            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Sign in
+          </button>
+          <p className="text-xs text-content-faint text-center">Forgot your PIN? The owner can reset it from the station page.</p>
+        </form>
+      ) : (
+        <form onSubmit={setup} className="space-y-4">
+          <div>
+            <label className={LABEL} htmlFor="station">Station name</label>
+            <div className="relative">
+              <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+              <input id="station" value={stationName} onChange={(e) => setStationName(e.target.value)} maxLength={100} className={AUTH_INPUT} placeholder="e.g. Rainoil Wuse" required />
+            </div>
+          </div>
+          <div>
+            <label className={LABEL} htmlFor="owner">Your name</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+              <input id="owner" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className={AUTH_INPUT} required />
+            </div>
+          </div>
+          <div>
+            <label className={LABEL} htmlFor="username">Username</label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+              <input id="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} maxLength={32} className={AUTH_INPUT} placeholder="e.g. manager" required />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={LABEL} htmlFor="newpin">PIN</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+                <input id="newpin" type="password" inputMode="numeric" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))} maxLength={8} className={AUTH_INPUT} placeholder="4-8 digits" required />
+              </div>
+            </div>
+            <div>
+              <label className={LABEL} htmlFor="confirmpin">Repeat PIN</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+                <input id="confirmpin" type="password" inputMode="numeric" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} maxLength={8} className={AUTH_INPUT} required />
+              </div>
+            </div>
+          </div>
+          {errorBox}
+          <button type="submit" disabled={busy || newPin.length < 4} className={submitCls}>
+            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Create station
+          </button>
+        </form>
       )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className={LABEL}>Email</label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className={AUTH_INPUT}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className={LABEL}>Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-            <input
-              type="password"
-              required
-              minLength={8}
-              maxLength={128}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              className={AUTH_INPUT}
-            />
-          </div>
-        </div>
-
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2.5 font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${AUTH_SUBMIT}`}
-        >
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          Sign in
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-content-muted mt-6">
-        <Link href="/auth/forgot-password" className={AUTH_LINK}>Forgot password?</Link>
-      </p>
-
-      <p className="text-center text-sm text-content-muted mt-3">
-        Don&apos;t have an account?{' '}
-        <Link href="/auth/register" className={AUTH_LINK}>Sign up</Link>
-      </p>
-
-      <p className="text-center text-xs text-content-faint mt-3">
-        Admin?{' '}
-        <Link href="/auth/admin-login" className={AUTH_LINK}>Use magic link</Link>
-      </p>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   )
 }

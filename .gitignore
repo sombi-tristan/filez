@@ -61,3 +61,6 @@ scripts/_*
 
 # Editor atomic-write leftovers, e.g. page.js.tmp.6600.1774719328381
 *.tmp.*
+
+# desktop build output
+/dist/

@@ -1,0 +1,36 @@
+name: Build Windows desktop app
+
+# Builds StationMGR-Setup-<version>.exe on a Windows runner. Download it from this run's
+# "Artifacts" section (Actions tab → latest "Build Windows desktop app" run).
+on:
+  push:
+    branches:
+      - 'desktop/**'
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build installer
+        run: npm run dist:win
+        env:
+          # No code-signing certificate: build an unsigned installer.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StationMGR-Windows-installer
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 30

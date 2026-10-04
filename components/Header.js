@@ -3,16 +3,13 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, Home, Loader2, Menu, Bell } from 'lucide-react'
-import useStationUnread from '@/lib/useStationUnread'
+import { ChevronLeft, Home, Loader2, Menu } from 'lucide-react'
 import { OUTLINE } from '@/components/ui'
 
 // Map paths to page titles. Back always uses router.back().
 const PAGE_TITLES = {
   // Dashboard
   '/dashboard': 'Dashboard',
-  '/dashboard/subscribe': 'Subscribe',
-  '/dashboard/feedback': 'Help & feedback',
 
   // Entries
   '/dashboard/entries': 'Entries',
@@ -37,14 +34,6 @@ const PAGE_TITLES = {
   '/dashboard/reports/account-ledger': 'Account Ledger',
   '/dashboard/reports/product-received': 'Product Received',
   '/dashboard/reports/dip-calculator': 'Dip Calculator',
-
-  // Admin
-  '/admin': 'Subscriptions',
-  '/admin/services': 'Services',
-  '/admin/users': 'Staff',
-  '/admin/analytics': 'Analytics',
-  '/admin/settings': 'Stations',
-  '/admin/excel-templates': 'Excel Templates',
 }
 
 function getTitle(pathname) {
@@ -53,17 +42,11 @@ function getTitle(pathname) {
   const settingsMatch = pathname.match(/^\/dashboard\/stations\/([^/]+)\/settings$/)
   if (settingsMatch) return 'Settings'
 
-  const notifMatch = pathname.match(/^\/dashboard\/stations\/([^/]+)\/notifications$/)
-  if (notifMatch) return 'Notifications'
-
   const stationMatch = pathname.match(/^\/dashboard\/stations\/[^/]+$/)
   if (stationMatch) return 'Station'
 
   const setupMatch = pathname.match(/^\/dashboard\/setup\/[^/]+$/)
   if (setupMatch) return 'Setup'
-
-  const payMatch = pathname.match(/^\/dashboard\/subscribe\/pay\//)
-  if (payMatch) return 'Payment'
 
   return null
 }
@@ -77,11 +60,8 @@ export default function Header({ onMenu }) {
   // Reset spinner when route changes
   useEffect(() => { setNavigating(false) }, [pathname])
 
-  // Derived above the auth early-return: useStationUnread is a hook, so it cannot sit after
-  // a conditional return. It no-ops on a null station.
   const stationMatch = pathname.match(/^\/dashboard\/stations\/([^/]+)/)
   const stationId = stationMatch ? stationMatch[1] : searchParams.get('org_id')
-  const { unread } = useStationUnread(stationId)
 
   const isAuth = pathname.startsWith('/auth')
   if (isAuth) return null
@@ -113,27 +93,6 @@ export default function Header({ onMenu }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Shown at every width. It used to be lg:hidden, on the grounds that the sidebar's
-              Notifications row already carries the badge above lg, which left the bell simply
-              absent on desktop. The duplication is fine: both read the same useStationUnread
-              hook, so the two counts cannot drift, and the sidebar's copy is a row in a list
-              while this is the persistent alert. */}
-          {stationId && (
-            <Link
-              href={`/dashboard/stations/${stationId}/notifications`}
-              aria-label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
-              title="Notifications"
-              className={`relative flex items-center justify-center w-9 h-9 ${OUTLINE} hover:bg-primary-500/20 hover:border-primary-600 dark:hover:border-primary-400`}
-            >
-              <Bell className="w-4 h-4" />
-              {unread > 0 && (
-                <span aria-hidden className="absolute -top-1.5 -right-1.5 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center text-[10px] font-semibold bg-accent-600 text-white rounded-full">
-                  {unread > 99 ? '99+' : unread}
-                </span>
-              )}
-            </Link>
-          )}
-
           {/* Icon-only, matching store-portal: the label was buying width from the page title
               for a destination the house icon already names, and the hamburger shares this end
               of the bar. w-9 h-9 so the two read as a matched pair. The name moves to

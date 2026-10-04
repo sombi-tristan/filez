@@ -1,38 +1,73 @@
 {
-  "name": "station-va",
-  "version": "0.1.0",
+  "name": "stationmgr",
+  "productName": "StationMGR",
+  "version": "1.0.0",
   "private": true,
+  "description": "StationMGR \u2014 fuel station records, offline on your computer",
+  "author": "Premeval Studios",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "serve-out": "node scripts/serve-out.mjs",
+    "desktop": "next build && electron .",
+    "dist:win": "next build && electron-builder --win nsis --x64 --publish never"
   },
-  "dependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@supabase/ssr": "^0.9.0",
-    "@supabase/supabase-js": "^2.98.0",
+  "build": {
+    "appId": "com.premeval.stationmgr",
+    "productName": "StationMGR",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/icon-512.png",
+      "artifactName": "StationMGR-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StationMGR",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "devDependencies": {
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "dexie": "^4.3.0",
     "dexie-react-hooks": "^4.2.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.35",
     "exceljs": "^4.4.0",
-    "googleapis": "^171.4.0",
     "imask": "^7.6.1",
-    "jose": "^6.2.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.577.0",
-    "mailparser": "^3.9.6",
     "next": "14.2.35",
+    "postcss": "^8",
     "react": "^18",
     "react-datepicker": "^9.1.0",
     "react-dom": "^18",
-    "recharts": "^3.7.0"
-  },
-  "devDependencies": {
-    "eslint": "^8",
-    "eslint-config-next": "14.2.35",
-    "postcss": "^8",
+    "recharts": "^3.7.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1"
   }

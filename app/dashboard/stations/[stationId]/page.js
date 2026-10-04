@@ -4,19 +4,19 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Loader2, Fuel, Settings, Mail, LogOut,
-  FileSpreadsheet, ClipboardList, CreditCard, Droplets, Users,
+  Loader2, Fuel, Settings, LogOut,
+  FileSpreadsheet, ClipboardList, Droplets, Users,
   ChevronRight, ChevronDown, BarChart3, Plus, Pencil, Trash2, AlertTriangle,
   FileText, BookOpen, ShieldX, Lock, Truck, Wallet, TrendingUp, Boxes, LineChart, Activity
 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Modal from '@/components/Modal'
-import { differenceInDays } from 'date-fns'
 import { db } from '@/lib/db'
 import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
 import { supabase } from '@/lib/supabaseClient'
 import StationWallet from '@/components/StationWallet'
+import ThisComputer from '@/components/ThisComputer'
 import ThemeToggle from '@/components/ThemeToggle'
 import {
   OUTLINE, INPUT, BTN_DANGER, BTN_PRIMARY, BTN_FRAMED, CARD_HOVER, CARD,
@@ -40,7 +40,12 @@ export default function StationPage() {
 
   // Staff invite state
   const [invites, setInvites] = useState([])
-  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('') // staff username
+  const [staffName, setStaffName] = useState('')
+  const [staffPin, setStaffPin] = useState('')
+  const [resetPinFor, setResetPinFor] = useState(null) // { email, name }
+  const [resetPin, setResetPin] = useState('')
+  const [resetError, setResetError] = useState('')
   const [inviteError, setInviteError] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviting, setInviting] = useState(false)
@@ -55,17 +60,12 @@ export default function StationPage() {
   const [accessDeniedModal, setAccessDeniedModal] = useState(false)
   // A platform admin in someone else's station: not the owner, not a member.
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
-  // Staff tapping Subscription: the button is shown to everyone, but only an owner can act.
-  const [ownerOnlyModal, setOwnerOnlyModal] = useState(false)
 
-  // Subscription (owner only)
-  const [subscription, setSubscription] = useState(null)
 
   // Manage station accordion
   const [showManage, setShowManage] = useState(false)
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
-  const [leaving, setLeaving] = useState(false)
 
   // Sync state
   const [syncing, setSyncing] = useState(false)
@@ -156,10 +156,10 @@ export default function StationPage() {
         fetch(`/api/organizations?org_id=${encodeURIComponent(stationId)}`),
         fetch('/api/auth/me'),
       ])
-      if (!orgRes.ok) { router.push('/dashboard'); return }
+      if (!orgRes.ok) { router.replace('/auth/login'); return }
       const data = await orgRes.json()
       const s = (data.stations || [])[0]
-      if (!s) { router.push('/dashboard'); return }
+      if (!s) { router.replace('/auth/login'); return }
 
       const me = userRes.ok ? (await userRes.json()).user : null
       setUser(me)
@@ -176,17 +176,10 @@ export default function StationPage() {
       setIsPlatformAdmin(!owned && me?.role === 'admin')
 
       if (owned) {
-        const [invRes, dashRes] = await Promise.all([
-          fetch(`/api/invites/list?org_id=${stationId}`),
-          fetch(`/api/dashboard/data?org_id=${stationId}`),
-        ])
+        const invRes = await fetch(`/api/invites/list?org_id=${stationId}`)
         if (invRes.ok) {
           const invData = await invRes.json()
           setInvites(invData.invites || [])
-        }
-        if (dashRes.ok) {
-          const dashData = await dashRes.json()
-          setSubscription(dashData.subscription || null)
         }
       } else {
         // Staff — fetch their visible_pages
@@ -211,23 +204,38 @@ export default function StationPage() {
 
   const addInvite = async (e) => {
     e.preventDefault()
-    if (!inviteEmail.trim()) return
+    if (!inviteEmail.trim() || !staffName.trim()) return
     setInviting(true)
     setInviteError('')
     const res = await fetch('/api/invites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ org_id: stationId, email: inviteEmail }),
+      body: JSON.stringify({ org_id: stationId, name: staffName, username: inviteEmail, pin: staffPin }),
     })
     if (res.ok) {
       setShowInviteModal(false)
       setInviteEmail('')
+      setStaffName('')
+      setStaffPin('')
       loadInvites()
     } else {
       const err = await res.json().catch(() => ({}))
-      setInviteError(err.error || 'Failed to invite staff')
+      setInviteError(err.error || 'Failed to add staff')
     }
     setInviting(false)
+  }
+
+  const submitResetPin = async (e) => {
+    e.preventDefault()
+    if (!resetPinFor) return
+    setResetError('')
+    const res = await fetch('/api/local/change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: resetPinFor.email, new_pin: resetPin }),
+    })
+    if (res.ok) { setResetPinFor(null); setResetPin('') }
+    else setResetError((await res.json().catch(() => ({}))).error || 'Could not reset PIN')
   }
 
   const confirmRemoveInvite = async () => {
@@ -274,33 +282,9 @@ export default function StationPage() {
     setSaving(false)
   }
 
-  const deleteStation = async () => {
-    if (!confirm(`Delete "${station.name}"? All staff, data, and subscriptions for this station will be permanently removed.`)) return
-    await fetch('/api/organizations', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: stationId }),
-    })
-    router.push('/dashboard')
-  }
-
-  const leaveStation = async () => {
-    if (!confirm('Leave this station? You will lose access to its entries and data.')) return
-    setLeaving(true)
-    const res = await fetch('/api/invites/leave', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ org_id: stationId }),
-    })
-    if (res.ok) {
-      router.push('/dashboard')
-    }
-    setLeaving(false)
-  }
-
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push('/')
+    router.replace('/auth/login')
   }
 
   if (loading) {
@@ -327,10 +311,10 @@ export default function StationPage() {
       <SectionHeader>Staff</SectionHeader>
       <div className={`p-3 ${CARD}`}>
           <button
-            onClick={() => { setShowInviteModal(true); setInviteEmail(''); setInviteError('') }}
+            onClick={() => { setShowInviteModal(true); setInviteEmail(''); setStaffName(''); setStaffPin(''); setInviteError('') }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium mb-4 ${BTN_PRIMARY}`}
           >
-            <Plus className="w-4 h-4" /> Invite Staff
+            <Plus className="w-4 h-4" /> Add Staff
           </button>
 
           {/* Rows inside the box, not cards. Each invite carried its own CARD, which nested a
@@ -348,17 +332,11 @@ export default function StationPage() {
                     <div className="flex items-center justify-between p-3">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="w-8 h-8 bg-primary-50 dark:bg-primary-950/40 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Mail className="w-4 h-4 text-primary-600" />
+                          <Users className="w-4 h-4 text-primary-600" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-content truncate">{inv.email}</p>
-                          <span className={`inline-block text-sm px-2 py-0.5 rounded-full font-medium mt-0.5 ${
-                            inv.status === 'accepted' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                            inv.status === 'declined' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                          }`}>
-                            {inv.status}
-                          </span>
+                          <p className="text-sm font-medium text-content truncate">{inv.name || inv.email}</p>
+                          <p className="text-xs text-content-muted truncate">@{inv.email}</p>
                         </div>
                       </div>
                       <button
@@ -444,12 +422,20 @@ export default function StationPage() {
                             </div>
                           ))}
                         </div>
-                        <button
-                          onClick={() => setDeleteModal({ id: inv.id, email: inv.email })}
-                          className={`flex items-center gap-2 px-3 py-2 text-sm font-medium ${BTN_DANGER}`}
-                        >
-                          <Trash2 className="w-4 h-4" /> Remove Staff
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => { setResetPinFor({ email: inv.email, name: inv.name }); setResetPin(''); setResetError('') }}
+                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium ${BTN_FRAMED}`}
+                          >
+                            <Lock className="w-4 h-4" /> Reset PIN
+                          </button>
+                          <button
+                            onClick={() => setDeleteModal({ id: inv.id, email: inv.name || inv.email })}
+                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium ${BTN_DANGER}`}
+                          >
+                            <Trash2 className="w-4 h-4" /> Remove Staff
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -482,84 +468,7 @@ export default function StationPage() {
           onClear={() => setClearConfirm(true)}
         />
 
-        <div className="flex items-center justify-between gap-2 mb-4">
-          {/* /dashboard redirects an admin to /admin, so for them this button flashed through
-              two redirects to land somewhere it did not name. Point it where it goes. */}
-          <Button
-            href={isPlatformAdmin ? '/admin/settings' : '/dashboard'}
-            icon={Fuel}
-            iconClass="w-5 h-5"
-          >
-            {isPlatformAdmin ? 'All Stations (admin)' : 'All Stations'}
-          </Button>
-          {/* Notifications is not here: the sidebar carries the bell, with its unread badge,
-              on every screen. This slot goes to the subscription instead, which is where the
-              status block that used to sit at the foot of this page now lives.
-
-              Shown to everyone, not just the owner. Hiding it left staff with no explanation
-              for why a station they work at has no subscription anywhere on screen; a button
-              that says who to ask is more use than a missing one. For staff it opens a message
-              instead of the page, since the subscribe form lists owned stations only and would
-              be empty for them anyway. */}
-          <Button
-            href={isOwner ? `/dashboard/subscribe?org_id=${stationId}` : undefined}
-            onClick={isOwner ? undefined : () => setOwnerOnlyModal(true)}
-            icon={CreditCard}
-            iconClass="w-5 h-5"
-          >
-            Subscription
-          </Button>
-        </div>
-
-      {/* Expired subscription notice (non-dismissable) */}
-      {isOwner && subscription?.status === 'expired' && subscription?.end_date && (() => {
-        const daysSinceExpiry = differenceInDays(new Date(), new Date(subscription.end_date))
-        const graceRemaining = 7 - daysSinceExpiry
-        return (
-          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-4 py-3 mb-6 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              {graceRemaining > 0 ? (
-                <>
-                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">Your subscription has expired</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{graceRemaining} day{graceRemaining !== 1 ? 's' : ''} of grace period remaining. Subscribe now to continue adding entries.</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">Subscription &amp; grace period expired</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">You can no longer add entries. Subscribe now to resume.</p>
-                </>
-              )}
-            </div>
-            <Link href={`/dashboard/subscribe?org_id=${stationId}`} className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_DANGER}`}>Subscribe</Link>
-          </div>
-        )
-      })()}
-
-        {/* Expired subscription notice (non-dismissable) */}
-        {isOwner && subscription?.status === 'expired' && subscription?.end_date && (() => {
-          const daysSinceExpiry = differenceInDays(new Date(), new Date(subscription.end_date))
-          const graceRemaining = 7 - daysSinceExpiry
-          return (
-            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-4 py-3 mb-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                {graceRemaining > 0 ? (
-                  <>
-                    <p className="text-sm text-red-800 dark:text-red-200 font-medium">Your subscription has expired</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{graceRemaining} day{graceRemaining !== 1 ? 's' : ''} of grace period remaining. Subscribe now to continue adding entries.</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-red-800 dark:text-red-200 font-medium">Subscription &amp; grace period expired</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">You can no longer add entries. Subscribe now to resume.</p>
-                  </>
-                )}
-              </div>
-              <Link href={`/dashboard/subscribe?org_id=${stationId}`} className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_DANGER}`}>Subscribe</Link>
-            </div>
-          )
-        })()}
+<div className="mb-4" />
 
         {/* Entries keep their original tile: a rectangular card sized by its content, icon
             above the label and its one-line description, two up on a phone and three from sm.
@@ -700,37 +609,15 @@ export default function StationPage() {
                 </button>
               </form>
 
-              <div className="border-t border-line pt-4">
-                <p className="text-sm text-content-muted mb-2">Permanently delete this station and all its data.</p>
-                <button
-                  onClick={deleteStation}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_DANGER}`}
-                >
-                  <Trash2 className="w-4 h-4" /> Delete Station
-                </button>
-              </div>
             </div>
           )}
         </section>
       )}
 
-      {/* Leave / sign out, then the appearance footer — the same tail store-portal's
-          dashboard carries. */}
+      <ThisComputer isOwner={isOwner} stationName={station?.name} />
+
+      {/* Sign out, then the appearance footer — the same tail store-portal's dashboard carries. */}
       <section className="mt-8 flex items-center gap-2 flex-wrap">
-        {/* Not for a platform admin: leaving goes through the membership route, so on a
-            station they were never invited to it would do nothing at all. The same reasoning
-            already keeps Delete off other people's stations on the admin screen. A button
-            that appears to work and does not is worse than no button. */}
-        {!isPlatformAdmin && (
-        <button
-          onClick={leaveStation}
-          disabled={leaving}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
-        >
-          {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-          Leave Station
-        </button>
-        )}
         <button
           onClick={handleSignOut}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
@@ -746,27 +633,30 @@ export default function StationPage() {
       </div>
       </div>
 
-      {/* Invite Staff Modal */}
+      {/* Add Staff Modal */}
       <Modal
         open={showInviteModal}
         onClose={() => { setShowInviteModal(false); setInviteError('') }}
-        title="Invite Staff"
+        title="Add Staff"
       >
         <form onSubmit={addInvite} className="space-y-4">
           <p className="text-sm text-content-muted">
-            Enter the email of the person you want to invite. They will see the invite on their dashboard after signing up or logging in.
+            They will sign in on this computer by choosing their name and entering this PIN. Choose what they can open after adding them.
           </p>
           <div>
-            <label className="block text-sm font-medium text-content-strong mb-1">Staff Email</label>
-            <input
-              type="email"
-              placeholder="staff@email.com"
-              maxLength={254}
-              value={inviteEmail}
-              onChange={(e) => { setInviteEmail(e.target.value); setInviteError('') }}
-              className={INPUT}
-              autoFocus
-            />
+            <label className="block text-sm font-medium text-content-strong mb-1">Full name</label>
+            <input type="text" maxLength={80} value={staffName}
+              onChange={(e) => { setStaffName(e.target.value); setInviteError('') }} className={INPUT} autoFocus />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-content-strong mb-1">Username</label>
+            <input type="text" placeholder="e.g. cashier1" maxLength={32} value={inviteEmail}
+              onChange={(e) => { setInviteEmail(e.target.value.toLowerCase().replace(/\s/g, '')); setInviteError('') }} className={INPUT} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-content-strong mb-1">PIN (4-8 digits)</label>
+            <input type="password" inputMode="numeric" maxLength={8} value={staffPin}
+              onChange={(e) => { setStaffPin(e.target.value.replace(/\D/g, '')); setInviteError('') }} className={INPUT} />
           </div>
           {inviteError && <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>}
           <div className="flex gap-2">
@@ -779,16 +669,24 @@ export default function StationPage() {
             </button>
             <button
               type="submit"
-              disabled={inviting || !inviteEmail.trim()}
+              disabled={inviting || !inviteEmail.trim() || !staffName.trim() || staffPin.length < 4}
               className={`flex-1 py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${BTN_PRIMARY}`}
             >
               {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Invite
+              Add
             </button>
           </div>
-          <p className="text-sm text-content-faint">
-            Not signed up yet? Share the <Link href="/auth/register" className="text-primary-600 underline">signup link</Link> with them.
-          </p>
+        </form>
+      </Modal>
+
+      {/* Reset Staff PIN Modal */}
+      <Modal open={!!resetPinFor} onClose={() => setResetPinFor(null)} title="Reset PIN">
+        <form onSubmit={submitResetPin} className="space-y-4">
+          <p className="text-sm text-content-muted">New PIN for <strong>{resetPinFor?.name || resetPinFor?.email}</strong>.</p>
+          <input type="password" inputMode="numeric" maxLength={8} value={resetPin} autoFocus
+            onChange={(e) => { setResetPin(e.target.value.replace(/\D/g, '')); setResetError('') }} className={INPUT} placeholder="4-8 digits" />
+          {resetError && <p className="text-sm text-red-600 dark:text-red-400">{resetError}</p>}
+          <button type="submit" disabled={resetPin.length < 4} className={`w-full py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}>Save PIN</button>
         </form>
       </Modal>
 
@@ -805,7 +703,7 @@ export default function StationPage() {
               <div>
                 <p className="text-sm font-medium text-red-800 dark:text-red-200">This action cannot be undone</p>
                 <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                  You are about to remove <strong>{deleteModal.email}</strong> from this station. They will lose access immediately.
+                  You are about to remove <strong>{deleteModal.email}</strong>. They will no longer be able to sign in. Entries they made stay on record.
                 </p>
               </div>
             </div>
@@ -841,7 +739,7 @@ export default function StationPage() {
                 <li>Remove all {pendingCount} pending item{pendingCount > 1 ? 's' : ''} from the queue</li>
                 <li>Delete any new entries that haven&apos;t been pushed yet</li>
               </ul>
-              <p className="mt-2 text-content-muted">You can pull from the server afterwards to restore your data.</p>
+
             </div>
           </div>
           <div className="flex gap-2">
@@ -870,26 +768,6 @@ export default function StationPage() {
             <p key={i} className="text-sm text-content-strong">{line}</p>
           ))}
           <button onClick={() => setSyncModal(null)} className={`w-full mt-4 py-2 text-sm font-medium ${BTN_PRIMARY}`}>
-            OK
-          </button>
-        </div>
-      </Modal>
-
-      {/* Owner-only Modal: staff tapped Subscription. Says who can act rather than what is
-          forbidden, because the point is to tell them where to go next. */}
-      <Modal open={ownerOnlyModal} onClose={() => setOwnerOnlyModal(false)} title="Owner only">
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50">
-            <Lock className="w-5 h-5 text-amber-600 dark:text-amber-300 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              Only the station owner can view or change this station&apos;s subscription. Ask
-              them if something needs renewing.
-            </p>
-          </div>
-          <button
-            onClick={() => setOwnerOnlyModal(false)}
-            className={`w-full py-2 text-sm font-medium ${OUTLINE} hover:bg-primary-500/20`}
-          >
             OK
           </button>
         </div>

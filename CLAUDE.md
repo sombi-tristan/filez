@@ -1,5 +1,13 @@
 CLAUDE.md
 
+Desktop branch (desktop/offline)
+
+This branch is the offline Windows app: no Supabase, no server. The "server" is
+lib/local (route handlers in lib/local/routes running in the app against IndexedDB,
+reached through the fetch shim in lib/local/installFetch.js). The sync engine below still
+runs, but its target is that local store. See README.md. Do not push this branch under a
+claude/ prefix: the auto-merge workflow would merge it into main.
+
 Important
 
 After every git push, always provide the pull request / merge link:

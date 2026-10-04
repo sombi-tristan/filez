@@ -1,7 +1,6 @@
 import localFont from 'next/font/local'
 import './globals.css'
 import AppShell from '@/components/AppShell'
-import PWAUpdateToast from '@/components/PWAUpdateToast'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -12,12 +11,6 @@ const geistSans = localFont({
 export const metadata = {
   title: 'StationMGR — Station Operations Management',
   description: 'Manage your station entries, reports, and daily operations',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'StationMGR',
-  },
 }
 
 export const viewport = {
@@ -47,7 +40,6 @@ export default function RootLayout({ children }) {
         <AppShell>
           {children}
         </AppShell>
-        <PWAUpdateToast />
       </body>
     </html>
   )
