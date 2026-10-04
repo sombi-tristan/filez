@@ -47,7 +47,11 @@
       "createStartMenuShortcut": true,
       "shortcutName": "StationMGR",
       "deleteAppDataOnUninstall": false
-    }
+    },
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US"
+    ]
   },
   "devDependencies": {
     "bcryptjs": "^3.0.3",
