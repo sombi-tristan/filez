@@ -17,12 +17,18 @@ import AddStation from '@/components/desktop/AddStation'
 export default function DashboardPage() {
   const router = useRouter()
   const [stations, setStations] = useState(null)
+  const [unowned, setUnowned] = useState([])
   const [isOwner, setIsOwner] = useState(false)
   const [adding, setAdding] = useState(false)
 
   const open = (station) => {
     setCurrentStationId(station.id)
     router.replace(station.onboarding_complete === false ? `/dashboard/setup/${station.id}` : `/dashboard/stations/${station.id}`)
+  }
+
+  const claim = async (station) => {
+    const res = await fetch('/api/local/stations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claim: station.id }) })
+    if (res.ok) open(station)
   }
 
   const load = async () => {
@@ -32,12 +38,14 @@ export default function DashboardPage() {
     const all = [...owned, ...(data.memberStations || []).filter((m) => !owned.some((o) => o.id === m.id))]
     setIsOwner(owned.length > 0 || all.length === 0)
     setStations(all)
-    return all
+    setUnowned(data.unownedStations || [])
+    return { all, unowned: data.unownedStations || [] }
   }
 
   useEffect(() => {
     const wantsList = new URLSearchParams(window.location.search).has('all')
-    load().then((all) => { if (all.length === 1 && !wantsList) open(all[0]) })
+    // A station with no owner here is shown, so then the list does not open the one at once.
+    load().then(({ all, unowned }) => { if (all.length === 1 && !wantsList && !unowned.length) open(all[0]) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -63,6 +71,19 @@ export default function DashboardPage() {
       {adding && (
         <div className="mb-6">
           <AddStation onAdded={(station) => { setAdding(false); load(); if (station) open(station) }} onCancel={() => setAdding(false)} />
+        </div>
+      )}
+
+      {isOwner && unowned.length > 0 && (
+        <div className="mb-6 space-y-2">
+          <h2 className="text-sm font-semibold text-content">Stations with no owner here</h2>
+          <p className="text-xs text-content-muted">These came down from the web, but their owner is not a person on this computer. Take one over to open it, with its records.</p>
+          {unowned.map((s) => (
+            <div key={s.id} className={`flex items-center justify-between gap-3 p-3 ${CARD}`}>
+              <span className="text-sm font-semibold text-content">{s.name || 'Station'}</span>
+              <button onClick={() => claim(s)} className="text-sm font-medium text-primary-600 hover:text-primary-700">Make me its owner</button>
+            </div>
+          ))}
         </div>
       )}
 
