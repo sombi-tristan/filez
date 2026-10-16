@@ -24,23 +24,28 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
 
 ## Using it
 
-- **First launch (needs the internet once):** the station's owner links the computer with their
-  StationMGR web email and password, and picks the station. Its records come down from the web.
-  Then the owner chooses the username and PIN they sign in with on this computer.
+- **First launch (no internet needed):** the owner names the station and chooses the username
+  and PIN they sign in with on this computer. The free features open at once.
+- **Linking (needs the internet once):** with a StationMGR web account, the owner links the
+  computer with their web email and password and picks the station, either on the first launch
+  (*Link instead*) or later from any locked feature. A computer set up offline moves its records
+  into the web station; if both have records, the owner chooses which to keep.
 - **Staff:** the owner adds staff on the station page (name, username, PIN) and picks which
   screens each can open. Staff sign in by choosing their name and entering their PIN. Staff and
   PINs stay on this computer.
-- **Push and Pull** (station page, needs the internet): Push sends what was entered here to the
+- **Free:** daily sales, lodgements, station setup, staff and PINs, and reports over up to 5
+  days (Dip Calculator included).
+- **Push and Pull** (station page, needs the internet and a subscription): Push sends what was entered here to the
   web station; Pull brings the web station's records here. Changes not yet pushed are kept as
   they are on a pull. Everything else works offline.
 - **Subscription:** the web platform sells it; the desktop checks it offline from a licence the
-  web signs on every link, push, pull and whenever the computer is online. A screen whose
-  service has run out is locked (Daily Sales needs Fuel operations, Lube needs Lube management,
-  Accounts and the Account Ledger need Customer payments). When every service has run out, the
-  whole app locks until it is renewed on the web and the computer checks again. Setting the
-  computer's clock back locks it too.
-- **Backups:** the owner's station page has *Back up data* (saves one `.json` file) and
-  *Restore backup*.
+  web signs on every link, push, pull and whenever the computer is online. Any service running
+  opens backup, reports over more than 5 days, and Push and Pull. The other entries need their
+  own service (Product Receipt and Imprest need Fuel operations, Lube and the Lube Report need
+  Lube management, Accounts and the Account Ledger need Customer payments). Setting the
+  computer's clock back closes the paid features until the web is reached again.
+- **Backups** (needs a subscription): the owner's station page has *Back up data* (saves one
+  `.json` file) and *Restore backup*.
 - Closing the app signs everyone out.
 
 ## How it works
@@ -58,7 +63,9 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
   encrypted with Windows' key store. The pages reach it through `electron/preload.js`.
 - `lib/local/outbox.js` records every row the in-app server changes; `lib/local/webSync.js`
   pushes them, pulls, and links. `lib/local/licence.js` checks the licence;
-  `components/desktop/LicenceGate.js` locks the app or a screen by it.
+  `components/desktop/LicenceGate.js` passes it to the screens (`useLicence`, `paid`) and
+  locks a screen whose service is not running. `lib/reportRange.js` caps a report at 5 days
+  without one.
 - Column defaults come from the migrations: `node scripts/gen-local-schema.mjs` regenerates
   `lib/local/schema.json` after a migration adds columns.
 

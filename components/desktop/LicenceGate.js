@@ -1,21 +1,26 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { IonContent, IonPage } from '@ionic/react'
-import { lockClosedOutline, refreshOutline, openOutline, logOutOutline } from 'ionicons/icons'
-import { Button, EmptyState, Spinner } from '@/design'
+import { lockClosedOutline, refreshOutline, openOutline, linkOutline } from 'ionicons/icons'
+import { Button, Dialog, EmptyState, Spinner } from '@/design'
 import { checkLicence } from '@/lib/local/licence'
 import { refreshLicence } from '@/lib/local/webSync'
 import { getLink } from '@/lib/local/link'
 import { openWeb } from '@/lib/local/web'
-import { clearSession } from '@/lib/local/session'
 import { fmtDate } from '@/lib/formatDate'
 import LinkForm from '@/components/desktop/LinkForm'
 
 /**
- * The station's subscriptions, as this computer sees them (lib/local/licence.js), for every
- * screen. Re-checked whenever a licence arrives, every minute, and renewed from the web when
- * the computer is online.
+ * Desktop build: what this computer may open, from the station's licence (lib/local/licence.js).
+ *
+ * Free, with no link and no subscription: daily sales and lodgements, and reports of up to 5
+ * days. Each other entry type needs its own service, as on the web (screens/routes.js
+ * `service`). Backup, reports longer than 5 days, and push and pull need any service running
+ * (`paid`), which needs the computer linked to its web station.
+ *
+ * Re-checked whenever a licence or a link arrives, every minute, and renewed from the web when
+ * the computer is online. Screens wait for the first check, so `paidNow()` is answered before
+ * any of them opens.
  */
 const LicenceContext = createContext(null)
 
@@ -52,104 +57,86 @@ function useLicenceState() {
   return [state, recheck]
 }
 
-function signOut() {
-  clearSession()
-  window.location.replace('/auth/login')
+export default function LicenceGate({ children }) {
+  const [state, recheck] = useLicenceState()
+  if (!state) return <div className="h-full flex items-center justify-center"><Spinner /></div>
+  const paid = state.status === 'ok' && state.anyActive
+  return <LicenceContext.Provider value={{ ...state, paid, recheck }}>{children}</LicenceContext.Provider>
 }
 
-/** Renew on the web, and check again once that is done. */
-export function RenewActions({ onChecked }) {
+/**
+ * The way to unlock something: link this computer first if it is not linked; once linked,
+ * renew on the web and check again.
+ */
+export function UnlockActions({ compact = false }) {
+  const licence = useLicence()
+  const [linking, setLinking] = useState(false)
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
-  const stationId = getLink()?.stationId
+  const link = getLink()
+
+  if (!link) {
+    return (
+      <>
+        <div className={compact ? '' : 'w-full max-w-xs mx-auto'}>
+          <Button icon={linkOutline} expand={compact ? 'inline' : 'block'} onClick={() => setLinking(true)}>Link this computer</Button>
+        </div>
+        <Dialog open={linking} onClose={() => setLinking(false)} title="Link this computer" placement="bottom">
+          <p className="text-[15px] text-content-muted mb-4">The station’s owner signs in with their StationMGR web account, once, online. The station’s subscription then works on this computer, offline.</p>
+          <LinkForm canBackUp onLinked={() => { setLinking(false); licence?.recheck?.() }} />
+        </Dialog>
+      </>
+    )
+  }
+
   const check = async () => {
     setChecking(true); setError('')
     const res = await refreshLicence()
     setChecking(false)
     if (!res.ok) setError(res.error)
-    onChecked?.()
+    licence?.recheck?.()
   }
   return (
-    <div className="flex flex-col items-stretch gap-2 w-full max-w-xs mx-auto">
-      <Button icon={refreshOutline} onClick={check} disabled={checking}>{checking ? 'Checking…' : 'Check again'}</Button>
-      <Button variant="secondary" icon={openOutline} onClick={() => openWeb(stationId ? `/dashboard/subscribe?org_id=${stationId}` : '/dashboard')}>Renew on the web</Button>
-      {error && <p className="text-[15px] font-semibold text-red-600 dark:text-red-400 text-center">{error}</p>}
-      <p className="text-[13px] text-content-faint text-center">Check again needs the internet once. After that this computer works offline again.</p>
+    <div className={compact ? 'flex flex-wrap gap-2' : 'flex flex-col items-stretch gap-2 w-full max-w-xs mx-auto'}>
+      <Button icon={refreshOutline} expand={compact ? 'inline' : 'block'} onClick={check} disabled={checking}>{checking ? 'Checking…' : 'Check again'}</Button>
+      <Button variant="secondary" icon={openOutline} expand={compact ? 'inline' : 'block'} onClick={() => openWeb(`/dashboard/subscribe?org_id=${link.stationId}`)}>Renew on the web</Button>
+      {error && <p className="text-[15px] font-semibold text-red-600 dark:text-red-400">{error}</p>}
     </div>
   )
 }
 
-const WHY = {
-  missing: 'This computer has no subscription record yet.',
-  invalid: 'The subscription record on this computer could not be checked.',
-  clock: 'This computer’s clock is behind the last time StationMGR ran. Set the date and time right, then check again.',
+/** A short note where a paid feature would be: what it needs, and the way to unlock it. */
+export function PaidNote({ what, verb = 'needs' }) {
+  const licence = useLicence()
+  const clock = licence?.status === 'clock'
+  return (
+    <div className="flex flex-col gap-3 p-3 border-2 border-line rounded-house bg-subtle">
+      <p className="text-[15px] text-content">
+        {clock
+          ? 'This computer’s clock is behind the last time StationMGR ran. Set the date and time right, then check again.'
+          : getLink()
+            ? `${what} ${verb} the station to have a subscription running.`
+            : `${what} ${verb} this computer linked to your station on the web, with a subscription.`}
+      </p>
+      <UnlockActions compact />
+    </div>
+  )
 }
 
-/**
- * Lets the station's screens open only on a linked computer with at least one running
- * service. Otherwise the whole app shows the way to link or renew; sign-in and the start page
- * are outside it.
- */
-export default function LicenceGate({ children }) {
-  const [state, recheck] = useLicenceState()
-
-  if (!state) return <div className="h-full flex items-center justify-center"><Spinner /></div>
-
-  if (state.status === 'unlinked') {
-    return (
-      <IonPage>
-        <IonContent>
-          <div className="max-w-sm mx-auto px-4 py-12">
-            <h1 className="text-2xl font-bold text-content mb-1">Link this computer</h1>
-            <p className="text-[15px] text-content-muted mb-6">StationMGR on this computer now works with your station’s subscription on the web. The station’s owner links it once; after that it works offline.</p>
-            <LinkForm canBackUp onLinked={recheck} />
-            <div className="mt-6"><Button variant="neutral" icon={logOutOutline} onClick={signOut}>Sign out</Button></div>
-          </div>
-        </IonContent>
-      </IonPage>
-    )
-  }
-
-  if (state.status !== 'ok' || !state.anyActive) {
-    const lapsed = Object.entries(state.services || {})
-    return (
-      <IonPage>
-        <IonContent>
-          <div className="max-w-md mx-auto px-4 py-12">
-            <EmptyState icon={lockClosedOutline} title="StationMGR is locked on this computer">
-              {WHY[state.status] || 'The station’s subscription has run out. Renew it on the web, then check again here.'}
-            </EmptyState>
-            {lapsed.length > 0 && (
-              <ul className="mb-6 border-2 border-line rounded-house divide-y-2 divide-line">
-                {lapsed.map(([key, until]) => (
-                  <li key={key} className="flex justify-between gap-3 px-3 py-2.5 text-[15px]">
-                    <span className="font-semibold text-content">{SERVICE_NAMES[key] || key}</span>
-                    <span className="text-content-muted">ended {fmtDate(until.slice(0, 10))}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <RenewActions onChecked={recheck} />
-            <div className="mt-6 max-w-xs mx-auto"><Button variant="neutral" icon={logOutOutline} onClick={signOut}>Sign out</Button></div>
-          </div>
-        </IonContent>
-      </IonPage>
-    )
-  }
-
-  return <LicenceContext.Provider value={{ ...state, recheck }}>{children}</LicenceContext.Provider>
-}
-
-/** A screen whose service has run out: what it needs, and the way to renew. */
+/** A screen whose service has run out: what it needs, and the way to unlock it. */
 export function ServiceLocked({ service }) {
   const licence = useLicence()
   const until = licence?.services?.[service]
   return (
     <div className="max-w-md mx-auto px-4 py-12">
       <EmptyState icon={lockClosedOutline} title={`${SERVICE_NAMES[service] || 'This service'} is not active`}>
-        {until ? `Its subscription ended on ${fmtDate(until.slice(0, 10))}.` : 'This station has no subscription for it.'} Renew it on the web to open this screen again.
+        {!getLink()
+          ? 'This screen needs a subscription. Link this computer to your station on the web to use it.'
+          : until
+            ? `Its subscription ended on ${fmtDate(until.slice(0, 10))}. Renew it on the web to open this screen again.`
+            : 'This station has no subscription for it. Add it on the web to open this screen.'}
       </EmptyState>
-      <RenewActions onChecked={licence?.recheck} />
+      <UnlockActions />
     </div>
   )
 }

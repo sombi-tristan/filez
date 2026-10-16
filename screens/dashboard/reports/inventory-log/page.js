@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import { buildInventoryLogReport } from '@/lib/buildInventoryLogReport'
 import { fmtDate } from '@/lib/formatDate'
 import DateRange from '@/components/reports/DateRange'
+import { defaultReportStart } from '@/lib/reportRange'
 import AccessGate from '@/components/AccessGate'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
 
@@ -43,7 +44,8 @@ function InventoryLogContent() {
   const today = new Date()
   const pad = (n) => String(n).padStart(2, '0')
   const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
-  const monthStartStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`
+  // Desktop build: the month to date, or the last 5 days without a subscription (lib/reportRange.js).
+  const monthStartStr = defaultReportStart(todayStr, `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`)
 
   const [startDate, _setStartDate] = useState(monthStartStr)
   const [endDate, _setEndDate] = useState(todayStr)

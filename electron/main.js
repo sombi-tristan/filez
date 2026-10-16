@@ -48,11 +48,11 @@ function start() {
     (_details, callback) => callback({ cancel: true }),
   )
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'File', submenu: [{ role: 'reload' }, { type: 'separator' }, { role: 'quit' }] },
-    { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: 'View', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' }, { role: 'toggleDevTools' }] },
-  ]))
+  // No menu bar in the window: the app has its own navigation. A Mac shows its menu at the top
+  // of the screen, not in the window, and needs the Edit roles there for copy and paste.
+  Menu.setApplicationMenu(process.platform === 'darwin'
+    ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }])
+    : null)
 
   createWindow()
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
@@ -65,6 +65,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'StationMGR',
+    autoHideMenuBar: true,
     icon: path.join(OUT_DIR, 'icon-512.png'),
     backgroundColor: '#ffffff',
     show: false,
