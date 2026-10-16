@@ -3,46 +3,60 @@
 import { useEffect, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { store } from '@/lib/local/store'
-import { getLink, updateLink } from '@/lib/local/link'
-import { pull, push } from '@/lib/local/webSync'
-import { useLicence } from '@/components/desktop/LicenceGate'
+import { allLinks, updateLink } from '@/lib/local/link'
+import { pendingCount } from '@/lib/local/outbox'
+import { checkLicence, paidNow } from '@/lib/local/licence'
+import { pull, push, refreshLicence } from '@/lib/local/webSync'
 
 /**
- * Desktop build: keeps this computer and its web station in step without anyone pressing Push
- * or Pull, so entries the staff make on their phones reach the computer's reports by themselves.
+ * Desktop build: keeps every linked station on this computer and its web station in step
+ * without anyone pressing Push or Pull, so entries the staff make on their phones reach the
+ * computer's reports by themselves. A computer holds several stations; each linked one with a
+ * subscription running syncs, whichever is open.
  *
  *   - Pull when the app opens, every PULL_EVERY while it runs, and when the internet comes back.
  *   - Push PUSH_AFTER the last change made here (more changes restart the wait).
  *
- * Only for a linked computer with a subscription running (`paid`), as the buttons are, and only
- * while the computer is online. Failures are quiet: the station page shows the last one
- * (link.syncError) and the next round tries again. The buttons still push and pull at once;
- * lib/local/webSync.js makes the two take turns.
+ * Only while the computer is online. Failures are quiet: the station page shows each station's
+ * last one (link.syncError) and the next round tries again. The buttons still push and pull at
+ * once; lib/local/webSync.js makes the calls take turns.
  */
 const PULL_EVERY = 10 * 60 * 1000
 const PUSH_AFTER = 60 * 1000
 
-function note(result) {
-  if (!getLink()) return
-  updateLink({ syncError: result?.ok || result?.unpaid ? null : (result?.error || 'Sync failed'), lastSyncAt: new Date().toISOString() })
+function note(stationId, result) {
+  updateLink({ syncError: result?.ok || result?.unpaid ? null : (result?.error || 'Sync failed'), lastSyncAt: new Date().toISOString() }, stationId)
+}
+
+const failed = (e) => ({ ok: false, error: e.message })
+
+/** The linked stations with a subscription running, their licences checked (and renewed online). */
+async function syncingStations() {
+  const ids = []
+  for (const { stationId, revoked } of allLinks()) {
+    if (revoked) continue
+    if (navigator.onLine) await refreshLicence(stationId).catch(() => {})
+    await checkLicence(Date.now(), stationId)
+    if (paidNow(stationId)) ids.push(stationId)
+  }
+  return ids
 }
 
 export default function AutoSync() {
-  const licence = useLicence()
-  const on = Boolean(licence?.paid) && Boolean(getLink())
   const pending = useLiveQuery(() => store.outbox.count(), [], 0)
   const busy = useRef(false)
 
-  // Pull, then push anything waiting: on opening, on a timer, and when back online.
+  // Pull, then push anything waiting, for each station: on opening, on a timer, and when back online.
   useEffect(() => {
-    if (!on) return
     const round = async () => {
       if (busy.current || !navigator.onLine) return
       busy.current = true
       try {
-        const pulled = await pull().catch((e) => ({ ok: false, error: e.message }))
-        note(pulled)
-        if (pulled.ok && (await store.outbox.count()) > 0) note(await push().catch((e) => ({ ok: false, error: e.message })))
+        for (const stationId of await syncingStations()) {
+          const pulled = await pull({ stationId }).catch(failed)
+          note(stationId, pulled)
+          if (pulled.ok && (await pendingCount(stationId)) > 0) note(stationId, await push(stationId).catch(failed))
+        }
       } finally {
         busy.current = false
       }
@@ -54,17 +68,19 @@ export default function AutoSync() {
       clearInterval(timer)
       window.removeEventListener('online', round)
     }
-  }, [on])
+  }, [])
 
-  // Push a minute after the last change made here.
+  // Push a minute after the last change made here, for each station that has changes waiting.
   useEffect(() => {
-    if (!on || !pending) return
-    const timer = setTimeout(() => {
+    if (!pending) return
+    const timer = setTimeout(async () => {
       if (!navigator.onLine) return
-      push().then(note, (e) => note({ ok: false, error: e.message }))
+      for (const stationId of await syncingStations()) {
+        if ((await pendingCount(stationId)) > 0) note(stationId, await push(stationId).catch(failed))
+      }
     }, PUSH_AFTER)
     return () => clearTimeout(timer)
-  }, [on, pending])
+  }, [pending])
 
   return null
 }
