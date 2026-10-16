@@ -13,7 +13,7 @@ The computer is linked to a station on the web platform (app/api/desktop/* on ma
   Every write the in-app server makes to a synced table (lib/desktopTables.js) is recorded in
   the outbox (lib/local/outbox.js); a pull writes the store directly and never echoes back, and
   rebuilds the screens' copy only when it changed something. Push and pull take turns.
-- Staff mostly work on their phones (the web or the Android app); the computer is where the
+- Staff mostly work on their phones (the web, installed as an app); the computer is where the
   owner reviews. components/desktop/AutoSync.js pulls on opening, every 10 minutes and when back
   online, and pushes a minute after the last change, for a linked computer with a subscription.
   The station page's buttons still do it at once.
@@ -23,14 +23,21 @@ The computer is linked to a station on the web platform (app/api/desktop/* on ma
 - The window never reaches the web itself. electron/web.js does, through electron/preload.js
   (window.stationmgr), holding the device token. Pages call lib/local/web.js.
 - The station's subscription is checked offline from the signed licence (lib/local/licence.js).
-  Free with no link: first-run setup, daily sales, lodgements, and reports over any 5 days at a
-  time (lib/reportRange.js moveRange: in components/reports/DateRange.js moving one date brings
-  the other along). Report screens marked `ranged` in screens/routes.js carry FreeReportBanner
-  across the top, above the dates. A screen's service is the
-  `service` field in screens/routes.js, and LicenceGate locks that screen when it is not running.
-  Any running service (`paid` from useLicence, `paidNow()`) opens backup, longer reports, and
-  Push and Pull; show PaidNote where a paid feature would be. The in-app server's requireService
-  follows the licence.
+  Free with no link: first-run setup, daily sales, lodgements, product receipt, and reports over
+  any 5 days at a time (lib/reportRange.js rangeAllowed: in components/reports/DateRange.js the
+  dates move on their own, and over 5 days Generate is greyed out with a line saying so, like
+  the audit report's 32 days). Report screens marked `ranged` in screens/routes.js carry
+  FreeReportBanner across the top, above the dates. A screen's service is the
+  `service` field in screens/routes.js, and LicenceGate locks that screen when it is not running;
+  a free screen must not check useSubscription itself (tests/desktop-free-entries.test.mjs).
+  Any running service (`paid` from useLicence, `paidNow()`) opens backup, longer reports,
+  exporting a report (exportAllowed), and Push and Pull; show PaidNote where a paid feature would
+  be. The in-app server's requireService follows the licence.
+- A restore (lib/local/routes/local/backup) takes a backup of this station only, decided before
+  anything is wiped (lib/local/restorePlan.js): one from before linking moves into the linked
+  station and is pushed; one of another station is refused. A linked computer that already holds
+  another station's records (heldStation) is offered at sign-in to get its station back from the
+  web or keep the held one and unlink (lib/local/routes/local/rescue).
 - No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
   (the end of app/globals.css re-sets the house colour variables on it).
 - Staff and their PINs stay on the computer: users and org_invites never sync.

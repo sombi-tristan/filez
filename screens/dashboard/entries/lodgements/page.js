@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from '@/lib/nav'
 import { Check, ChevronDown, X } from 'lucide-react'
-import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
 import { lodgementsRepo } from '@/lib/repositories/lodgements'
 import DateInput from '@/components/DateInput'
@@ -11,7 +10,7 @@ import { useSavePush } from '@/components/SavePushProvider'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_DATE } from '@/components/ui'
 import {
-  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, AddEntryButton, SubscribeNotice,
+  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, AddEntryButton,
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
 
@@ -34,7 +33,6 @@ export default function LodgementsFormPage() {
   const editId = searchParams.get('edit') || null
   const editDate = searchParams.get('edit_date') || null
   const qs = `org_id=${orgId}`
-  const { subscribed: isSubscribed, loading: subLoading } = useSubscription(orgId, 'fuel-operations')
 
   const [loading, setLoading] = useState(true)
   const [locked, setLocked] = useState(false)
@@ -241,8 +239,6 @@ export default function LodgementsFormPage() {
       <form onSubmit={handleSubmit}>
         <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        {!subLoading && !isSubscribed && <SubscribeNotice />}
-
         {entries.map((entry, idx) => {
           const chosen = banks.find((b) => b.id === entry.bankId)
           return (
@@ -285,7 +281,6 @@ export default function LodgementsFormPage() {
           saving={saving}
           saved={saved}
           isEditing={isEditing}
-          disabled={!subLoading && !isSubscribed}
           error={error}
           onErrorDone={() => setError('')}
         />

@@ -8,7 +8,8 @@ import { db } from '@/lib/db'
 import { buildSalesOperationReport } from '@/lib/buildSalesOperationReport'
 import { exportSalesOperationExcel } from '@/lib/exportSalesOperationExcel'
 import DateRange from '@/components/reports/DateRange'
-import { defaultReportStart } from '@/lib/reportRange'
+import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
 
 function fmt(n) {
@@ -54,6 +55,9 @@ function SalesOperationContent() {
   const [lubeProducts, setLubeProducts] = useState([])
   const [stationName, setStationName] = useState('')
   const [exporting, setExporting] = useState(false)
+  // Exporting is a paid feature: without a subscription the button shows PaidNote instead.
+  const paid = Boolean(useLicence()?.paid)
+  const [askedToExport, setAskedToExport] = useState(false)
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return }
@@ -142,6 +146,7 @@ function SalesOperationContent() {
 
   const handleExport = async () => {
     if (!report) return
+    if (!exportAllowed()) { setAskedToExport(true); return }
     setExporting(true)
     try {
       await exportSalesOperationExcel({
@@ -201,6 +206,7 @@ function SalesOperationContent() {
               )}
             </div>
           </div>
+          {askedToExport && !paid && <div className="mb-3 shrink-0"><PaidNote what="Exporting a report" /></div>}
 
           {!generated ? (
             <div className="flex-1 flex items-center justify-center">

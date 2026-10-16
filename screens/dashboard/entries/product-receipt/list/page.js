@@ -4,10 +4,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/lib/db'
-import { useSubscription } from '@/lib/hooks/useSubscription'
 import { Spinner } from '@/design'
 import {
-  EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager, SubscribeNotice,
+  EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager,
 } from '@/components/entries/EntryListParts'
 
 export default function ProductReceiptListPage() {
@@ -17,7 +16,6 @@ export default function ProductReceiptListPage() {
   const [page, setPage] = useState(1)
   const [ready, setReady] = useState(false)
   const limit = 10
-  const { subscribed, loading: subLoading } = useSubscription(orgId, 'fuel-operations')
 
   useEffect(() => {
     setReady(true)
@@ -61,7 +59,7 @@ export default function ProductReceiptListPage() {
   if (!ready) return <div className="flex justify-center py-20"><Spinner /></div>
 
   return (
-    <EntryListScreen newHref={`/dashboard/entries/product-receipt?${qs}`} newDisabled={!subLoading && !subscribed} top={!subLoading && !subscribed ? <SubscribeNotice /> : null}>
+    <EntryListScreen newHref={`/dashboard/entries/product-receipt?${qs}`}>
       {pageGroups.length === 0 ? (
         <EntryListEmpty what="receipts" />
       ) : (

@@ -13,8 +13,8 @@ import { lazy } from 'react'
  *           subscription Screen.js puts the free-range banner above it
  *   service the subscription the screen needs on this computer (lib/local/licence.js): past its
  *           date the screen is locked, as Screen.js shows. Without one, always open: daily
- *           sales, lodgements and most reports are free (a report's range over 5 days is paid,
- *           lib/reportRange.js).
+ *           sales, lodgements, product receipt and most reports are free (a report's range
+ *           over 5 days, and exporting one, are paid: lib/reportRange.js).
  *
  * Desktop build: no admin area, and no feedback, notifications or subscribe screens (a
  * subscription is bought on the web).
@@ -31,8 +31,8 @@ export const DASHBOARD_SCREENS = [
   { path: '/dashboard/entries/lodgements/list', title: 'Lodgement Entries', Page: lazy(() => import('@/screens/dashboard/entries/lodgements/list/page')) },
   { path: '/dashboard/entries/lube', title: 'Lube', Page: lazy(() => import('@/screens/dashboard/entries/lube/page')), service: 'lube-management' },
   { path: '/dashboard/entries/lube/list', title: 'Lube Entries', Page: lazy(() => import('@/screens/dashboard/entries/lube/list/page')), service: 'lube-management' },
-  { path: '/dashboard/entries/product-receipt', title: 'Product Receipt', Page: lazy(() => import('@/screens/dashboard/entries/product-receipt/page')), service: 'fuel-operations' },
-  { path: '/dashboard/entries/product-receipt/list', title: 'Receipt Entries', Page: lazy(() => import('@/screens/dashboard/entries/product-receipt/list/page')), service: 'fuel-operations' },
+  { path: '/dashboard/entries/product-receipt', title: 'Product Receipt', Page: lazy(() => import('@/screens/dashboard/entries/product-receipt/page')) },
+  { path: '/dashboard/entries/product-receipt/list', title: 'Receipt Entries', Page: lazy(() => import('@/screens/dashboard/entries/product-receipt/list/page')) },
   { path: '/dashboard/reports/account-ledger', title: 'Account Ledger', Page: lazy(() => import('@/screens/dashboard/reports/account-ledger/page')), report: true, service: 'customer-payments' },
   { path: '/dashboard/reports/analytics', title: 'Analytics', Page: lazy(() => import('@/screens/dashboard/reports/analytics/page')), report: true, ranged: true },
   { path: '/dashboard/reports/audit-report', title: 'Audit Report', Page: lazy(() => import('@/screens/dashboard/reports/audit-report/page')), report: true, ranged: true },

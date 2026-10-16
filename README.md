@@ -33,8 +33,8 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
 - **Staff:** the owner adds staff on the station page (name, username, PIN) and picks which
   screens each can open. Staff sign in by choosing their name and entering their PIN. Staff and
   PINs stay on this computer.
-- **Free:** daily sales, lodgements, station setup, staff and PINs, and reports over up to 5
-  days (Dip Calculator included).
+- **Free:** daily sales, lodgements, product receipt, station setup, staff and PINs, and reports
+  over any 5 days in a row (Dip Calculator included). Exporting a report needs a subscription.
 - **Push and Pull** (station page, needs the internet and a subscription). With a subscription
   the app also does both on its own while online: it pulls when it opens and every 10 minutes,
   so entries the staff make on their phones reach the computer's reports, and pushes a minute
@@ -43,12 +43,14 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
   they are on a pull. Everything else works offline.
 - **Subscription:** the web platform sells it; the desktop checks it offline from a licence the
   web signs on every link, push, pull and whenever the computer is online. Any service running
-  opens backup, reports over more than 5 days, and Push and Pull. The other entries need their
-  own service (Product Receipt and Imprest need Fuel operations, Lube and the Lube Report need
+  opens backup, reports over more than 5 days, exporting reports, and Push and Pull. The other
+  entries need their own service (Imprest needs Fuel operations, Lube and the Lube Report need
   Lube management, Accounts and the Account Ledger need Customer payments). Setting the
   computer's clock back closes the paid features until the web is reached again.
 - **Backups** (needs a subscription): the owner's station page has *Back up data* (saves one
-  `.json` file) and *Restore backup*.
+  `.json` file) and *Restore backup*. A backup restores only onto its own station (or, made
+  before linking, onto the station linked since); one of another station is refused and nothing
+  changes.
 - Closing the app signs everyone out.
 
 ## How it works
@@ -67,8 +69,8 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
 - `lib/local/outbox.js` records every row the in-app server changes; `lib/local/webSync.js`
   pushes them, pulls, and links. `lib/local/licence.js` checks the licence;
   `components/desktop/LicenceGate.js` passes it to the screens (`useLicence`, `paid`) and
-  locks a screen whose service is not running. `lib/reportRange.js` caps a report at 5 days
-  without one.
+  locks a screen whose service is not running. `lib/reportRange.js` caps a report at 5 days,
+  and keeps export, without one.
 - Column defaults come from the migrations: `node scripts/gen-local-schema.mjs` regenerates
   `lib/local/schema.json` after a migration adds columns.
 

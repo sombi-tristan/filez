@@ -4,7 +4,7 @@ import '@/lib/local/installFetch'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Loader2, Lock, User, AtSign, Store } from 'lucide-react'
-import { LABEL } from '@/components/ui'
+import { LABEL, BTN_FRAMED } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '../authStyles'
 import LinkForm from '@/components/desktop/LinkForm'
 
@@ -33,6 +33,10 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
+
+  // a linked computer holding another station's records (lib/local/restorePlan.js heldStation)
+  const [rescue, setRescue] = useState(false)
+  const [notice, setNotice] = useState('')
 
   const loadStatus = () =>
     fetch('/api/local/status')
@@ -64,7 +68,30 @@ export default function LoginPage() {
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(body.error || 'Sign in failed'); setPin(''); return }
+    // The linked station is not on this computer: going in would only come back here.
+    if (status.heldStation) { setRescue(true); setPin(''); return }
     goIn(status)
+  }
+
+  const choose = async (keep) => {
+    const held = status.heldStation.name || 'the other station'
+    if (keep === 'web' && !window.confirm(`This removes ${held}'s records from this computer. Keep a backup of them first if you need them. Continue?`)) return
+    setBusy(true); setError('')
+    const res = await fetch('/api/local/rescue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keep }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(body.error || 'That did not work'); return }
+    setRescue(false)
+    if (keep === 'web' && !body.pulled) {
+      setNotice(`Nothing came down from the web yet${body.error ? ` (${body.error})` : ''}. Choose your PIN, then Pull from the station page once its subscription is running.`)
+    }
+    const next = await fetch('/api/local/status').then((r) => r.json())
+    setStatus(next)
+    if (keep === 'held') goIn(next)
   }
 
   const setup = async (e) => {
@@ -115,7 +142,31 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {status.setupDone ? (
+      {notice && <p className="text-sm text-content-muted mb-4" role="status">{notice}</p>}
+
+      {rescue ? (
+        <div className="space-y-4">
+          <p className="text-sm text-content">
+            This computer holds the records of <strong>{status.heldStation.name || 'another station'}</strong>, but it is
+            linked to <strong>{status.stationName || 'a different station'}</strong>. Choose which to keep.
+          </p>
+          <button type="button" onClick={() => choose('web')} disabled={busy} className={submitCls}>
+            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Get {status.stationName || 'the linked station'} back from the web
+          </button>
+          <p className="text-xs text-content-faint">
+            Removes {status.heldStation.name || 'these'} records from this computer and brings the linked station&apos;s down
+            from the web (its subscription must be running). Then you choose your PIN again.
+          </p>
+          <button type="button" onClick={() => choose('held')} disabled={busy} className={`w-full py-2.5 font-medium disabled:opacity-50 ${BTN_FRAMED}`}>
+            Keep {status.heldStation.name || 'these records'} and unlink
+          </button>
+          <p className="text-xs text-content-faint">
+            Keeps these records. This computer stops being linked to {status.stationName || 'the other station'}; you can
+            link it to {status.heldStation.name || 'its own station'} later.
+          </p>
+          {errorBox}
+        </div>
+      ) : status.setupDone ? (
         <form onSubmit={signIn} className="space-y-4">
           <div>
             <label className={LABEL} htmlFor="who">Who is signing in?</label>

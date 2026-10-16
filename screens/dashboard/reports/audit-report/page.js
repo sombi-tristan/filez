@@ -10,7 +10,8 @@ import { exportAuditExcel } from '@/lib/exportAuditExcel'
 import { exportAuditGenericExcel } from '@/lib/exportAuditGenericExcel'
 import { isRainoilGroup } from '@/lib/exportGroup'
 import DateRange from '@/components/reports/DateRange'
-import { defaultReportStart } from '@/lib/reportRange'
+import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
@@ -187,6 +188,9 @@ function AuditReportContent() {
   )
 
   const [exporting, setExporting] = useState(false)
+  // Exporting is a paid feature: without a subscription the button shows PaidNote instead.
+  const paid = Boolean(useLicence()?.paid)
+  const [askedToExport, setAskedToExport] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [templateUrl, setTemplateUrl] = useState(null)
 
@@ -233,6 +237,7 @@ function AuditReportContent() {
 
   const handleExport = async () => {
     if (!report || exporting) return
+    if (!exportAllowed()) { setAskedToExport(true); return }
     setExporting(true)
     try {
       // Pre-check for truncation warnings
@@ -329,6 +334,7 @@ function AuditReportContent() {
       {dateRangeDays > 32 && (
         <p className="text-xs text-red-500 mt-1">Date range cannot exceed 32 days ({dateRangeDays} days selected).</p>
       )}
+      {askedToExport && !paid && <div className="mb-3 shrink-0"><PaidNote what="Exporting a report" /></div>}
 
       {/* Report content */}
       {report ? (

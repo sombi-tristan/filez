@@ -10,7 +10,8 @@ import { exportProductReceiptExcel } from '@/lib/exportProductReceiptExcel'
 import { exportProductReceiptGenericExcel } from '@/lib/exportProductReceiptGenericExcel'
 import { isRainoilGroup } from '@/lib/exportGroup'
 import DateRange from '@/components/reports/DateRange'
-import { defaultReportStart } from '@/lib/reportRange'
+import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
@@ -118,6 +119,9 @@ function ProductReceivedReportContent() {
   const [reportEnd, setReportEnd] = useState(todayStr)
 
   const [exportingIdx, setExportingIdx] = useState(null)
+  // Exporting is a paid feature: without a subscription the button shows PaidNote instead.
+  const paid = Boolean(useLicence()?.paid)
+  const [askedToExport, setAskedToExport] = useState(false)
 
   // Config
   const [tanks, setTanks] = useState([])
@@ -192,6 +196,7 @@ function ProductReceivedReportContent() {
 
   const handleExport = async (row, idx) => {
     if (exportingIdx !== null) return
+    if (!exportAllowed()) { setAskedToExport(true); return }
     setExportingIdx(idx)
     try {
       // exportProductReceiptExcel is a replica of Rainoil's discharge certificate, theirs
@@ -270,6 +275,7 @@ function ProductReceivedReportContent() {
           </Link>
         </div>
       </div>
+      {askedToExport && !paid && <div className="mb-3 shrink-0"><PaidNote what="Exporting a report" /></div>}
 
       {/* Content */}
       <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 pb-4 ${REPORT_CARD}`}>
