@@ -36,6 +36,9 @@ export default function StationPage() {
   const stationId = params.stationId
 
   const [loading, setLoading] = useState(true)
+  // Why the station could not be opened, shown here rather than a silent return to sign-in,
+  // which looped when the person signed in could not open it (CLAUDE.md, restore)
+  const [openError, setOpenError] = useState(null)
   const [station, setStation] = useState(null)
   const [isOwner, setIsOwner] = useState(false)
   const [user, setUser] = useState(null)
@@ -149,10 +152,15 @@ export default function StationPage() {
         fetch(`/api/organizations?org_id=${encodeURIComponent(stationId)}`),
         fetch('/api/auth/me'),
       ])
-      if (!orgRes.ok) { router.replace('/auth/login'); return }
-      const data = await orgRes.json()
+      if (orgRes.status === 401) { router.replace('/auth/login'); return }
+      const data = await orgRes.json().catch(() => ({}))
       const s = (data.stations || [])[0]
-      if (!s) { router.replace('/auth/login'); return }
+      if (!orgRes.ok || !s) {
+        const me = userRes.ok ? (await userRes.json().catch(() => ({}))).user : null
+        setOpenError({ status: orgRes.status, error: data.error || 'Station not found', who: me?.name || me?.email || 'nobody' })
+        setLoading(false)
+        return
+      }
 
       const me = userRes.ok ? (await userRes.json()).user : null
       setUser(me)
@@ -284,6 +292,22 @@ export default function StationPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
+      </div>
+    )
+  }
+
+  if (openError) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 space-y-4" role="alert">
+        <h1 className="text-xl font-bold text-content">This station could not be opened</h1>
+        <p className="text-sm text-content">
+          {openError.error} (error {openError.status}). Station <code className="text-xs">{stationId}</code>, signed in as {openError.who}.
+        </p>
+        <p className="text-sm text-content-muted">
+          Sign out and sign in again: if this computer holds another station&apos;s records, sign-in offers to get this
+          station back from the web, keep the other one, or create it on the web.
+        </p>
+        <button onClick={handleSignOut} className={`px-4 py-2 text-sm font-medium ${BTN_PRIMARY}`}>Sign out</button>
       </div>
     )
   }
