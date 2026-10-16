@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Fuel, ClipboardList, BarChart3, Users } from 'lucide-react'
 import Footer from '@/components/Footer'
+import DesktopDownload from '@/components/DesktopDownload'
 import { BTN_FRAMED, BTN_PRIMARY } from '@/components/ui'
 
 export default function LandingPage() {
@@ -18,8 +19,14 @@ export default function LandingPage() {
   }, [])
 
   return (
-    // A column at least the screen's height, so the footer sits at the bottom of a short page.
-    <div className="min-h-screen flex flex-col">
+    <>
+    {/* A computer gets the desktop app's download page (lib/platform.js). Chosen by CSS, at the
+        same width as the check in the dashboard, so neither page flashes before the other. */}
+    <div className="hidden lg:block min-h-screen">
+      <DesktopDownload signedIn={loggedIn} />
+    </div>
+    {/* A column at least the screen's height, so the footer sits at the bottom of a short page. */}
+    <div className="lg:hidden min-h-screen flex flex-col">
     {/* The landing page gets no AppShell (see components/AppShell.js: `/` returns bare
         children), so it carries its own bar. Same chrome as the app header, h-14 and the blue
         rule, so arriving from the site into the dashboard is not a change of furniture.
@@ -129,5 +136,6 @@ export default function LandingPage() {
     </div>
     <Footer />
     </div>
+    </>
   )
 }

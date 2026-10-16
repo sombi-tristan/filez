@@ -6,8 +6,8 @@ import {
   IonBackButton, IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar,
   useIonRouter,
 } from '@ionic/react'
-import { homeOutline, notificationsOutline } from 'ionicons/icons'
-import { Badge, IconButton, Spinner } from '@/design'
+import { desktopOutline, homeOutline, notificationsOutline } from 'ionicons/icons'
+import { Badge, EmptyState, IconButton, Spinner } from '@/design'
 import { AreaContext, ScreenLocationContext } from '@/lib/nav'
 import useStationUnread from '@/lib/useStationUnread'
 import AdminViewingBanner from '@/components/AdminViewingBanner'
@@ -28,6 +28,18 @@ import Footer from '@/components/Footer'
  * keyed by the history entry it was opened for: a new visit (or a new day in place) remounts
  * it, while Back to a screen underneath returns to its own entry and keeps it as it was left.
  */
+/** A report the web does not keep (screens/routes.js `desktopOnly`). */
+function DesktopOnly() {
+  return (
+    <div className="max-w-md mx-auto px-4 py-12">
+      <EmptyState icon={desktopOutline} title="In the desktop app">
+        This report is in StationMGR for Windows. On the web: Summary, Analytics, Inventory Log
+        and Account Ledger.
+      </EmptyState>
+    </div>
+  )
+}
+
 export default function Screen({ screen }) {
   const live = useLocation()
   const [held, setHeld] = useState(live)
@@ -86,10 +98,10 @@ export default function Screen({ screen }) {
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
               <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
-                <Page key={held.key} />
+                {screen.desktopOnly ? <DesktopOnly /> : <Page key={held.key} />}
               </Suspense>
             </div>
-            {!screen.report && <Footer app />}
+            {(!screen.report || screen.desktopOnly) && <Footer app />}
           </div>
         </IonContent>
       </IonPage>
