@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
 import { Download, Monitor, Smartphone, CreditCard } from 'lucide-react'
 import Footer from '@/components/Footer'
@@ -13,6 +12,9 @@ import { DESKTOP_DOWNLOAD_URL } from '@/lib/platform'
  * and pull, so the way to buy or renew one, and to sign in for it, stays here.
  *
  *   signedIn  whether to offer the subscription page rather than signing in
+ *
+ * Shown both on the plain landing page and inside the dashboard's Ionic app, so its links are
+ * plain page loads that work in either.
  */
 export default function DesktopDownload({ signedIn = false }) {
   return (
@@ -54,9 +56,14 @@ export default function DesktopDownload({ signedIn = false }) {
                   Daily sales, lodgements and short reports are free. A subscription, bought here,
                   opens the rest: link the app to your station from inside it.
                 </p>
-                <Link href={signedIn ? '/dashboard/subscribe' : '/auth/login?next=/dashboard/subscribe'} className={`inline-flex px-4 py-2 text-sm font-semibold ${BTN_FRAMED}`}>
+                <a href={signedIn ? '/dashboard/subscribe' : '/auth/login?next=/dashboard/subscribe'} className={`inline-flex px-4 py-2 text-sm font-semibold ${BTN_FRAMED}`}>
                   {signedIn ? 'Manage subscription' : 'Sign in to subscribe'}
-                </Link>
+                </a>
+                {signedIn && (
+                  <a href="/dashboard/computers" className="ml-3 inline-flex px-4 py-2 text-sm font-semibold text-accent">
+                    Linked computers
+                  </a>
+                )}
               </div>
             </div>
             <div className="flex gap-3">
