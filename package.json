@@ -6,9 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "android": "cap sync android",
-    "android:open": "cap open android"
+    "lint": "next lint"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -39,9 +37,6 @@
     "recharts": "^3.7.0"
   },
   "devDependencies": {
-    "@capacitor/android": "^7.6.9",
-    "@capacitor/cli": "^7.6.9",
-    "@capacitor/core": "^7.6.9",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
