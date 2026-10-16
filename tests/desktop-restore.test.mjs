@@ -56,6 +56,9 @@ check('one with two stations is refused', restorePlan(backup([A, 'Wuse'], [B, 'K
 console.log('\nA computer already holding another station')
 check('linked to B and holding B is fine', heldStation({ stationId: B, linked: true, stations: [{ id: B, name: 'Kubwa' }] }) === null)
 check('linked to B and holding A is offered the way out', heldStation({ stationId: B, linked: true, stations: [{ id: A, name: 'Wuse' }] })?.id === A)
+// The sign-in loop 1.0.4 missed: a pull put B's row back (owned by B's web owner) beside A's, so
+// B was not missing, yet the people here are A's and none of them could open B.
+check('linked to B and holding A beside a pulled B is offered it too', heldStation({ stationId: B, linked: true, stations: [{ id: B, name: 'Kubwa' }, { id: A, name: 'Wuse' }] })?.id === A)
 check('a fresh linked computer is not', heldStation({ stationId: B, linked: true, stations: [] }) === null)
 check('a computer that is not linked is not', heldStation({ stationId: LOCAL_STATION_ID, linked: false, stations: [{ id: A, name: 'Wuse' }] }) === null)
 
