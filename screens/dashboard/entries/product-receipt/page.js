@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from '@/lib/nav'
-import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
 import { productReceiptsRepo } from '@/lib/repositories/productReceipts'
 import DateInput from '@/components/DateInput'
@@ -12,7 +11,7 @@ import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_DATE } from '@/components/ui'
 import {
   EntryScreen, DayBar, EntryCard, EntryTabs, Field, FieldGroup, FieldRow, NumberInput, AddEntryButton,
-  SubscribeNotice, SaveBar, EntryLoading, NotConfigured, adjacentDates,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
 
 function blankEntry(tanks) {
@@ -109,7 +108,6 @@ export default function ProductReceiptFormPage() {
   const editId = searchParams.get('edit') || null
   const editDate = searchParams.get('edit_date') || null
   const qs = `org_id=${orgId}`
-  const { subscribed: isSubscribed, loading: subLoading } = useSubscription(orgId, 'fuel-operations')
 
   const [loading, setLoading] = useState(true)
   const [locked, setLocked] = useState(false)
@@ -321,8 +319,6 @@ export default function ProductReceiptFormPage() {
       <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { e.preventDefault(); const fields = Array.from(e.currentTarget.querySelectorAll('input, select, textarea')); const idx = fields.indexOf(e.target); if (idx >= 0 && idx < fields.length - 1) fields[idx + 1].focus() } }}>
         <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        {!subLoading && !isSubscribed && <SubscribeNotice />}
-
         <EntryTabs count={entries.length} active={activeTab} onChange={setActiveTab} />
 
         {current && (
@@ -406,7 +402,6 @@ export default function ProductReceiptFormPage() {
           saving={saving}
           saved={saved}
           isEditing={isEditing}
-          disabled={!subLoading && !isSubscribed}
           error={error}
           onErrorDone={() => setError('')}
         />
