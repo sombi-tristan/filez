@@ -57,6 +57,7 @@ check('runs a report over 5 days', range.rangeAllowed('2026-10-01', '2026-10-05'
 check('not one over 6 days', !range.rangeAllowed('2026-10-01', '2026-10-06'))
 check('opens a report 5 days back', range.defaultReportStart('2026-10-16', '2026-10-01') === '2026-10-12')
 check('not before the month starts', range.defaultReportStart('2026-10-02', '2026-10-01') === '2026-10-01')
+check('does not export a report', range.exportAllowed() === false)
 
 setLink({ stationId: STATION, stationName: 'Kubwa' })
 console.log('\nLinked, before any licence arrives')
@@ -74,6 +75,7 @@ check('counts the app as open', good.anyActive === true)
 check('opens the paid features', lic.paidNow())
 check('runs a report over any range', range.rangeAllowed('2026-01-01', '2026-10-16'))
 check('opens a report at the month start', range.defaultReportStart('2026-10-16', '2026-10-01') === '2026-10-01')
+check('exports a report', range.exportAllowed() === true)
 check('the in-app server agrees on writes', (await lic.serviceRunning('fuel-operations')) && !(await lic.serviceRunning('lube-management')))
 check('a service the station never had is shut', !(await lic.serviceRunning('customer-payments')))
 
@@ -103,6 +105,15 @@ check('running normally is fine', (await lic.checkLicence(Date.now() + 2 * DAY))
 check('set back more than a day closes the paid features', (await lic.checkLicence(Date.now() - 3 * DAY)).status === 'clock')
 await lic.saveLicence(await sign({ 'fuel-operations': soon }))
 check('a fresh licence from the web resets it', (await lic.checkLicence()).status === 'ok')
+
+console.log('\nReports that export')
+// Each one asks exportAllowed() first thing in its handler, and shows PaidNote when it is shut.
+for (const name of ['audit-report', 'daily-sales-report', 'product-received', 'sales-operation']) {
+  const src = readFileSync(resolve(root, 'screens', 'dashboard', 'reports', name, 'page.js'), 'utf8')
+  const handler = src.slice(src.indexOf('const handleExport')).split('\n').slice(1, 3).join('\n')
+  check(`${name} checks before exporting`, handler.includes('if (!exportAllowed())'))
+  check(`${name} shows PaidNote`, src.includes('<PaidNote'))
+}
 
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)

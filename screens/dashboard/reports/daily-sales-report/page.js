@@ -9,7 +9,8 @@ import { db } from '@/lib/db'
 import { buildDailyReport } from '@/lib/buildDailyReport'
 import { exportDailyReportExcel } from '@/lib/exportDailyReportExcel'
 import DateRange from '@/components/reports/DateRange'
-import { defaultReportStart } from '@/lib/reportRange'
+import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, CARD_HOVER, CARD, REPORT_CARD } from '@/components/ui'
 
@@ -60,6 +61,9 @@ function DailySalesReportContent() {
 
   const [stationName, setStationName] = useState('')
   const [exporting, setExporting] = useState(false)
+  // Exporting is a paid feature: without a subscription the button shows PaidNote instead.
+  const paid = Boolean(useLicence()?.paid)
+  const [askedToExport, setAskedToExport] = useState(false)
   const [tabOffset, setTabOffset] = useState(0)
   const [showEditModal, setShowEditModal] = useState(false)
   const TAB_COUNT = 31
@@ -139,6 +143,7 @@ function DailySalesReportContent() {
 
   const handleExport = async () => {
     if (!report) return
+    if (!exportAllowed()) { setAskedToExport(true); return }
     setExporting(true)
     try {
       await exportDailyReportExcel({
@@ -267,6 +272,7 @@ function DailySalesReportContent() {
           )}
         </div>
       </div>
+      {askedToExport && !paid && <div className="mb-3 shrink-0"><PaidNote what="Exporting a report" /></div>}
 
       {/* Scrollable content area */}
       {!generated ? (
