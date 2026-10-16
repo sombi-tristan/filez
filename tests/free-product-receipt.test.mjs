@@ -21,6 +21,7 @@ function check(name, ok) {
 
 check('the API does not ask for a subscription', !read('app', 'api', 'entries', 'product-receipt', 'route.js').includes('requireService('))
 check('the form does not gate on a subscription', !read('screens', 'dashboard', 'entries', 'product-receipt', 'page.js').includes('useSubscription('))
+check('a desktop push of receipts needs no service', !/product_receipt_entries: {[^}]*service:/.test(read('lib', 'desktopTables.js')))
 check('the list does not gate on a subscription', !read('screens', 'dashboard', 'entries', 'product-receipt', 'list', 'page.js').includes('useSubscription('))
 
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
