@@ -8,20 +8,29 @@ reached through the fetch shim in lib/local/installFetch.js). The sync engine be
 runs, but its target is that local store. See README.md. Do not push this branch under a
 claude/ prefix: the auto-merge workflow would merge it into main.
 
-The computer is linked to a station on the web platform (app/api/desktop/* on main):
+A computer holds several stations side by side (lib/local/link.js): sign in once with a PIN, then
+pick a station (screens/dashboard/page.js; the owner sees the stations they own, staff the ones
+they were added to by invite; "Your stations" in the sidebar). The station open now
+(getCurrentStationId) is the one the screens, the licence checks, a backup and the Link form
+follow. The owner adds a station (components/desktop/AddStation.js): new offline
+(lib/local/routes/local/stations, then the setup wizard), brought down from the web (LinkForm
+with no local station), or from a backup file. A station whose owner is nobody here is offered
+to an owner to take over. Each station may be linked to its own web station (app/api/desktop/*
+on main), with its own link, licence and device token, or stay offline only:
 - Push and Pull move rows between the local store and the web station (lib/local/webSync.js).
   Every write the in-app server makes to a synced table (lib/desktopTables.js) is recorded in
   the outbox (lib/local/outbox.js); a pull writes the store directly and never echoes back, and
   rebuilds the screens' copy only when it changed something. Push and pull take turns.
 - Staff mostly work on their phones (the web, installed as an app); the computer is where the
   owner reviews. components/desktop/AutoSync.js pulls on opening, every 10 minutes and when back
-  online, and pushes a minute after the last change, for a linked computer with a subscription.
+  online, and pushes a minute after the last change, for every linked station with a
+  subscription. The outbox notes each change's station (org), and a push sends one station's.
   The station page's buttons still do it at once.
 - An owner can revoke a computer on the web (Linked computers). Its next push, pull or licence
   check gets 401: the link is marked `revoked` and the screens offer Link again, which keeps the
   computer's records when it is the same station.
 - The window never reaches the web itself. electron/web.js does, through electron/preload.js
-  (window.stationmgr), holding the device token. Pages call lib/local/web.js.
+  (window.stationmgr), holding one device token per linked station. Pages call lib/local/web.js.
 - The station's subscription is checked offline from the signed licence (lib/local/licence.js).
   Free with no link: first-run setup, daily sales, lodgements, product receipt, and reports over
   any 5 days at a time (lib/reportRange.js rangeAllowed: in components/reports/DateRange.js the
@@ -33,15 +42,14 @@ The computer is linked to a station on the web platform (app/api/desktop/* on ma
   Any running service (`paid` from useLicence, `paidNow()`) opens backup, longer reports,
   exporting a report (exportAllowed), and Push and Pull; show PaidNote where a paid feature would
   be. The in-app server's requireService follows the licence.
-- A restore (lib/local/routes/local/backup) always overwrites this computer, setup and opening
-  balances included, so no setup wizard follows (lib/local/restorePlan.js). One from before
-  linking, or of a station made offline, moves into the linked station and is pushed. One of
-  another station moves under the local id and unlinks the computer; sign-in then offers to
-  create it as a new web station or link it (LinkForm createFor; app/api/desktop/link createName,
-  lib/newStation.js on main). A new web station has no subscription: the records wait for its
-  first push. A linked computer that already holds another station's records (heldStation) is
-  offered at sign-in to get its station back from the web, keep the held one and unlink, or
-  create the held one on the web (lib/local/routes/local/rescue).
+- A backup (lib/local/routes/local/backup) is the station open now. A restore makes it a
+  station here: added beside the others, or replacing only that same station
+  (lib/local/restorePlan.js); never merged into a different one, so its setup and opening
+  balances come in once, exactly as in the file. Stations made offline on different computers
+  share the fixed local id: a backup of a different one is added under a new id. Backup and
+  restore need a subscription running on a station here. The Link form can also create a new
+  web station for a station's records (app/api/desktop/link createName, lib/newStation.js on
+  main); it has no subscription, so the records wait for its first push.
 - No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
   (the end of app/globals.css re-sets the house colour variables on it).
 - Staff and their PINs stay on the computer: users and org_invites never sync.
