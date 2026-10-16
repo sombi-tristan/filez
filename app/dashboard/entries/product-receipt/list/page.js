@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Pencil, ChevronLeft, ChevronRight, Lock } from 'lucide-react'
-import Link from 'next/link'
 import { db } from '@/lib/db'
-import { fmtDate } from '@/lib/formatDate'
 import { useSubscription } from '@/lib/hooks/useSubscription'
-import { BTN_PRIMARY, BTN_FRAMED } from '@/components/ui'
+import { Spinner } from '@/design'
+import {
+  EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager, SubscribeNotice,
+} from '@/components/entries/EntryListParts'
 
 export default function ProductReceiptListPage() {
   const searchParams = useSearchParams()
@@ -58,73 +58,30 @@ export default function ProductReceiptListPage() {
   const totalPages = Math.ceil(total / limit)
   const pageGroups = groupedEntries.slice((page - 1) * limit, page * limit)
 
-  if (!ready) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-line border-t-blue-600 rounded-full animate-spin" /></div>
+  if (!ready) return <div className="flex justify-center py-20"><Spinner /></div>
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
-      {!subLoading && !subscribed && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 px-4 py-3 mb-4 flex items-center gap-3">
-          <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">Subscribe to add entries</p>
-            <p className="text-xs text-amber-600 dark:text-amber-400">You can view existing data, but creating new entries requires an active subscription.</p>
-          </div>
-          <Link href="/dashboard/subscribe" className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_PRIMARY}`}>Subscribe</Link>
-        </div>
-      )}
-      <div className="flex items-center justify-end mb-6">
-        {(subscribed || subLoading) ? (
-          <Link href={`/dashboard/entries/product-receipt?${qs}`} className={`flex items-center gap-1 text-sm px-4 py-2 font-medium ${BTN_PRIMARY}`}>
-            <Plus className="w-4 h-4" /> New Entry
-          </Link>
-        ) : (
-          <span className="flex items-center gap-1 text-sm bg-subtle text-content-faint px-4 py-2 font-medium cursor-not-allowed">
-            <Plus className="w-4 h-4" /> New Entry
-          </span>
-        )}
-      </div>
-
+    <EntryListScreen newHref={`/dashboard/entries/product-receipt?${qs}`} newDisabled={!subLoading && !subscribed} top={!subLoading && !subscribed ? <SubscribeNotice /> : null}>
       {pageGroups.length === 0 ? (
-        <p className="text-sm text-content-muted py-8 text-center">No entries yet.</p>
+        <EntryListEmpty what="receipts" />
       ) : (
         <>
-          <div className="divide-y divide-line">
-            {pageGroups.map((group) => {
-              const hasUnsynced = group.entries.some(e => pendingIds.has(e.id))
-              return (
-              <div key={group.date} className={`py-3 px-2 flex items-center gap-3 ${hasUnsynced ? 'bg-green-50 dark:bg-green-950/40' : ''}`}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-content">
-                    {group.date !== 'no-date' ? fmtDate(group.date) : 'No date'}
-                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-subtle text-content-muted font-medium">{group.entries.length} {group.entries.length === 1 ? 'receipt' : 'receipts'}</span>
-                  </p>
-                  <p className="text-xs text-content-muted">
-                    {group.entries.map((e, i) => (
-                      <span key={e.id}>
-                        {i > 0 && ' · '}
-                        {tanksMap[e.tankId] || 'Unknown tank'} {Number(e.actualVolume).toLocaleString()}L
-                        {e.driverName && <span className="text-content-faint"> ({e.driverName})</span>}
-                      </span>
-                    ))}
-                  </p>
-                </div>
-                <Link href={`/dashboard/entries/product-receipt?${qs}&edit_date=${group.date}`} className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 ${BTN_FRAMED}`}>
-                  <Pencil className="w-3.5 h-3.5" /> Edit
-                </Link>
-              </div>
-              )
-            })}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-line">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="flex items-center gap-1 text-sm text-content-muted hover:text-content disabled:opacity-30"><ChevronLeft className="w-4 h-4" /> Prev</button>
-              <span className="text-sm text-content-muted">Page {page} of {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="flex items-center gap-1 text-sm text-content-muted hover:text-content disabled:opacity-30">Next <ChevronRight className="w-4 h-4" /></button>
-            </div>
-          )}
+          <DayRows>
+            {pageGroups.map((group) => (
+              <DayRow
+                key={group.date}
+                href={`/dashboard/entries/product-receipt?${qs}&edit_date=${group.date}`}
+                date={group.date}
+                count={group.entries.length}
+                noun="receipt"
+                detail={group.entries.map((e) => `${tanksMap[e.tankId] || 'Unknown tank'} ${Number(e.actualVolume).toLocaleString()}L${e.driverName ? ` (${e.driverName})` : ''}`).join(' · ')}
+                pending={group.entries.some(e => pendingIds.has(e.id))}
+              />
+            ))}
+          </DayRows>
+          <ListPager page={page} totalPages={totalPages} onPage={setPage} />
         </>
       )}
-    </div>
+    </EntryListScreen>
   )
 }

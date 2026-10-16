@@ -2,15 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2, List, Trash2, AlertTriangle, Lock, Plus, ChevronLeft, ChevronRight, Check, ChevronDown, X } from 'lucide-react'
-import Link from 'next/link'
+import { Check, ChevronDown, X } from 'lucide-react'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
 import { lodgementsRepo } from '@/lib/repositories/lodgements'
 import DateInput from '@/components/DateInput'
 import { useSavePush } from '@/components/SavePushProvider'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
-import { ENTRY_INPUT, ENTRY_DATE, ENTRY_LINE, ENTRY_DIVIDE, BTN_PRIMARY, BTN_FRAMED } from '@/components/ui'
+import { ENTRY_INPUT, ENTRY_DATE } from '@/components/ui'
+import {
+  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, AddEntryButton, SubscribeNotice,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates,
+} from '@/components/entries/EntryParts'
 
 /** What distinguishes two accounts at the same bank: the POS terminal, or the type. */
 function bankSub(b) {
@@ -226,122 +229,66 @@ export default function LodgementsFormPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+  if (loading) return <EntryLoading />
 
-  if (locked) return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
-      <div className="text-center py-16">
-        <AlertTriangle className="w-8 h-8 text-content-faint mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-content mb-1">Station Not Configured</h2>
-        <p className="text-sm text-content-muted mb-4">Set up your station in Settings before creating entries.</p>
-        <Link href={`/dashboard/stations/${orgId}/settings`} className={`inline-block px-4 py-2 text-sm font-medium ${BTN_PRIMARY}`}>Go to Settings</Link>
-      </div>
-    </div>
-  )
+  if (locked) return <NotConfigured orgId={orgId} />
 
-  const currentDateIdx = editDate ? allDates.indexOf(editDate) : -1
-  const prevDate = currentDateIdx > 0 ? allDates[currentDateIdx - 1] : null
-  const nextDate = currentDateIdx < allDates.length - 1 ? allDates[currentDateIdx + 1] : null
+  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const dayHref = (d) => d && `/dashboard/entries/lodgements?${qs}&edit_date=${d}`
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
-      <div className="flex items-center justify-end mb-6 gap-2">
-          {isEditing && editDate && (
-            <>
-              <button type="button" onClick={() => router.push(`/dashboard/entries/lodgements?${qs}&edit_date=${prevDate}`)} disabled={!prevDate} className={`flex items-center justify-center text-sm px-2 py-2 disabled:opacity-30 disabled:cursor-not-allowed ${BTN_FRAMED}`}><ChevronLeft className="w-4 h-4" /></button>
-              <button type="button" onClick={() => router.push(`/dashboard/entries/lodgements?${qs}&edit_date=${nextDate}`)} disabled={!nextDate} className={`flex items-center justify-center text-sm px-2 py-2 disabled:opacity-30 disabled:cursor-not-allowed ${BTN_FRAMED}`}><ChevronRight className="w-4 h-4" /></button>
-            </>
-          )}
-          <Link href={`/dashboard/entries/lodgements/list?${qs}`} className={`flex items-center gap-1 text-sm px-3 py-2 font-medium ${BTN_FRAMED}`}>
-            <List className="w-4 h-4" /> View Entries
-          </Link>
-      </div>
-
+    <EntryScreen>
       <form onSubmit={handleSubmit}>
-        {/* Shared date */}
-        <div className={`border-card ${ENTRY_LINE} mb-4`}>
-          <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Entry Date</label>
-          <DateInput value={formDate} onChange={handleDateChange} className={ENTRY_DATE} />
-        </div>
+        <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        {/* Entry cards */}
-        {entries.map((entry, idx) => (
-          <div key={entry._key} className={`border-card ${ENTRY_LINE} divide-y-card ${ENTRY_DIVIDE} mb-3`}>
-            <div className="flex items-center justify-between px-3 py-1.5 bg-subtle">
-              <span className="text-xs font-medium text-content-muted">Entry {idx + 1}</span>
-              {entries.length > 1 && (
-                <button type="button" onClick={() => removeEntry(idx)} className="text-red-400 hover:text-red-600 dark:text-red-400">
-                  <Trash2 className="w-3.5 h-3.5" />
+        {!subLoading && !isSubscribed && <SubscribeNotice />}
+
+        {entries.map((entry, idx) => {
+          const chosen = banks.find((b) => b.id === entry.bankId)
+          return (
+            <EntryCard key={entry._key} title={`Entry ${idx + 1}`} onRemove={entries.length > 1 ? () => removeEntry(idx) : null}>
+              <Field label="Bank account">
+                <button
+                  type="button"
+                  onClick={() => setBankSheet(idx)}
+                  className="w-full flex items-center gap-2 px-3 py-3 text-left text-base bg-primary-500/[0.12] hover:bg-primary-500/[0.2]"
+                >
+                  <span className={`flex-1 truncate ${chosen ? 'text-content' : 'text-content-faint'}`}>
+                    {chosen ? chosen.bank_name : 'Select account'}
+                    {chosen && <span className="text-content-faint"> · {bankSub(chosen)}</span>}
+                  </span>
+                  <ChevronDown className="w-5 h-5 text-content-faint flex-shrink-0" />
                 </button>
-              )}
-            </div>
-            <div className={`grid grid-cols-2 divide-x-card ${ENTRY_DIVIDE}`}>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Amount</label>
-                <input type="number" value={entry.amount} onChange={(e) => updateEntry(idx, 'amount', e.target.value)} step="0.01" min="0" className={ENTRY_INPUT} />
-              </div>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Bank Account</label>
-                {(() => {
-                  const chosen = banks.find((b) => b.id === entry.bankId)
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => setBankSheet(idx)}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-base bg-transparent hover:bg-primary-50 dark:hover:bg-primary-950/40"
-                    >
-                      <span className={`flex-1 truncate ${chosen ? 'text-content' : 'text-content-faint'}`}>
-                        {chosen ? chosen.bank_name : 'Select account'}
-                        {chosen && <span className="text-content-faint"> · {bankSub(chosen)}</span>}
-                      </span>
-                      <ChevronDown className="w-4 h-4 text-content-faint flex-shrink-0" />
-                    </button>
-                  )
-                })()}
-              </div>
-            </div>
-            <div className={`grid grid-cols-2 divide-x-card ${ENTRY_DIVIDE}`}>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Sales Date</label>
+              </Field>
+              <FieldRow cols={2} keep>
+                <Field label="Amount (₦)">
+                  <NumberInput value={entry.amount} onValue={(v) => updateEntry(idx, 'amount', v)} placeholder="0.00" />
+                </Field>
+                <Field label="Type">
+                  <div className="px-3 py-2.5 text-base text-content-muted capitalize">{entry.lodgementType || '—'}</div>
+                </Field>
+              </FieldRow>
+              <Field label="Sales date">
                 <DateInput value={entry.salesDate} onChange={(v) => updateEntry(idx, 'salesDate', v)} className={ENTRY_DATE} />
-              </div>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Type</label>
-                <div className="px-3 py-2.5 text-base text-content-muted capitalize">{entry.lodgementType || '—'}</div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Notes</label>
-              <textarea value={entry.notes} onChange={(e) => updateEntry(idx, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
-            </div>
-          </div>
-        ))}
+              </Field>
+              <Field label="Notes">
+                <textarea value={entry.notes} onChange={(e) => updateEntry(idx, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
+              </Field>
+            </EntryCard>
+          )
+        })}
 
-        <button type="button" onClick={addEntry} className="flex items-center gap-1 text-sm text-primary-600 font-medium hover:text-primary-700 mb-4">
-          <Plus className="w-4 h-4" /> Add Entry
-        </button>
+        <AddEntryButton onClick={addEntry} />
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{error}</p>}
-
-        {!subLoading && !isSubscribed && (
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 px-4 py-3 mt-3 flex items-start gap-3">
-            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">Subscribe to add entries</p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">You can view existing data, but creating new entries requires an active subscription.</p>
-            </div>
-            <Link href="/dashboard/subscribe" className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_PRIMARY}`}>Subscribe</Link>
-          </div>
-        )}
-
-        <div className="flex gap-2 mt-3">
-          <Link href={`/dashboard/entries/lodgements/list?${qs}`} className={`ml-auto px-4 py-2 text-sm ${BTN_FRAMED}`}>Cancel</Link>
-          <button type="submit" disabled={saving || saved || (!subLoading && !isSubscribed)} className={`flex items-center gap-2 text-white px-4 py-2 text-sm font-medium disabled:opacity-50 ${saved ? 'bg-green-600' : 'bg-primary-500 hover:bg-primary-600'}`}>
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {saved && <Check className="w-4 h-4" />}
-            {saved ? 'Saved!' : isEditing ? 'Update' : 'Save All'}
-          </button>
-        </div>
+        <SaveBar
+          listHref={`/dashboard/entries/lodgements/list?${qs}`}
+          saving={saving}
+          saved={saved}
+          isEditing={isEditing}
+          disabled={!subLoading && !isSubscribed}
+          error={error}
+          onErrorDone={() => setError('')}
+        />
       </form>
 
       {/* Account / terminal sheet — the same picker as the daily-sales consumption account.
@@ -403,6 +350,6 @@ export default function LodgementsFormPage() {
           </div>
         )
       })()}
-    </div>
+    </EntryScreen>
   )
 }

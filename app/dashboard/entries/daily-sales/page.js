@@ -2,18 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2, List, Trash2, AlertTriangle, Lock, Plus, ChevronLeft, ChevronRight, User, X, Check } from 'lucide-react'
-import Link from 'next/link'
+import { Loader2, Trash2, AlertTriangle, User, X, Check } from 'lucide-react'
 import { db } from '@/lib/db'
 import { dailySalesRepo } from '@/lib/repositories/dailySales'
-import DateInput from '@/components/DateInput'
 import Toggle from '@/components/Toggle'
 import { useSavePush } from '@/components/SavePushProvider'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { fmtDate } from '@/lib/formatDate'
 import { isDefaultAccount } from '@/lib/defaultAccounts'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
-import { ENTRY_INPUT, ENTRY_DATE, ENTRY_FILL, ENTRY_LINE, ENTRY_DIVIDE, BTN_DANGER, BTN_PRIMARY, BTN_FRAMED } from '@/components/ui'
+import { ENTRY_INPUT, BTN_DANGER, BTN_FRAMED } from '@/components/ui'
+import {
+  EntryScreen, DayBar, EntryCard, EntryTabs, Field, FieldGroup, FieldRow, NumberInput, AddEntryButton,
+  SubscribeNotice, SaveBar, EntryLoading, NotConfigured, adjacentDates,
+} from '@/components/entries/EntryParts'
 
 function blankEntry(nozzles, tanks) {
   return {
@@ -425,39 +427,47 @@ export default function DailySalesFormPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+  if (loading) return <EntryLoading />
 
-  if (locked) return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
-      <div className="text-center py-16">
-        <AlertTriangle className="w-8 h-8 text-content-faint mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-content mb-1">Station Not Configured</h2>
-        <p className="text-sm text-content-muted mb-4">Set up your station in Settings before creating entries.</p>
-        <Link href={`/dashboard/stations/${orgId}/settings`} className={`inline-block px-4 py-2 text-sm font-medium ${BTN_PRIMARY}`}>Go to Settings</Link>
-      </div>
-    </div>
-  )
+  if (locked) return <NotConfigured orgId={orgId} />
 
   const current = entries[activeTab]
 
-  const currentDateIdx = editDate ? allDates.indexOf(editDate) : -1
-  const prevDate = currentDateIdx > 0 ? allDates[currentDateIdx - 1] : null
-  const nextDate = currentDateIdx < allDates.length - 1 ? allDates[currentDateIdx + 1] : null
+  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const dayHref = (d) => d && `/dashboard/entries/daily-sales?${qs}&edit_date=${d}`
+
+  // The litres field beside an account button: the button only once there are litres to book.
+  const litresWithAccount = (idx, r, type) => {
+    const field = type === 'pour_back' ? 'pour_back' : 'consumption'
+    const hasValue = Number(r[field]) > 0
+    const custId = type === 'pour_back' ? r.pour_back_customer_id : r.consumption_customer_id
+    const custName = hasValue && custId ? customers.find(c => c.id === custId)?.name : null
+    return (
+      <div className="flex items-center">
+        <NumberInput
+          data-skip-enter
+          value={r[field]}
+          onValue={(v) => updateNozzleReading(activeTab, idx, field, v)}
+          onBlur={() => maybePromptAccount(activeTab, idx, type)}
+          placeholder="0"
+        />
+        {hasValue && (
+          <button
+            type="button"
+            onClick={() => setConsModal({ entryIdx: activeTab, nozzleIdx: idx, type })}
+            className={`flex-shrink-0 flex items-center justify-center w-11 h-11 ${custName ? 'text-primary-600 dark:text-primary-400' : 'text-content-faint hover:text-content-muted'}`}
+            aria-label={custName ? `Account: ${custName}` : 'Attach account'}
+            title={custName || 'Attach account'}
+          >
+            <User className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
-      <div className="flex items-center justify-end mb-6 gap-2">
-          {isEditing && editDate && (
-            <>
-              <button type="button" onClick={() => router.push(`/dashboard/entries/daily-sales?${qs}&edit_date=${prevDate}`)} disabled={!prevDate} className={`flex items-center justify-center text-sm px-2 py-2 disabled:opacity-30 disabled:cursor-not-allowed ${BTN_FRAMED}`}><ChevronLeft className="w-4 h-4" /></button>
-              <button type="button" onClick={() => router.push(`/dashboard/entries/daily-sales?${qs}&edit_date=${nextDate}`)} disabled={!nextDate} className={`flex items-center justify-center text-sm px-2 py-2 disabled:opacity-30 disabled:cursor-not-allowed ${BTN_FRAMED}`}><ChevronRight className="w-4 h-4" /></button>
-            </>
-          )}
-          <Link href={`/dashboard/entries/daily-sales/list?${qs}`} className={`flex items-center gap-1 text-sm px-3 py-2 font-medium ${BTN_FRAMED}`}>
-            <List className="w-4 h-4" /> View Entries
-          </Link>
-      </div>
-
+    <EntryScreen>
       <form onSubmit={handleSubmit} onFocus={(e) => { if (e.target.tagName === 'INPUT' && (e.target.type === 'number' || e.target.type === 'text')) e.target.select() }} onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
           e.preventDefault()
@@ -469,185 +479,116 @@ export default function DailySalesFormPage() {
           }
         }
       }}>
-        {/* Shared date */}
-        <div className={`border-card ${ENTRY_LINE} mb-4`}>
-          <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Date</label>
-          <DateInput value={formDate} onChange={handleDateChange} className={ENTRY_DATE} />
-        </div>
+        <DayBar label="Date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        {/* Entry tabs */}
-        <div className="flex items-center border-b border-line mb-0">
-          {entries.map((entry, idx) => (
-            <button
-              key={entry._key}
-              type="button"
-              onClick={() => setActiveTab(idx)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === idx ? 'border-blue-600 text-primary-600' : 'border-transparent text-content-muted hover:text-content-strong'}`}
-            >
-              Entry {idx + 1}
-            </button>
-          ))}
-          <button type="button" onClick={addEntry} className="px-3 py-2 text-primary-600 hover:text-primary-700">
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
+        {!subLoading && !isSubscribed && <SubscribeNotice />}
 
-        {/* Active entry form */}
+        <EntryTabs count={entries.length} active={activeTab} onChange={setActiveTab} />
+
         {current && (
-          <div className={`border-card ${ENTRY_LINE} border-t-0 divide-y-card ${ENTRY_DIVIDE}`}>
-            {entries.length > 1 && (
-              <div className="flex justify-end px-3 py-1.5 bg-subtle">
-                <button type="button" onClick={() => removeEntry(activeTab)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 dark:text-red-300">
-                  <Trash2 className="w-3.5 h-3.5" /> Remove Entry {activeTab + 1}
-                </button>
-              </div>
-            )}
-
-            <div className="bg-subtle px-2 py-1">
-              <span className="text-xs text-content-muted font-semibold uppercase tracking-wide">Fuel Prices (₦/litre)</span>
-            </div>
-            <div className={`grid grid-cols-3 divide-x-card ${ENTRY_DIVIDE}`}>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">PMS</label>
-                <input type="text" inputMode="decimal" data-skip-enter value={current.prices.PMS} onChange={(e) => updatePrice(activeTab, 'PMS', e.target.value)} step="0.01" min="0" placeholder="0.00" className={ENTRY_INPUT} />
-              </div>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">AGO</label>
-                <input type="text" inputMode="decimal" data-skip-enter value={current.prices.AGO} onChange={(e) => updatePrice(activeTab, 'AGO', e.target.value)} step="0.01" min="0" placeholder="0.00" className={ENTRY_INPUT} />
-              </div>
-              <div>
-                <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">DPK</label>
-                <input type="text" inputMode="decimal" data-skip-enter value={current.prices.DPK} onChange={(e) => updatePrice(activeTab, 'DPK', e.target.value)} step="0.01" min="0" placeholder="0.00" className={ENTRY_INPUT} />
-              </div>
-            </div>
+          <EntryCard
+            title={entries.length > 1 ? `Entry ${activeTab + 1} of ${entries.length}` : 'Daily sales'}
+            onRemove={entries.length > 1 ? () => removeEntry(activeTab) : null}
+          >
+            <FieldGroup title="Fuel prices (₦/litre)">
+              <FieldRow cols={3} keep>
+                {['PMS', 'AGO', 'DPK'].map((fuel) => (
+                  <Field key={fuel} label={fuel}>
+                    <NumberInput data-skip-enter value={current.prices[fuel]} onValue={(v) => updatePrice(activeTab, fuel, v)} placeholder="0.00" />
+                  </Field>
+                ))}
+              </FieldRow>
+            </FieldGroup>
 
             {current.nozzleReadings.length > 0 && (
-              <>
-                <div className="bg-subtle px-2 py-1">
-                  <span className="text-xs text-content-muted font-semibold uppercase tracking-wide">Nozzle Readings</span>
-                  <span className="text-xs text-content-faint ml-2">— leave blank to use prev. day closing</span>
-                </div>
+              <FieldGroup title="Nozzle readings" aside={<span className="text-[13px] text-content-faint">Blank uses the last closing</span>}>
                 {current.nozzleReadings.map((r, idx) => {
-                  const consHasValue = Number(r.consumption) > 0
-                  const pbHasValue = Number(r.pour_back) > 0
-                  const consCustName = consHasValue && r.consumption_customer_id
+                  const consCustName = Number(r.consumption) > 0 && r.consumption_customer_id
                     ? customers.find(c => c.id === r.consumption_customer_id)?.name
                     : null
-                  const pbCustName = pbHasValue && r.pour_back_customer_id
+                  const pbCustName = Number(r.pour_back) > 0 && r.pour_back_customer_id
                     ? customers.find(c => c.id === r.pour_back_customer_id)?.name
                     : null
                   return (
                     <div key={r.pump_id}>
-                      <div className={`grid grid-cols-[2fr_1fr_1fr] divide-x-card ${ENTRY_DIVIDE}`}>
-                        <div>
-                          <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">{r.label}</label>
-                          <input
-                            type="text" inputMode="decimal" enterKeyHint="next"
-                            value={r.closing_meter}
-                            onChange={(e) => updateNozzleReading(activeTab, idx, 'closing_meter', e.target.value)}
-                            step="0.01"
-                            min="0"
-                            placeholder={prevClosing[r.pump_id] != null ? String(prevClosing[r.pump_id]) : ''}
-                            className={ENTRY_INPUT}
-                          />
+                      {/* Closing meter takes the full width on a phone, with consumption and
+                          pour back side by side under it; one row of three on a computer. */}
+                      <div className="grid grid-cols-2 sm:grid-cols-[2fr_1fr_1fr]">
+                        <div className="col-span-2 sm:col-span-1">
+                          <Field label={`${r.label} · closing meter`}>
+                            <NumberInput
+                              value={r.closing_meter}
+                              onValue={(v) => updateNozzleReading(activeTab, idx, 'closing_meter', v)}
+                              placeholder={prevClosing[r.pump_id] != null ? String(prevClosing[r.pump_id]) : ''}
+                            />
+                          </Field>
                         </div>
-                        <div>
-                          <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Cons.</label>
-                          {/* px on the wrapper leaves a non-tappable gutter so leaving this
-                              field does not land focus on the pour-back input beside it. */}
-                          <div className="flex items-center px-1.5">
-                            <input type="text" inputMode="decimal" data-skip-enter value={r.consumption} onChange={(e) => updateNozzleReading(activeTab, idx, 'consumption', e.target.value)} onBlur={() => maybePromptAccount(activeTab, idx, 'consumption')} step="0.01" min="0" className={`w-full px-2 py-2.5 text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`} />
-                            {consHasValue && (
-                              <button type="button" onClick={() => setConsModal({ entryIdx: activeTab, nozzleIdx: idx, type: 'consumption' })} className={`flex-shrink-0 mr-1.5 p-1 rounded ${consCustName ? 'text-primary-600' : 'text-content-faint hover:text-content-muted'}`} title={consCustName || 'Attach account'}>
-                                <User className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
+                        <div className="border-t-2 sm:border-t-0 sm:border-l-2 border-line">
+                          <Field label="Consumption (L)">{litresWithAccount(idx, r, 'consumption')}</Field>
                         </div>
-                        <div>
-                          <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">P.B.</label>
-                          <div className="flex items-center px-1.5">
-                            <input type="text" inputMode="decimal" data-skip-enter value={r.pour_back} onChange={(e) => updateNozzleReading(activeTab, idx, 'pour_back', e.target.value)} onBlur={() => maybePromptAccount(activeTab, idx, 'pour_back')} step="0.01" min="0" className={`w-full px-2 py-2.5 text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`} />
-                            {pbHasValue && (
-                              <button type="button" onClick={() => setConsModal({ entryIdx: activeTab, nozzleIdx: idx, type: 'pour_back' })} className={`flex-shrink-0 mr-1.5 p-1 rounded ${pbCustName ? 'text-primary-600' : 'text-content-faint hover:text-content-muted'}`} title={pbCustName || 'Attach account'}>
-                                <User className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
+                        <div className="border-t-2 sm:border-t-0 border-l-2 border-line">
+                          <Field label="Pour back (L)">{litresWithAccount(idx, r, 'pour_back')}</Field>
                         </div>
                       </div>
                       {(consCustName || pbCustName) && (
-                        <div className="px-2 pb-0.5 -mt-0.5 space-x-2">
-                          {consCustName && <span className="text-xs text-primary-600">Cons: {consCustName}</span>}
-                          {pbCustName && <span className="text-xs text-primary-600">P.B.: {pbCustName}</span>}
+                        <div className="px-3 pb-1 flex flex-wrap gap-x-3 text-[13px] text-primary-600 dark:text-primary-400">
+                          {consCustName && <span>Consumption: {consCustName}</span>}
+                          {pbCustName && <span>Pour back: {pbCustName}</span>}
                         </div>
                       )}
                     </div>
                   )
                 })}
-              </>
+              </FieldGroup>
             )}
 
             {nozzles.length === 0 && (
-              <div className="px-2 py-3">
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">No nozzles found. Check your station setup or refresh.</p>
-              </div>
+              <p className="px-3 py-3 text-[15px] text-content-muted">No nozzles found. Check your station setup or refresh.</p>
             )}
 
             {current.tankReadings.length > 0 && (
-              <>
-                <div className="bg-subtle px-2 py-1.5 flex items-center justify-between">
-                  <span className="text-xs text-content-muted font-semibold uppercase tracking-wide">UGT Closing Stock</span>
-                  <Toggle checked={current.closeOfBusiness} onChange={(v) => updateEntry(activeTab, 'closeOfBusiness', v)} label="Final entry" />
-                </div>
+              <FieldGroup
+                title="UGT closing stock"
+                aside={<Toggle checked={current.closeOfBusiness} onChange={(v) => updateEntry(activeTab, 'closeOfBusiness', v)} label="Final entry" />}
+              >
                 {current.closeOfBusiness && current.tankReadings.map((r, idx) => (
-                  <div key={r.tank_id} className={`grid grid-cols-2 divide-x-card ${ENTRY_DIVIDE}`}>
+                  <FieldRow key={r.tank_id} cols={2} keep>
                     <div className="flex items-center px-3 py-2.5 bg-subtle/50">
-                      <span className="text-xs text-content-muted">{r.label}</span>
+                      <span className="text-[15px] text-content-muted">{r.label}</span>
                     </div>
-                    <div>
-                      <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Litres</label>
-                      <input type="text" inputMode="decimal" enterKeyHint="next" value={r.closing_stock} onChange={(e) => updateTankReading(activeTab, idx, e.target.value)} step="0.01" min="0" placeholder={prevTankClosing[r.tank_id] != null ? String(prevTankClosing[r.tank_id]) : ''} className={ENTRY_INPUT} />
-                    </div>
-                  </div>
+                    <Field label="Litres">
+                      <NumberInput
+                        value={r.closing_stock}
+                        onValue={(v) => updateTankReading(activeTab, idx, v)}
+                        placeholder={prevTankClosing[r.tank_id] != null ? String(prevTankClosing[r.tank_id]) : ''}
+                      />
+                    </Field>
+                  </FieldRow>
                 ))}
-              </>
+              </FieldGroup>
             )}
 
             {tanks.length === 0 && (
-              <div className="px-2 py-3">
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">No tanks found. Check your station setup or refresh.</p>
-              </div>
+              <p className="px-3 py-3 text-[15px] text-content-muted">No tanks found. Check your station setup or refresh.</p>
             )}
 
-            <div>
-              <label className="block text-xs text-content-faint px-2 pt-1 uppercase tracking-wide">Notes</label>
+            <Field label="Notes">
               <textarea data-skip-enter value={current.notes} onChange={(e) => updateEntry(activeTab, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
-            </div>
-          </div>
+            </Field>
+          </EntryCard>
         )}
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{error}</p>}
+        <AddEntryButton onClick={addEntry} />
 
-        {!subLoading && !isSubscribed && (
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 px-4 py-3 mt-3 flex items-start gap-3">
-            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">Subscribe to add entries</p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">You can view existing data, but creating new entries requires an active subscription.</p>
-            </div>
-            <Link href="/dashboard/subscribe" className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_PRIMARY}`}>Subscribe</Link>
-          </div>
-        )}
-
-        <div className="flex gap-2 mt-3">
-          <Link href={`/dashboard/entries/daily-sales/list?${qs}`} className={`ml-auto px-4 py-2 text-sm ${BTN_FRAMED}`}>Cancel</Link>
-          <button type="submit" disabled={saving || saved || (!subLoading && !isSubscribed)} className={`flex items-center gap-2 text-white px-4 py-2 text-sm font-medium disabled:opacity-50 ${saved ? 'bg-green-600' : 'bg-primary-500 hover:bg-primary-600'}`}>
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {saved && <Check className="w-4 h-4" />}
-            {saved ? 'Saved!' : isEditing ? 'Update' : 'Save All'}
-          </button>
-        </div>
+        <SaveBar
+          listHref={`/dashboard/entries/daily-sales/list?${qs}`}
+          saving={saving}
+          saved={saved}
+          isEditing={isEditing}
+          disabled={!subLoading && !isSubscribed}
+          error={error}
+          onErrorDone={() => setError('')}
+        />
       </form>
 
       {/* Danger zone — outside the <form> so the button can never submit it. Only offered
@@ -763,6 +704,6 @@ export default function DailySalesFormPage() {
           </div>
         )
       })()}
-    </div>
+    </EntryScreen>
   )
 }

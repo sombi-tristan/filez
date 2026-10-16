@@ -3,11 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
-import Link from 'next/link'
 import { db } from '@/lib/db'
-import { fmtDate } from '@/lib/formatDate'
-import { BTN_PRIMARY, BTN_FRAMED } from '@/components/ui'
+import { Spinner } from '@/design'
+import {
+  EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager,
+} from '@/components/entries/EntryListParts'
 
 export default function LodgementsListPage() {
   const searchParams = useSearchParams()
@@ -55,62 +55,40 @@ export default function LodgementsListPage() {
   const totalPages = Math.ceil(total / limit)
   const pageGroups = groupedEntries.slice((page - 1) * limit, page * limit)
 
-  if (!ready) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-line border-t-blue-600 rounded-full animate-spin" /></div>
+  if (!ready) return <div className="flex justify-center py-20"><Spinner /></div>
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
-      <div className="flex items-center justify-end mb-6">
-        <Link href={`/dashboard/entries/lodgements?${qs}`} className={`flex items-center gap-1 text-sm px-4 py-2 font-medium ${BTN_PRIMARY}`}>
-          <Plus className="w-4 h-4" /> New Entry
-        </Link>
-      </div>
-
+    <EntryListScreen newHref={`/dashboard/entries/lodgements?${qs}`}>
       {pageGroups.length === 0 ? (
-        <p className="text-sm text-content-muted py-8 text-center">No entries yet.</p>
+        <EntryListEmpty />
       ) : (
         <>
-          <div className="divide-y divide-line">
-            {pageGroups.map((group) => {
-              const hasUnsynced = group.entries.some(e => pendingIds.has(e.id))
-              return (
-              <div key={group.date} className={`py-3 px-2 flex items-center gap-3 ${hasUnsynced ? 'bg-green-50 dark:bg-green-950/40' : ''}`}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-content">
-                    {group.date !== 'no-date' ? fmtDate(group.date) : 'No date'}
-                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-subtle text-content-muted font-medium">{group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}</span>
-                    <span className="ml-2 text-sm font-semibold text-content-strong">&#8358;{group.totalAmount.toLocaleString()}</span>
-                  </p>
-                  <p className="text-xs text-content-muted">
-                    {(() => {
-                      const counts = {}
-                      for (const e of group.entries) {
-                        const t = e.lodgementType || 'unknown'
-                        counts[t] = (counts[t] || 0) + 1
-                      }
-                      return Object.entries(counts)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([t, c]) => `${c} ${typeLabel[t] || t}`)
-                        .join(' · ')
-                    })()}
-                  </p>
-                </div>
-                <Link href={`/dashboard/entries/lodgements?${qs}&edit_date=${group.date}`} className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 ${BTN_FRAMED}`}>
-                  <Pencil className="w-3.5 h-3.5" /> Edit
-                </Link>
-              </div>
-              )
-            })}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-line">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="flex items-center gap-1 text-sm text-content-muted hover:text-content disabled:opacity-30"><ChevronLeft className="w-4 h-4" /> Prev</button>
-              <span className="text-sm text-content-muted">Page {page} of {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="flex items-center gap-1 text-sm text-content-muted hover:text-content disabled:opacity-30">Next <ChevronRight className="w-4 h-4" /></button>
-            </div>
-          )}
+          <DayRows>
+            {pageGroups.map((group) => (
+              <DayRow
+                key={group.date}
+                href={`/dashboard/entries/lodgements?${qs}&edit_date=${group.date}`}
+                date={group.date}
+                count={group.entries.length}
+                amount={`₦${group.totalAmount.toLocaleString()}`}
+                detail={(() => {
+                  const counts = {}
+                  for (const e of group.entries) {
+                    const t = e.lodgementType || 'unknown'
+                    counts[t] = (counts[t] || 0) + 1
+                  }
+                  return Object.entries(counts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([t, c]) => `${c} ${typeLabel[t] || t}`)
+                    .join(' · ')
+                })()}
+                pending={group.entries.some(e => pendingIds.has(e.id))}
+              />
+            ))}
+          </DayRows>
+          <ListPager page={page} totalPages={totalPages} onPage={setPage} />
         </>
       )}
-    </div>
+    </EntryListScreen>
   )
 }
