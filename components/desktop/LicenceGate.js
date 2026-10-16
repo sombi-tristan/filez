@@ -9,6 +9,7 @@ import { getLink } from '@/lib/local/link'
 import { openWeb } from '@/lib/local/web'
 import { fmtDate } from '@/lib/formatDate'
 import LinkForm from '@/components/desktop/LinkForm'
+import { FREE_REPORT_DAYS } from '@/lib/reportRange'
 
 /**
  * Desktop build: what this computer may open, from the station's licence (lib/local/licence.js).
@@ -119,6 +120,28 @@ export function PaidNote({ what, verb = 'needs' }) {
             : `${what} ${verb} this computer linked to your station on the web, with a subscription.`}
       </p>
       <UnlockActions compact />
+    </div>
+  )
+}
+
+/**
+ * Across the top of a report without a subscription: reports cover any FREE_REPORT_DAYS days at
+ * a time, and the way to unlock longer ones. Full width, above the report's dates.
+ */
+export function FreeReportBanner() {
+  const licence = useLicence()
+  if (!licence || licence.paid) return null
+  const clock = licence.status === 'clock'
+  return (
+    <div className="w-full border-b-2 border-primary-500/40 bg-primary-50 dark:bg-primary-950/30 px-4 py-3">
+      <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[15px] text-content min-w-0 flex-1">
+          {clock
+            ? 'This computer’s clock is behind the last time StationMGR ran. Set the date and time right, then check again.'
+            : <>Free plan: a report covers any <strong>{FREE_REPORT_DAYS} days</strong> at a time. Move the dates to the days you need. {getLink() ? 'A subscription opens longer ranges.' : 'Link this computer to your station, with a subscription, for longer ranges.'}</>}
+        </p>
+        <UnlockActions compact />
+      </div>
     </div>
   )
 }
