@@ -22,11 +22,22 @@ jobs:
       - name: Install
         run: npm ci
 
+      # The web station this build links to and the key it checks licences with are in
+      # package.json "stationmgr" (webOrigin, licencePublicKey); both are public. Repository
+      # variables STATIONMGR_WEB_ORIGIN and NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY override them
+      # when set (Settings → Secrets and variables → Actions → Variables).
+      - name: Point the build at the web station
+        shell: bash
+        run: |
+          if [ -n "${{ vars.STATIONMGR_WEB_ORIGIN }}" ]; then npm pkg set "stationmgr.webOrigin=${{ vars.STATIONMGR_WEB_ORIGIN }}"; fi
+          echo "Web station: $(npm pkg get stationmgr.webOrigin)"
+
       - name: Build installer
         run: npm run dist:win
         env:
           # No code-signing certificate: build an unsigned installer.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY }}
 
       - uses: actions/upload-artifact@v4
         with:

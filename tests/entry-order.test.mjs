@@ -60,7 +60,7 @@ const PAGES = ['daily-sales', 'product-receipt', 'lodgements', 'lube', 'customer
 console.log('\nentry ordering: every multi-entry page')
 
 for (const page of PAGES) {
-  const file = resolve(root, 'app', 'dashboard', 'entries', page, 'page.js')
+  const file = resolve(root, 'screens', 'dashboard', 'entries', page, 'page.js')
   const code = readFileSync(file, 'utf8')
 
   // Save side: the batch must stamp positions, not one shared `now`.

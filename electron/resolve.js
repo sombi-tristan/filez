@@ -3,6 +3,8 @@
 //   /auth/login            → auth/login.html
 //   /dashboard/entries     → dashboard/entries.html, or dashboard/entries/index.html
 //   /_next/static/...      → that file
+//   /dashboard/anything    → dashboard.html: the station's screens are one Ionic app with its
+//                            own router (components/shell/IonicShell.js), exported as one page
 // Anything else falls back to 404.html. Shared by the Electron app and scripts/serve-out.mjs.
 const path = require('node:path')
 const fs = require('node:fs')
@@ -22,6 +24,13 @@ function resolveExportPath(root, urlPath) {
     try {
       if (fs.statSync(full).isFile()) return full
     } catch { /* try next */ }
+  }
+  // Every address inside the Ionic app is answered by its one page, which routes it in-app.
+  if (p === '/dashboard' || p.startsWith('/dashboard/')) {
+    for (const rel of ['dashboard.html', 'dashboard/index.html']) {
+      const full = path.join(root, rel)
+      try { if (fs.statSync(full).isFile()) return full } catch { /* try next */ }
+    }
   }
   return path.join(root, '404.html')
 }

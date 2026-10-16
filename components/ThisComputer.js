@@ -3,12 +3,15 @@
 import { useRef, useState } from 'react'
 import { Download, Upload, KeyRound, Loader2, AlertTriangle } from 'lucide-react'
 import Modal from '@/components/Modal'
+import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import { INPUT, BTN_PRIMARY, BTN_FRAMED, BTN_DANGER, CARD, SectionHeader } from '@/components/ui'
 
 /**
  * Desktop build: the station's data lives only on this computer, so the hub carries the tools
  * that look after it — a backup file the owner can copy to a flash drive, restoring one, and
  * changing your own PIN.
+ *
+ * Backup and restore need a subscription running (components/desktop/LicenceGate.js `paid`).
  */
 export default function ThisComputer({ isOwner, stationName }) {
   const [busy, setBusy] = useState('')
@@ -19,6 +22,7 @@ export default function ThisComputer({ isOwner, stationName }) {
   const [newPin, setNewPin] = useState('')
   const [pinError, setPinError] = useState('')
   const fileRef = useRef(null)
+  const paid = Boolean(useLicence()?.paid)
 
   const backup = async () => {
     setBusy('backup')
@@ -76,7 +80,7 @@ export default function ThisComputer({ isOwner, stationName }) {
     <section className="mb-8">
       <SectionHeader>This computer</SectionHeader>
       <div className={`p-3 flex flex-wrap gap-2 ${CARD}`}>
-        {isOwner && (
+        {isOwner && paid && (
           <>
             <button onClick={backup} disabled={!!busy} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}>
               {busy === 'backup' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Back up data
@@ -92,6 +96,9 @@ export default function ThisComputer({ isOwner, stationName }) {
           <KeyRound className="w-4 h-4" /> Change my PIN
         </button>
       </div>
+      {isOwner && !paid && (
+        <div className="mt-2"><PaidNote what="Backing up and restoring this computer’s records" /></div>
+      )}
       {isOwner && (
         <p className="text-xs text-content-faint mt-2">
           Your records are stored only on this computer. Back up regularly so a broken or stolen PC does not take them with it.

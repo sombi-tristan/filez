@@ -1,17 +1,12 @@
 /**
- * Pins that the station shell actually mounts its sidebar.
+ * Pins that the dashboard and admin area are wired as Ionic apps, with the sidebar mounted.
  *
- * StationSidebar shipped complete and unreachable: AppShell imported it, declared
- * `drawerOpen`, and then returned Header + main with neither used. The hamburger was
- * missing for the same reason — Header draws it only when handed `onMenu`, and AppShell
- * passed no props at all.
+ * StationSidebar once shipped complete and unreachable: imported, never rendered, and the
+ * menu button never drawn. Both failures are silent (an unused import is legal, a guarded
+ * button simply does not draw), so the wiring is pinned here rather than left to the eye.
  *
- * Both failures are silent. An unused import is legal, a guarded button simply does not
- * draw, and nothing throws. The only signal was a person looking for a sidebar that was
- * never there, which is why this is pinned in a test rather than left to the eye.
- *
- * This reads the source instead of rendering it: the defect is whether the wiring is
- * written, so a source assertion catches it with no DOM and no React test runner.
+ * This reads the source instead of rendering it: the defect is whether the wiring is written,
+ * so a source assertion catches it with no DOM and no React test runner.
  *
  * Run: node tests/app-shell-sidebar.test.mjs
  */
@@ -22,9 +17,14 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const read = (...p) => readFileSync(resolve(__dirname, '..', ...p), 'utf8')
 
-const shell = read('components', 'AppShell.js')
-const header = read('components', 'Header.js')
-const sidebar = read('components', 'StationSidebar.js')
+const shell = read('components', 'shell', 'IonicShell.js')
+const screen = read('components', 'shell', 'Screen.js')
+const dashboardPage = read('app', 'dashboard', '[[...path]]', 'page.js')
+const dashboardApp = read('app', 'dashboard', '[[...path]]', 'DashboardApp.js')
+const resolver = read('electron', 'resolve.js')
+const nav = read('lib', 'nav.js')
+const routes = read('screens', 'routes.js')
+const tailwind = read('tailwind.config.js')
 
 let failures = 0
 const check = (label, ok, detail = '') => {
@@ -32,37 +32,42 @@ const check = (label, ok, detail = '') => {
   if (!ok) failures++
 }
 
-console.log('AppShell mounts the station sidebar')
+console.log('Each area mounts the Ionic app')
 
-check('renders <StationSidebar', /<StationSidebar/.test(shell),
-  'imported but never rendered is exactly the bug this pins')
+check('/dashboard mounts the shell for its area', /<IonicShell area="\/dashboard" \/>/.test(dashboardApp))
+check('the shell is loaded in the browser only', /ssr: false/.test(dashboardApp))
+check('the export writes the one dashboard page', /generateStaticParams\(\)\s*\{\s*return \[\{ path: \[\] \}\]/.test(dashboardPage))
+check('Electron answers every /dashboard address with it', /p\.startsWith\('\/dashboard\/'\)/.test(resolver))
 
-check('drives it with the drawer state', /<StationSidebar[^>]*open=\{drawerOpen\}/s.test(shell))
+console.log('\nThe shell is an Ionic app with the sidebar in a split pane')
 
-check('gives the drawer a way to close', /<StationSidebar[^>]*onClose=\{/s.test(shell))
+check('IonApp around Ionic\'s router', /<IonApp>\s*<IonReactRouter>/s.test(shell))
+check('a split pane whose content is the outlet', /<IonSplitPane contentId="main"/.test(shell) && /<IonRouterOutlet id="main" animation=\{slideTransition\}>/.test(shell))
+check('the menu points at the same content', /<IonMenu contentId="main"/.test(shell))
+check('the dashboard menu renders the station sidebar with the open station', /<StationSidebar stationId=\{stationId\} \/>/.test(shell))
+check('nothing opens before the licence gate', /<LicenceGate>[\s\S]*<IonSplitPane/.test(shell))
+check('every screen of the area is a route', /screens\.map\(\(screen\) => \(\s*<Route key=\{screen\.path\} path=\{screen\.path\} element=\{<Screen screen=\{screen\} \/>\}/s.test(shell))
 
-check('hands Header onMenu so the hamburger draws', /<Header\s+onMenu=\{/.test(shell))
+console.log('\nEach screen is an Ionic page that can open the menu and go back')
 
-// useSearchParams suspends. Header is already wrapped for this reason; the sidebar calls it
-// too, so an unwrapped mount would opt the whole route out of static rendering.
-check('wraps the sidebar in Suspense', /<Suspense[^>]*>\s*<StationSidebar/s.test(shell))
+check('the screen is an IonPage', /<IonPage>/.test(screen))
+check('the top bar draws the menu button', /<IonMenuButton \/>/.test(screen),
+  'without it a phone has no way to the sidebar')
+check('the top bar draws a back button off the area root', /<IonBackButton/.test(screen))
+check('the content scrolls in IonContent', /<IonContent>/.test(screen))
+check('the screen holds its own address for the hooks', /<ScreenLocationContext\.Provider value=\{held\}>/.test(screen))
 
-// The desktop aside is `shrink-0` in normal flow, so its parent has to be a row and the
-// content column has to be allowed to shrink. Without min-w-0 a wide table pushes the
-// sidebar off screen instead of scrolling inside its own column.
-check('lays the shell out as a row', /className="flex min-h-screen"/.test(shell))
-check('lets the content column shrink', /flex-1 min-w-0/.test(shell))
+console.log('\nLeaving the app is a full page load (sign-in is a plain page)')
 
-console.log('\nThe pieces it depends on still look the way it assumes')
+check('nav only stacks addresses inside the area', /if \(insideArea\(href, area\)\) ionRouter\.push\(href, 'forward', 'push'\)\s*else window\.location\.assign\(href\)/.test(nav))
+check('the station screens are in the dashboard table', /path: '\/dashboard\/stations\/:stationId'/.test(routes))
 
-check('Header still gates the hamburger on onMenu', /onMenu\s*&&/.test(header),
-  'if this guard goes, the assertion above stops proving anything')
+check('the footer sits at the bottom of a short screen', /<div className="min-h-full flex flex-col">\s*<div className="flex-1">/s.test(screen))
 
-check('StationSidebar still takes { open, onClose }',
-  /export default function StationSidebar\(\{\s*open,\s*onClose\s*\}\)/.test(sidebar))
+console.log('\nThe screens are styled')
 
-check('StationSidebar still self-hides off-station', /if \(!stationId\) return null/.test(sidebar),
-  'this is what keeps it out of non-station pages without AppShell branching')
+check('Tailwind reads screens/ for its classes', /"\.\/screens\/\*\*\/\*\.\{js/.test(tailwind),
+  'without it every class used only by a screen is stripped from the CSS')
 
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)

@@ -54,6 +54,10 @@
     ]
   },
   "devDependencies": {
+    "@fontsource/outfit": "^5.3.0",
+    "@fontsource/source-sans-3": "^5.3.1",
+    "@ionic/react": "^9.0.8",
+    "@ionic/react-router": "^9.0.8",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "dexie": "^4.3.0",
@@ -64,6 +68,8 @@
     "eslint-config-next": "14.2.35",
     "exceljs": "^4.4.0",
     "imask": "^7.6.1",
+    "ionicons": "^8.1.0",
+    "jose": "^6.2.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",
@@ -71,8 +77,17 @@
     "react": "^18",
     "react-datepicker": "^9.1.0",
     "react-dom": "^18",
+    "react-router": "^6.30.6",
+    "react-router-dom": "^6.30.6",
     "recharts": "^3.7.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1"
+  },
+  "stationmgr": {
+    "webOrigin": [
+      "https://stationmgr.site",
+      "https://filez-brown.vercel.app"
+    ],
+    "licencePublicKey": "-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+oi+8sMjVp6bvaleOlEO2mqLOZxu\\nKAEbOTQaZ43FWZvcBtwYEGqk1tczF7+ZAvAdhLT9gC3VGquli0fksPKTtA==\\n-----END PUBLIC KEY-----"
   }
 }
