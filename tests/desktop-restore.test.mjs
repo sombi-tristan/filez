@@ -4,8 +4,9 @@
  *
  * The bug: restoring a backup of another station on a linked computer wiped this station's
  * records, left a station the computer could not find, and sent every sign-in back to the
- * sign-in screen. A backup of this station, or of this computer before it was linked, restores;
- * one of another station is refused before anything is wiped. A computer already in that state
+ * sign-in screen. A backup of this station, or of this computer before it was linked, restores
+ * into it; one of another station overwrites this computer and unlinks it, so the owner can
+ * create (or link) that station on the web. A computer already in that state
  * is offered its way out at sign-in.
  *
  * Run: node tests/desktop-restore.test.mjs
@@ -39,8 +40,10 @@ console.log('Restoring on a computer linked to B')
 check('a backup of B restores as it is', (p => p.ok && !p.adoptFrom)(restorePlan(backup([B, 'Kubwa']), { stationId: B, linked: true })))
 check('a backup from before linking moves into B', (p => p.ok && p.adoptFrom === LOCAL_STATION_ID)(restorePlan(backup([LOCAL_STATION_ID, 'Kubwa']), { stationId: B, linked: true })))
 const other = restorePlan(backup([A, 'Wuse']), { stationId: B, linked: true })
-check('a backup of another station is refused', other.ok === false)
-check('and says which station it holds', /Wuse/.test(other.error || ''))
+check('a backup of another station restores, overwriting', other.ok === true)
+check('its records move under the local id', other.adoptFrom === A && other.into === LOCAL_STATION_ID)
+check('and the computer is unlinked from B, to create or link its own station', other.unlink === true)
+check('a backup from before linking does not unlink', !restorePlan(backup([LOCAL_STATION_ID, 'Kubwa']), { stationId: B, linked: true }).unlink)
 
 console.log('\nRestoring on a computer that is not linked')
 check('its own backup restores as it is', (p => p.ok && !p.adoptFrom)(restorePlan(backup([LOCAL_STATION_ID, 'Kubwa']), { stationId: LOCAL_STATION_ID, linked: false })))

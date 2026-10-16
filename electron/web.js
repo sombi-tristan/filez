@@ -84,9 +84,9 @@ function fromApp(event) {
 }
 
 function registerWebBridge() {
-  ipcMain.handle('web:link', async (event, { email, password, stationId } = {}) => {
+  ipcMain.handle('web:link', async (event, { email, password, stationId, createName } = {}) => {
     if (!fromApp(event)) return { ok: false, status: 403, body: {} }
-    const res = await call('POST', '/api/desktop/link', { email, password, stationId, deviceName: os.hostname() })
+    const res = await call('POST', '/api/desktop/link', { email, password, stationId, createName, deviceName: os.hostname() })
     if (res.ok && res.body?.token) {
       writeToken(res.body.token)
       delete res.body.token
