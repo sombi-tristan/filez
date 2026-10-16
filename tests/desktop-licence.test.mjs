@@ -106,6 +106,17 @@ check('set back more than a day closes the paid features', (await lic.checkLicen
 await lic.saveLicence(await sign({ 'fuel-operations': soon }))
 check('a fresh licence from the web resets it', (await lic.checkLicence()).status === 'ok')
 
+console.log('\nThe date range')
+// Like the audit report's 32 days: each date moves on its own, and a range over the free days
+// greys out Generate with a line saying so, rather than dragging the other date along.
+{
+  const src = readFileSync(resolve(root, 'components', 'reports', 'DateRange.js'), 'utf8')
+  check('moves the start on its own', src.includes('onChange={onStart}'))
+  check('moves the end on its own', src.includes('onChange={onEnd}'))
+  check('says when the range is over the free days', src.includes('FREE_REPORT_DAYS') && src.includes('days selected'))
+  check('no longer drags the other date', !src.includes('moveRange'))
+}
+
 console.log('\nReports that export')
 // Each one asks exportAllowed() first thing in its handler, and shows PaidNote when it is shut.
 for (const name of ['audit-report', 'daily-sales-report', 'product-received', 'sales-operation']) {
