@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { usePathname, useSearchParams, useParams, useRouter } from 'next/navigation'
+import { usePathname, useRouter } from '@/lib/nav'
 import { IonIcon } from '@ionic/react'
+import { menuController } from '@ionic/core/components'
 import {
-  bookOutline, cardOutline, closeOutline, cubeOutline, documentTextOutline, gridOutline,
+  bookOutline, cardOutline, cubeOutline, documentTextOutline, gridOutline,
   homeOutline, logOutOutline, pulseOutline, receiptOutline, settingsOutline, statsChartOutline,
   trendingUpOutline, carOutline, walletOutline, waterOutline, peopleOutline, clipboardOutline,
   analyticsOutline,
@@ -25,14 +26,9 @@ import { buildStationNav } from '@/lib/stationNav'
  * are in (and the way to another), the menu under group labels, and who is signed in. In the
  * neutrals, with the accent only on the row that is open.
  *
- * Two presentations of one list:
- *   lg and up → a persistent column running the full height
- *   below lg  → an overlay drawer from the right, opened by the parent (this one is controlled)
- *
- * The house puts its sidebar in an IonMenu inside an IonSplitPane. That pair needs the whole
- * app inside IonApp/IonContent, which scrolls in a box rather than the document; every screen
- * here scrolls the document (the reports size themselves to the viewport), so the column and
- * drawer stay plain elements and only what is inside them is the house's.
+ * It is the content of the dashboard's IonMenu (components/shell/IonicShell.js), inside an
+ * IonSplitPane: a column beside the screen on a computer, a drawer on a phone. `stationId` is
+ * the open station, read by the shell from the address.
  *
  * It renders buildStationNav(), the same source the station hub reads, so the two cannot
  * offer different destinations. Blocked destinations are shown dimmed rather than hidden,
@@ -75,14 +71,9 @@ function BlockedRow({ label, icon }) {
   )
 }
 
-export default function StationSidebar({ open, onClose }) {
+export default function StationSidebar({ stationId }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const params = useParams()
   const router = useRouter()
-
-  // The station is in the path on the hub, and in ?org_id= on every entry and report screen.
-  const stationId = params?.stationId || searchParams.get('org_id') || ''
 
   const [isOwner, setIsOwner] = useState(false)
   const [visiblePages, setVisiblePages] = useState(null)
@@ -139,12 +130,12 @@ export default function StationSidebar({ open, onClose }) {
 
   const isCurrent = (href) => pathname === href.split('?')[0]
 
-  // The house row would navigate with Ionic's router, which this app does not run: it is
-  // stopped, and Next's router goes instead.
+  // Opens the screen and, on a phone, puts the drawer away. A destination from the menu
+  // starts a fresh stack rather than piling onto whatever was open.
   const go = (href) => (e) => {
     e.preventDefault()
-    onClose?.()
-    router.push(href)
+    menuController.close('main')
+    router.root(href)
   }
 
   const row = (link) => (link.allowed ? (
@@ -165,7 +156,7 @@ export default function StationSidebar({ open, onClose }) {
     <Image src="/icon-192.png" alt="" aria-hidden width={32} height={32} className="w-8 h-8 shrink-0 rounded-house" />
   )
 
-  const body = (
+  return (
     <Sidebar label="Station">
       <SidebarBrand mark={brandMark} name="StationMGR" />
       <SidebarSwitcher
@@ -173,7 +164,7 @@ export default function StationSidebar({ open, onClose }) {
         subtitle={isOwner ? 'Owner' : 'Staff member'}
         currentId={String(stationId)}
         options={stations.map((s) => ({ id: String(s.id), title: s.name }))}
-        onPick={(o) => { if (String(o.id) !== String(stationId)) router.push(`/dashboard/stations/${o.id}`) }}
+        onPick={(o) => { if (String(o.id) !== String(stationId)) { menuController.close('main'); router.root(`/dashboard/stations/${o.id}`) } }}
       />
 
       <SidebarNavRow href={home} label="Station home" icon={homeOutline} active={pathname === home} onClick={go(home)} />
@@ -203,40 +194,5 @@ export default function StationSidebar({ open, onClose }) {
         action={<ThemeControl cycle />}
       />
     </Sidebar>
-  )
-
-  return (
-    <>
-      {/* Desktop: a real column in normal flow, so the content beside it reflows on its own. */}
-      <aside className="hidden lg:flex flex-col sticky top-0 self-start h-screen w-64 shrink-0 overflow-y-auto border-r-2 border-line bg-surface">
-        {body}
-      </aside>
-
-      {/* Below lg: an overlay drawer, kept mounted so it slides rather than appears. It opens
-          from the RIGHT, meeting the menu button, because the left of the header is the back
-          arrow's. The two never co-exist (lg:hidden vs hidden lg:flex). */}
-      {open && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black/40" onClick={onClose} aria-hidden />
-      )}
-      <aside
-        className={`lg:hidden fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] overflow-y-auto border-l-2 border-line bg-surface transition-transform duration-300 ease-in-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-hidden={!open}
-        {...(!open && { inert: '' })}
-      >
-        <div className="relative">
-          {body}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close menu"
-            className="house-theme-cycle absolute right-2 top-2"
-          >
-            <IonIcon icon={closeOutline} aria-hidden="true" />
-          </button>
-        </div>
-      </aside>
-    </>
   )
 }

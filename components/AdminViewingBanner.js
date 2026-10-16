@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useParams, useSearchParams } from 'next/navigation'
+import Link from '@/lib/nav'
+import { useParams, useSearchParams } from '@/lib/nav'
 import { ShieldAlert } from 'lucide-react'
 
 /**
@@ -15,8 +15,8 @@ import { ShieldAlert } from 'lucide-react'
  * Renders nothing at all for owners, for staff, and for an admin sitting in a station they
  * happen to own, so the only people who ever see it are the ones it is about.
  *
- * Sticky at top-14, directly beneath the h-14 header, so it stays put as the page scrolls and
- * does not cover the header. z-20 keeps it under the header's z-30 and above page content.
+ * Drawn inside the screen's IonHeader, under the toolbar, so it stays put while the content
+ * scrolls beneath it.
  */
 export default function AdminViewingBanner() {
   const params = useParams()
@@ -53,7 +53,7 @@ export default function AdminViewingBanner() {
   if (!station) return null
 
   return (
-    <div className="sticky top-14 z-20 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/50 print:hidden">
+    <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/50 print:hidden">
       <div className="px-4 sm:px-6 py-2 flex items-center gap-2.5 text-sm">
         <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-300 shrink-0" />
         <p className="flex-1 min-w-0 text-amber-800 dark:text-amber-200">

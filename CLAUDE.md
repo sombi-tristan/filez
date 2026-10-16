@@ -29,10 +29,21 @@ The UI uses the house design system from the groo repository, copied into "desig
 - Import its parts from "@/design" only, and only from client components.
 - Never edit anything in "design/". Change it in groo, then run "node design/sync.mjs ../filez" from groo. tests/design-copy.test.mjs fails if the copy drifts.
 - One accent: blue ("data-accent=\"blue\"" on <html>). Dark is "data-theme=\"dark\"" on <html>.
-- Ionic runs in md mode with core.css only. Do not import @ionic/react/css/structure.css: it pins <body>, and every screen here scrolls the document.
-- The house parts navigate with Ionic's router, which this app does not run. Give them an onClick that calls preventDefault() and then Next's router.push().
+- Ionic runs in md mode with core.css only. Do not import @ionic/react/css/structure.css: it pins <body> on every page, and the home and auth pages scroll the document. The Ionic apps pin it themselves (html.ionic-app in app/globals.css).
 - Entry screens are built from components/entries/EntryParts.js (forms) and EntryListParts.js (lists). Keep the lists off EntryParts.js: it carries the date picker.
 - Tailwind screens keep using bg-surface / text-content / border-line / bg-primary-*. app/globals.css maps those names to the house values. The filez line token is "--line-ch" because house.css already defines "--line" as a hex value.
+
+---
+
+Ionic Screens
+
+The dashboard and the admin area each run as one Ionic app with Ionic's own router, so screens stack: a screen opens over the last, Back slides it away, and the one underneath is still there.
+
+- app/dashboard/[[...path]]/page.js and app/admin/[[...path]]/page.js only mount components/shell/IonicShell.js (in the browser). Every address under the area lands there.
+- The screens live in screens/ (screens/dashboard, screens/admin), not app/. A new screen is a page.js there plus a row in screens/routes.js (path, title, lazy import).
+- Each screen is wrapped by components/shell/Screen.js: an IonPage with the top bar (menu, back, bell, home) and an IonContent that scrolls. Layout inside a screen is relative to IonContent: sticky things use top-0, not top-14.
+- Inside the Ionic apps, import useRouter / usePathname / useSearchParams / useParams / Link from "@/lib/nav", never from next/navigation or next/link. lib/nav moves within the stack for addresses inside the area and does a full page load for anything else, so middleware.js still checks sign-in and the admin role on the way into each area.
+- The sidebars are the content of the IonMenu inside an IonSplitPane: a column on a computer, a drawer on a phone.
 
 ---
 

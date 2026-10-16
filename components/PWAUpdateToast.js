@@ -24,9 +24,14 @@ export default function PWAUpdateToast() {
     return () => navigator.serviceWorker.removeEventListener('controllerchange', onChange)
   }, [])
 
+  // Nothing until there is an update to tell. IonToast draws differently on the server and in
+  // the browser, and this sits in the root layout, so drawing it before then would break
+  // hydration on every page.
+  if (!show) return null
+
   return (
     <IonToast
-      isOpen={show}
+      isOpen
       message="A new version is available."
       position="bottom"
       icon={refreshOutline}

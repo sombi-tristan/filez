@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import Link from '@/lib/nav'
+import { useRouter } from '@/lib/nav'
 import { IonIcon } from '@ionic/react'
 import { addOutline, chevronForward, cloudOfflineOutline, documentTextOutline, lockClosedOutline } from 'ionicons/icons'
 import { Button, EmptyState, Pager } from '@/design'

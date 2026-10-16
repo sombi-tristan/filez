@@ -9,6 +9,9 @@ http://localhost:8888/design). It is not on the public site.
 - **One accent per app.** Orange `#F57D00` or blue `#0093DD`: set `data-accent="blue"` on
   `<html>` for blue, nothing for orange. The accent is the same in light and dark.
 - **4px corners** on everything: buttons, fields, cards, tiles, sheets.
+- **Icons on round plates.** An icon that stands on its own sits in a circle (`--round`): icon
+  buttons, chips, sidebar and list rows, sheet actions, the empty state, the FAB. An icon inside
+  a button with words stays bare.
 - **Flat.** No gradients and no shadows; a 2px line in the line colour marks an edge. The toast
   is the one thing that casts a shadow, because it floats over the screen.
 - **Type.** Outfit (800, 600) for headings, Source Sans 3 for the rest. 17px to read, 15px for
