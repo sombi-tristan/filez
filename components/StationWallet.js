@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { HardDrive, Loader2, ArrowUpFromLine, ArrowDownToLine, CloudUpload } from 'lucide-react'
 import { getLink } from '@/lib/local/link'
-import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
+import { useLicence, PaidNote, UnlockActions } from '@/components/desktop/LicenceGate'
 
 /**
  * Top-of-hub card: the one accent surface on the page, solid brand blue with white text.
@@ -13,7 +14,8 @@ import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
  * throw away changes the web has never seen.
  *
  * Push and Pull need the computer linked and a subscription running (LicenceGate `paid`):
- * without them the buttons are off and a note under the card says how to unlock them.
+ * without them the buttons are off and a note under the card says how to unlock them. With
+ * them, components/desktop/AutoSync.js also pushes and pulls on its own while online.
  */
 const COUNT_PIP = 'bg-white/25 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center' // design-exception
 
@@ -24,7 +26,13 @@ function when(iso) {
 }
 
 export default function StationWallet({ station, pendingCount = 0, syncing, refreshing, onPush, onPull }) {
-  const link = getLink()
+  // The link carries the last push, pull and sync error, which the automatic sync updates.
+  const [link, setLink] = useState(getLink)
+  useEffect(() => {
+    const update = () => setLink(getLink())
+    window.addEventListener('stationmgr:link', update)
+    return () => window.removeEventListener('stationmgr:link', update)
+  }, [])
   const paid = Boolean(useLicence()?.paid)
   // Before linking there is no web station to be behind: the count would mean nothing yet.
   const upToDate = !link || pendingCount === 0
@@ -54,7 +62,13 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
       </div>
 
       <div className="relative border-t border-white/30 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs text-white/80 min-w-0">Push and Pull need the internet. Everything else works offline.</p>
+        <p className="text-xs text-white/80 min-w-0">
+          {paid
+            ? link?.syncError
+              ? `Last sync failed: ${link.syncError}`
+              : 'Syncs with the web on its own while online. Everything else works offline.'
+            : 'Push and Pull need the internet. Everything else works offline.'}
+        </p>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button onClick={onPush} disabled={!paid || syncing || upToDate} className={btn}>
             {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpFromLine className="w-4 h-4" />}
@@ -69,6 +83,12 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
       </div>
     </div>
     {!paid && <div className="mb-4"><PaidNote what="Push and Pull" verb="need" /></div>}
+    {paid && link?.revoked && (
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3 border-2 border-line rounded-house bg-subtle">
+        <p className="text-[15px] text-content">This computer was unlinked from its station on the web, so it no longer syncs.</p>
+        <UnlockActions compact />
+      </div>
+    )}
     </>
   )
 }

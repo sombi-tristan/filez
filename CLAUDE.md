@@ -11,7 +11,15 @@ claude/ prefix: the auto-merge workflow would merge it into main.
 The computer is linked to a station on the web platform (app/api/desktop/* on main):
 - Push and Pull move rows between the local store and the web station (lib/local/webSync.js).
   Every write the in-app server makes to a synced table (lib/desktopTables.js) is recorded in
-  the outbox (lib/local/outbox.js); a pull writes the store directly and never echoes back.
+  the outbox (lib/local/outbox.js); a pull writes the store directly and never echoes back, and
+  rebuilds the screens' copy only when it changed something. Push and pull take turns.
+- Staff mostly work on their phones (the web or the Android app); the computer is where the
+  owner reviews. components/desktop/AutoSync.js pulls on opening, every 10 minutes and when back
+  online, and pushes a minute after the last change, for a linked computer with a subscription.
+  The station page's buttons still do it at once.
+- An owner can revoke a computer on the web (Linked computers). Its next push, pull or licence
+  check gets 401: the link is marked `revoked` and the screens offer Link again, which keeps the
+  computer's records when it is the same station.
 - The window never reaches the web itself. electron/web.js does, through electron/preload.js
   (window.stationmgr), holding the device token. Pages call lib/local/web.js.
 - The station's subscription is checked offline from the signed licence (lib/local/licence.js).
