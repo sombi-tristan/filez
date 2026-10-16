@@ -14,10 +14,11 @@ import { FREE_REPORT_DAYS } from '@/lib/reportRange'
 /**
  * Desktop build: what this computer may open, from the station's licence (lib/local/licence.js).
  *
- * Free, with no link and no subscription: daily sales and lodgements, and reports of up to 5
- * days. Each other entry type needs its own service, as on the web (screens/routes.js
- * `service`). Backup, reports longer than 5 days, and push and pull need any service running
- * (`paid`), which needs the computer linked to its web station.
+ * Free, with no link and no subscription: daily sales, lodgements and product receipt, and
+ * reports of up to 5 days. Each other entry type needs its own service, as on the web
+ * (screens/routes.js `service`). Backup, reports longer than 5 days, exporting a report, and
+ * push and pull need any service running (`paid`), which needs the computer linked to its web
+ * station.
  *
  * Re-checked whenever a licence or a link arrives, every minute, and renewed from the web when
  * the computer is online. Screens wait for the first check, so `paidNow()` is answered before
