@@ -60,6 +60,8 @@ console.log('\nLeaving an area is a full page load, so middleware checks the way
 check('nav only stacks addresses inside the area', /if \(insideArea\(href, area\)\) ionRouter\.push\(href, 'forward', 'push'\)\s*else window\.location\.assign\(href\)/.test(nav))
 check('the station screens are in the dashboard table', /path: '\/dashboard\/stations\/:stationId'/.test(routes))
 
+check('the footer sits at the bottom of a short screen', /<div className="min-h-full flex flex-col">\s*<div className="flex-1">/s.test(screen))
+
 console.log('\nThe screens are styled')
 
 check('Tailwind reads screens/ for its classes', /"\.\/screens\/\*\*\/\*\.\{js/.test(tailwind),

@@ -186,7 +186,7 @@ export function SaveBar({ listHref, saving, saved, isEditing, disabled, error, o
   return (
     <>
       <div
-        className="fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t-2 lg:border-t-0 border-line"
+        className="entry-actionbar fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t-2 lg:border-t-0 border-line"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-3xl mx-auto flex gap-3">

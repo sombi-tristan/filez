@@ -168,3 +168,12 @@ html.ionic-app body {
   overflow: hidden;
   overscroll-behavior: none;
 }
+
+/* A screen with an action bar pinned to the bottom of a phone (components/entries: Save, New
+   entry) keeps its footer clear of the bar: the footer sits at the bottom of the screen, and
+   the bar would otherwise cover it. On a computer the bar is in the flow and nothing is pinned. */
+@media (max-width: 1023px) {
+  .ion-page:has(.entry-actionbar) footer {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}

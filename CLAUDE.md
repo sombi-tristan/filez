@@ -43,7 +43,8 @@ The dashboard and the admin area each run as one Ionic app with Ionic's own rout
 - The screens live in screens/ (screens/dashboard, screens/admin), not app/. A new screen is a page.js there plus a row in screens/routes.js (path, title, lazy import).
 - Each screen is wrapped by components/shell/Screen.js: an IonPage with the top bar (menu, back, bell, home) and an IonContent that scrolls. Layout inside a screen is relative to IonContent: sticky things use top-0, not top-14.
 - Inside the Ionic apps, import useRouter / usePathname / useSearchParams / useParams / Link from "@/lib/nav", never from next/navigation or next/link. lib/nav moves within the stack for addresses inside the area and does a full page load for anything else, so middleware.js still checks sign-in and the admin role on the way into each area.
-- The sidebars are the content of the IonMenu inside an IonSplitPane: a column on a computer, a drawer on a phone.
+- The sidebars are the content of the IonMenu inside an IonSplitPane: a column on a computer, a drawer on a phone. Their groups are accordions (the house SidebarSections), one open at a time, opening the group that holds the screen shown.
+- Every screen's footer sits at the bottom of the screen when the content is short (Screen.js). A bar pinned to the bottom of a phone carries the class entry-actionbar, which keeps the footer clear of it.
 
 ---
 

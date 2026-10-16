@@ -1840,6 +1840,49 @@ button.house-side-switch {
   font-weight: 700;
 }
 
+/* SidebarSections: the groups as accordions in the sidebar's own look, not Ionic's boxed one. */
+.house-side-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.house-side-sections ion-accordion {
+  margin: 0;
+  border: 0;
+  border-radius: var(--corner);
+  background: transparent;
+}
+
+.house-side-sections ion-accordion [slot='content'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 0 8px;
+}
+
+ion-item.house-side-section-head {
+  --background: transparent;
+  --background-hover: var(--ink);
+  --background-hover-opacity: 0.04;
+  --border-radius: var(--corner);
+  --min-height: 44px;
+  --padding-start: 12px;
+  --inner-padding-end: 8px;
+  --color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+ion-item.house-side-section-head ion-icon {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-side-section.accordion-expanded ion-item.house-side-section-head {
+  --color: var(--ink);
+}
+
 .house-side-row {
   position: relative;
   display: flex;

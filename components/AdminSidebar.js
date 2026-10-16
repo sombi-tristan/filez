@@ -9,7 +9,7 @@ import {
   settingsOutline,
 } from 'ionicons/icons'
 import {
-  Sidebar, SidebarBrand, SidebarSwitcher, SidebarGroupLabel, SidebarNavRow, SidebarUserFooter,
+  Sidebar, SidebarBrand, SidebarSwitcher, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter,
   ThemeControl,
 } from '@/design'
 import { supabase } from '@/lib/supabaseClient'
@@ -37,6 +37,8 @@ export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
+  // Every admin screen is in the Admin group, so it starts open.
+  const [openGroup, setOpenGroup] = useState('admin')
 
   const signOut = async () => {
     setSigningOut(true)
@@ -59,22 +61,28 @@ export default function AdminSidebar() {
     <Sidebar label="Admin">
       <SidebarBrand mark={brandMark} name="StationMGR" />
       <SidebarSwitcher title="Platform" subtitle="Admin" />
-      <SidebarGroupLabel>Admin</SidebarGroupLabel>
-      {LINKS.map((l) => (
-        <SidebarNavRow
-          key={l.href}
-          href={l.href}
-          label={l.label}
-          icon={l.icon}
-          active={pathname === l.href}
-          onClick={go(l.href)}
-        />
-      ))}
-      <SidebarNavRow
-        label={signingOut ? 'Signing out…' : 'Sign out'}
-        icon={logOutOutline}
-        onClick={(e) => { e.preventDefault(); if (!signingOut) signOut() }}
-      />
+      {/* The groups as accordions, one open at a time, as in the station sidebar. */}
+      <SidebarSections value={openGroup} onChange={setOpenGroup}>
+        <SidebarSection value="admin" label="Admin">
+          {LINKS.map((l) => (
+            <SidebarNavRow
+              key={l.href}
+              href={l.href}
+              label={l.label}
+              icon={l.icon}
+              active={pathname === l.href}
+              onClick={go(l.href)}
+            />
+          ))}
+        </SidebarSection>
+        <SidebarSection value="account" label="Account">
+          <SidebarNavRow
+            label={signingOut ? 'Signing out…' : 'Sign out'}
+            icon={logOutOutline}
+            onClick={(e) => { e.preventDefault(); if (!signingOut) signOut() }}
+          />
+        </SidebarSection>
+      </SidebarSections>
       <SidebarUserFooter name="Admin" action={<ThemeControl cycle />} />
     </Sidebar>
   )

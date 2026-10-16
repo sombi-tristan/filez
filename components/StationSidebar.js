@@ -12,7 +12,7 @@ import {
   analyticsOutline,
 } from 'ionicons/icons'
 import {
-  Sidebar, SidebarBrand, SidebarSwitcher, SidebarGroupLabel, SidebarNavRow, SidebarUserFooter,
+  Sidebar, SidebarBrand, SidebarSwitcher, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter,
   ThemeControl,
 } from '@/design'
 import { supabase } from '@/lib/supabaseClient'
@@ -58,6 +58,24 @@ const ICONS = {
   imprest: walletOutline,
 }
 
+/** The heading of the station's own group (Settings, Sign out). */
+const STATION_GROUP = 'Station'
+
+/**
+ * The group holding the screen at `pathname`: the entry or report group whose link it is, or
+ * the station's own group for its settings. Null for a screen in no group (the station home).
+ */
+function groupFor(pathname, stationId) {
+  if (!stationId) return null
+  if (pathname === `/dashboard/stations/${stationId}/settings`) return STATION_GROUP
+  const sections = buildStationNav(stationId, { isOwner: true })
+  // An entry link opens its list (…/daily-sales/list); the form beside it (…/daily-sales) is in
+  // the same group.
+  const base = (href) => href.split('?')[0].replace(/\/list$/, '')
+  const hit = sections.find((section) => section.links.some((l) => pathname === base(l.href) || pathname.startsWith(`${base(l.href)}/`)))
+  return hit ? hit.heading : null
+}
+
 /**
  * A destination this member may not open: the house row's look, dimmed, and inert. The house
  * row has no disabled state, so this is the one row drawn here rather than by SidebarNavRow.
@@ -80,6 +98,13 @@ export default function StationSidebar({ stationId }) {
   const [signingOut, setSigningOut] = useState(false)
   const [user, setUser] = useState(null)
   const [stations, setStations] = useState([])
+  // The group whose accordion is open. It follows the screen: opening a screen opens the group
+  // that holds it, and a tap on another group's heading opens that one instead.
+  const [openGroup, setOpenGroup] = useState('')
+  const groupOfScreen = groupFor(pathname, stationId)
+  useEffect(() => {
+    if (groupOfScreen) setOpenGroup(groupOfScreen)
+  }, [groupOfScreen])
 
   useEffect(() => {
     if (!stationId) return
@@ -169,24 +194,25 @@ export default function StationSidebar({ stationId }) {
 
       <SidebarNavRow href={home} label="Station home" icon={homeOutline} active={pathname === home} onClick={go(home)} />
 
-      {sections.map((section) => (
-        <div key={section.heading}>
-          <SidebarGroupLabel>{section.heading}</SidebarGroupLabel>
-          {section.links.map(row)}
-        </div>
-      ))}
+      {/* Each group is an accordion, one open at a time. */}
+      <SidebarSections value={openGroup} onChange={setOpenGroup}>
+        {sections.map((section) => (
+          <SidebarSection key={section.heading} value={section.heading} label={section.heading}>
+            {section.links.map(row)}
+          </SidebarSection>
+        ))}
 
-      <div>
-        <SidebarGroupLabel>Station</SidebarGroupLabel>
-        {/* No Notifications row: the header's bell shows at every width and carries the
-            unread count. */}
-        <SidebarNavRow href={`${home}/settings`} label="Settings" icon={settingsOutline} active={pathname === `${home}/settings`} onClick={go(`${home}/settings`)} />
-        <SidebarNavRow
-          label={signingOut ? 'Signing out…' : 'Sign out'}
-          icon={logOutOutline}
-          onClick={(e) => { e.preventDefault(); if (!signingOut) signOut() }}
-        />
-      </div>
+        <SidebarSection value={STATION_GROUP} label="Station">
+          {/* No Notifications row: the header's bell shows at every width and carries the
+              unread count. */}
+          <SidebarNavRow href={`${home}/settings`} label="Settings" icon={settingsOutline} active={pathname === `${home}/settings`} onClick={go(`${home}/settings`)} />
+          <SidebarNavRow
+            label={signingOut ? 'Signing out…' : 'Sign out'}
+            icon={logOutOutline}
+            onClick={(e) => { e.preventDefault(); if (!signingOut) signOut() }}
+          />
+        </SidebarSection>
+      </SidebarSections>
 
       <SidebarUserFooter
         name={user?.name || user?.email || 'Account'}

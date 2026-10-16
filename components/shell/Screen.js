@@ -81,10 +81,16 @@ export default function Screen({ screen }) {
         </IonHeader>
 
         <IonContent>
-          <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
-            <Page key={held.key} />
-          </Suspense>
-          {!screen.report && <Footer app />}
+          {/* At least the content's height, with the page taking the room, so the footer sits
+              at the bottom of a short screen and under the last line of a long one. */}
+          <div className="min-h-full flex flex-col">
+            <div className="flex-1">
+              <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
+                <Page key={held.key} />
+              </Suspense>
+            </div>
+            {!screen.report && <Footer app />}
+          </div>
         </IonContent>
       </IonPage>
     </ScreenLocationContext.Provider>

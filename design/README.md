@@ -67,7 +67,7 @@ http://localhost:8888/design). It is not on the public site.
 | `Toggle`, `Spinner`, `LoadingOverlay` | A switch with its words; the spinner for a wait with no shape; the whole screen held. |
 | `ThemeControl` | Light, Dark or System, remembered on the device. Call `applyTheme()` before the app draws. |
 | `AppHeader` | A screen's top bar: back arrow and title, or the brand, and actions at the end. |
-| `Sidebar`, `SidebarBrand`, `SidebarSwitcher`, `SidebarGroupLabel`, `SidebarNavRow`, `SidebarUserFooter` | A business app's sidebar, for an IonMenu inside an IonSplitPane. |
+| `Sidebar`, `SidebarBrand`, `SidebarSwitcher`, `SidebarGroupLabel`, `SidebarSections`, `SidebarSection`, `SidebarNavRow`, `SidebarUserFooter` | A business app's sidebar, for an IonMenu inside an IonSplitPane. `SidebarSections` holds a long menu's groups as accordions, one open at a time. |
 | `ReportShell`, `ReportSection` | A report's frame (controls pinned to the top) and its titled blocks. |
 | `ReportTable`, `TableFrame`, `Pager` | The standard table: filled head, ruled rows, numeric columns right and tabular, a totals row, pages of `PAGE_SIZE`. `TableFrame` and `Pager` on their own for a table too unusual for it. |
 | `Stat`, `StatGrid` | Figure tiles in a ruled grid, two across on a phone and four on a computer. |
