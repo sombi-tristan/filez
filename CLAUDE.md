@@ -31,6 +31,7 @@ The UI uses the house design system from the groo repository, copied into "desig
 - One accent: blue ("data-accent=\"blue\"" on <html>). Dark is "data-theme=\"dark\"" on <html>.
 - Ionic runs in md mode with core.css only. Do not import @ionic/react/css/structure.css: it pins <body>, and every screen here scrolls the document.
 - The house parts navigate with Ionic's router, which this app does not run. Give them an onClick that calls preventDefault() and then Next's router.push().
+- Entry screens are built from components/entries/EntryParts.js (forms) and EntryListParts.js (lists). Keep the lists off EntryParts.js: it carries the date picker.
 - Tailwind screens keep using bg-surface / text-content / border-line / bg-primary-*. app/globals.css maps those names to the house values. The filez line token is "--line-ch" because house.css already defines "--line" as a hex value.
 
 ---
