@@ -84,7 +84,7 @@ On GitHub: Actions → "Build Android app" → Run workflow builds the same APK
 ### Putting the APK on stationmgr.site
 
 Android phones that open the site in their browser are offered the app (the home page and the
-dashboard's banner), and computers get it on the download page. The link is the file
+dashboard's banner). Computers are not. The link is the file
 `StationMGR.apk` on the GitHub release tagged `android` (`lib/platform.js`):
 
 1. First time: https://github.com/sombi-tristan/filez/releases/new, tag `android` (create it),
