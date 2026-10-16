@@ -17,7 +17,7 @@ import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
 import { supabase } from '@/lib/supabaseClient'
 import StationWallet from '@/components/StationWallet'
-import ThemeToggle from '@/components/ThemeToggle'
+import { ThemeControl } from '@/design'
 import {
   OUTLINE, INPUT, BTN_DANGER, BTN_PRIMARY, BTN_FRAMED, CARD_HOVER, CARD,
   Button, SectionHeader, RowGroup, Row,
@@ -742,7 +742,7 @@ export default function StationPage() {
 
       <div className="mt-8 pt-6 flex items-center justify-between gap-3 flex-wrap">
         <span className="text-xs font-semibold text-content-muted uppercase tracking-wide">Appearance</span>
-        <ThemeToggle />
+        <ThemeControl />
       </div>
       </div>
 

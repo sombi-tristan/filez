@@ -1,13 +1,18 @@
-import localFont from 'next/font/local'
+// The house type, self-hosted so it works offline and under the CSP's font-src 'self'.
+// Outfit for headings, Source Sans 3 for the rest (design/README.md).
+import '@fontsource/outfit/600.css'
+import '@fontsource/outfit/800.css'
+import '@fontsource/source-sans-3/400.css'
+import '@fontsource/source-sans-3/600.css'
+import '@fontsource/source-sans-3/700.css'
+// Ionic's core only. Its structure.css pins <body> (position: fixed; overflow: hidden) for an
+// app that scrolls inside IonContent; every screen here scrolls the document, so it is left out.
+import '@ionic/react/css/core.css'
 import './globals.css'
+import '@/design/house.css'
 import AppShell from '@/components/AppShell'
+import HouseSetup from '@/components/HouseSetup'
 import PWAUpdateToast from '@/components/PWAUpdateToast'
-
-const geistSans = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-  weight: '100 900',
-})
 
 export const metadata = {
   title: 'StationMGR — Station Operations Management',
@@ -21,29 +26,27 @@ export const metadata = {
 }
 
 export const viewport = {
-  themeColor: '#2563eb',
+  themeColor: '#0093dd',
 }
 
 /**
- * Runs before first paint, so a returning dark-mode user never sees a light flash.
- *
- * Deliberately NOT defaulting to the OS preference the way store-portal does: dark mode
- * here is only as complete as the screens converted to semantic tokens, and most of this
- * app still uses literal bg-white / bg-gray-*. Auto-applying dark would give anyone with a
- * dark phone a half-dark app they never asked for. Dark is opt-in until the sweep is done,
- * at which point this can become `t === 'dark' || ((t === 'system' || !t) && sys)`.
+ * Runs before first paint, so a dark device never opens on a flash of light. The same rule as
+ * the design system's applyTheme() (design/components/ThemeControl.jsx): a saved Light or Dark
+ * wins, and System (or nothing saved) follows the device. ThemeControl keeps it in step after.
  */
-const themeScript = `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();`
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||((t!=='light')&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}catch(e){}})();`
 
 export default function RootLayout({ children }) {
   return (
+    // data-accent: one accent per app, and this one is blue.
     // suppressHydrationWarning: the script above changes <html> before React hydrates, and
     // the server cannot know the user's stored choice.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-accent="blue" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${geistSans.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
+        <HouseSetup />
         <AppShell>
           {children}
         </AppShell>

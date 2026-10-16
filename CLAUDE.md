@@ -22,6 +22,19 @@ This project does not use TypeScript. All code should be written in JavaScript.
 
 ---
 
+Design System
+
+The UI uses the house design system from the groo repository, copied into "design/".
+
+- Import its parts from "@/design" only, and only from client components.
+- Never edit anything in "design/". Change it in groo, then run "node design/sync.mjs ../filez" from groo. tests/design-copy.test.mjs fails if the copy drifts.
+- One accent: blue ("data-accent=\"blue\"" on <html>). Dark is "data-theme=\"dark\"" on <html>.
+- Ionic runs in md mode with core.css only. Do not import @ionic/react/css/structure.css: it pins <body>, and every screen here scrolls the document.
+- The house parts navigate with Ionic's router, which this app does not run. Give them an onClick that calls preventDefault() and then Next's router.push().
+- Tailwind screens keep using bg-surface / text-content / border-line / bg-primary-*. app/globals.css maps those names to the house values. The filez line token is "--line-ch" because house.css already defines "--line" as a hex value.
+
+---
+
 Project Architecture
 
 This project uses a local-first / offline-first architecture.

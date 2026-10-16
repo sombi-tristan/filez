@@ -3,68 +3,68 @@
 @tailwind utilities;
 
 /*
- * Design tokens (see store-portal/DESIGN_SYSTEM.md — the two apps share one system).
+ * Design tokens, fed from the house design system (design/house.css, synced from groo).
  *
- * Brand and neutral colours are CSS-variable RGB channels rather than literal hex, for two
- * reasons: dark mode becomes a variable swap instead of a per-class rewrite, and the channel
- * form "R G B" keeps Tailwind's `rgb(var(--x) / <alpha-value>)` opacity modifiers working.
- *
- * Screens use bg-surface / text-content / border-line instead of raw white and grays. Until
- * a screen is converted its existing bg-white / bg-gray-* classes keep working untouched, so
- * this file can land ahead of the sweep without changing anything on screen.
+ * The house tokens (--accent, --ground, --raised, --ink, --muted, --line) drive the house
+ * components and Ionic. The Tailwind screens here use bg-surface / text-content / border-line
+ * and bg-primary-*, so those names are kept, and their values are the house's: the same hex,
+ * as RGB channels so Tailwind's `rgb(var(--x) / <alpha-value>)` opacity modifiers keep working.
+ * Change a value in the design system, not here, unless it is one of the scale steps the
+ * house does not define.
  */
 :root {
   color-scheme: light;
 
-  /* Premeval blue — the single accent. */
-  --primary-50: 234 246 254;
-  --primary-100: 208 236 253;
-  --primary-200: 166 219 251;
-  --primary-300: 111 196 248;
-  --primary-400: 63 174 245;
-  --primary-500: 29 161 242;
-  --primary-600: 14 132 212;
-  --primary-700: 12 105 171;
-  --primary-800: 15 88 134;
-  --primary-900: 18 74 111;
-  --primary-950: 12 46 69;
+  /* The house blue (#0093DD at 500, --accent-shade at 600, --accent-tint at 400). */
+  --primary-50: 238 248 254;   /* --accent-wash */
+  --primary-100: 214 238 251;
+  --primary-200: 173 221 246;
+  --primary-300: 112 194 237;
+  --primary-400: 26 158 224;
+  --primary-500: 0 147 221;
+  --primary-600: 0 129 194;
+  --primary-700: 0 105 158;
+  --primary-800: 0 84 126;
+  --primary-900: 4 64 95;
+  --primary-950: 6 32 46;      /* --accent-ink */
 
-  /* Station orange, byte-identical to the literal scale it replaces (#F4611E at 500). */
-  --accent-50: 254 243 236;
-  --accent-100: 253 224 207;
-  --accent-200: 251 191 154;
-  --accent-300: 248 157 101;
-  --accent-400: 246 124 48;
-  --accent-500: 244 97 30;
-  --accent-600: 212 77 18;
-  --accent-700: 163 59 14;
-  --accent-800: 115 42 10;
-  --accent-900: 66 24 6;
+  /* One accent per app: the old station orange now takes the same blue. */
+  --accent-50: var(--primary-50);
+  --accent-100: var(--primary-100);
+  --accent-200: var(--primary-200);
+  --accent-300: var(--primary-300);
+  --accent-400: var(--primary-400);
+  --accent-500: var(--primary-500);
+  --accent-600: var(--primary-600);
+  --accent-700: var(--primary-700);
+  --accent-800: var(--primary-800);
+  --accent-900: var(--primary-900);
 
-  /* Semantic neutrals — light */
-  --canvas: 255 255 255;      /* page background */
-  --surface: 255 255 255;     /* cards, header, panels */
-  --subtle: 249 250 251;      /* gray-50: hover fills, quiet panels */
-  --line: 156 163 175;        /* gray-400: default borders/dividers */
-  --line-strong: 107 114 128; /* gray-500: emphasized borders */
-  --content: 17 24 39;        /* gray-900: primary text */
-  --content-strong: 55 65 81; /* gray-700: secondary text */
-  --content-muted: 107 114 128;  /* gray-500: muted text */
-  --content-faint: 156 163 175;  /* gray-400: faint text/icons */
+  /* The house neutrals — light. */
+  --canvas: 255 255 255;         /* --ground */
+  --surface: 255 255 255;        /* --ground: flat, a 2px line marks the edge */
+  --subtle: 247 249 249;         /* --raised */
+  --line-ch: 207 217 222;           /* --line (named apart from it, which is a hex) */
+  --line-strong: 83 100 113;     /* --muted */
+  --content: 15 20 25;           /* --ink */
+  --content-strong: 39 52 62;
+  --content-muted: 83 100 113;   /* --muted */
+  --content-faint: 130 145 156;
 }
 
-.dark {
+[data-theme='dark'] {
   color-scheme: dark;
 
-  --canvas: 13 17 23;         /* deep slate */
-  --surface: 22 27 34;        /* raised surface */
-  --subtle: 30 37 46;         /* quiet panels/hover */
-  --line: 71 85 105;          /* bolder, more visible on dark */
-  --line-strong: 100 116 139;
-  --content: 231 234 239;
-  --content-strong: 203 213 225;
-  --content-muted: 148 163 184;
-  --content-faint: 100 116 139;
+  /* The house neutrals — dark. The accent does not turn. */
+  --canvas: 14 22 30;            /* --ground */
+  --surface: 14 22 30;           /* --ground */
+  --subtle: 23 32 42;            /* --raised */
+  --line-ch: 56 68 77;              /* --line (named apart from it, which is a hex) */
+  --line-strong: 120 136 149;
+  --content: 247 249 249;        /* --ink */
+  --content-strong: 214 222 228;
+  --content-muted: 163 177 189;  /* --muted */
+  --content-faint: 110 125 137;
 }
 
 body {
@@ -91,15 +91,15 @@ section,
   font-family: inherit;
   background-color: rgb(var(--surface));
   border: 1px solid rgb(156 163 175);
-  border-radius: 0;
+  border-radius: 4px;
   color: rgb(var(--content));
   max-width: calc(100vw - 2rem);
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.18), 0 4px 6px -4px rgb(0 0 0 / 0.18);
 }
-.dark .react-datepicker.app-datepicker { border-color: rgb(255 255 255 / 0.3); }
+[data-theme='dark'] .react-datepicker.app-datepicker { border-color: rgb(255 255 255 / 0.3); }
 .app-datepicker .react-datepicker__header {
   background-color: rgb(var(--subtle));
-  border-bottom: 1px solid rgb(var(--line));
+  border-bottom: 1px solid rgb(var(--line-ch));
   border-radius: 0;
   padding-top: 0.6rem;
 }
