@@ -6,6 +6,8 @@ import { LABEL } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '@/app/auth/authStyles'
 import { link, finishLink } from '@/lib/local/webSync'
 import { hasWebBridge } from '@/lib/local/web'
+import { getCurrentStationId } from '@/lib/local/link'
+import { getSessionUserId } from '@/lib/local/session'
 
 /**
  * Links this computer to its station on the web: the one step that needs the internet.
@@ -23,11 +25,13 @@ import { hasWebBridge } from '@/lib/local/web'
  * and opening balances): from the start, from the list of their stations, or when they own none.
  * It has no subscription yet, so the records go up with its first push once one is running.
  *
- *   createFor  the name to suggest for a new station (the station this computer holds)
+ *   createFor       the name to suggest for a new station (the station this computer holds)
+ *   localStationId  the station on this computer to link (the one open now); null brings the
+ *                   web station down as a new station here, owned by the person signed in
  */
 const NEW = '__new__'
 
-export default function LinkForm({ onLinked, canBackUp = false, createFor = '' }) {
+export default function LinkForm({ onLinked, canBackUp = false, createFor = '', localStationId = getCurrentStationId() }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [stations, setStations] = useState(null)
@@ -52,9 +56,10 @@ export default function LinkForm({ onLinked, canBackUp = false, createFor = '' }
     setError('')
     const creating = newName !== null
     setBusy(creating ? 'Creating the station on the web…' : 'Linking and getting the station’s records…')
+    const here = { localStationId, ownerHereId: getSessionUserId() }
     const result = await link(creating
-      ? { email, password, createName: newName }
-      : { email, password, stationId: stationId || undefined }).catch((err) => ({ ok: false, error: err.message }))
+      ? { email, password, createName: newName, ...here }
+      : { email, password, stationId: stationId || undefined, ...here }).catch((err) => ({ ok: false, error: err.message }))
     setBusy('')
     if (result.stations) { setStations(result.stations); setStationId(result.stations[0]?.id || ''); return }
     if (result.conflict) { setConflict(result.pending); return }
