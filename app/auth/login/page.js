@@ -57,12 +57,9 @@ export default function LoginPage() {
     if (restored !== null) setLinkFor(restored)
   }, [])
 
-  const goIn = (s) => {
-    // A full load: the station is an Ionic app of its own (components/shell/IonicShell.js).
-    window.location.replace(s?.onboardingComplete === false
-      ? `/dashboard/setup/${s.stationId}`
-      : `/dashboard/stations/${s.stationId}`)
-  }
+  // Into the stations this person may open (screens/dashboard/page.js), which opens the one
+  // station at once when there is only one. A full load: it is an Ionic app of its own.
+  const goIn = () => window.location.replace('/dashboard')
 
   const signIn = async (e) => {
     e.preventDefault()
