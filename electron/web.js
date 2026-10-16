@@ -34,24 +34,50 @@ function webOrigin() {
   return origins.includes(reached) ? reached : origins[0] || ''
 }
 
-const tokenFile = () => path.join(app.getPath('userData'), 'device-token.bin')
+// One device token per linked station ({ [stationId]: token }), in one encrypted file. A computer
+// from before kept a single token in device-token.bin: the first station asked for takes it, which
+// is the station it was linked to (lib/local/link.js moves that link the same way).
+const tokensFile = () => path.join(app.getPath('userData'), 'device-tokens.bin')
+const oldTokenFile = () => path.join(app.getPath('userData'), 'device-token.bin')
 
-function readToken() {
+function readFile(file) {
   try {
-    const data = fs.readFileSync(tokenFile())
+    const data = fs.readFileSync(file)
     return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(data) : data.toString('utf8')
   } catch {
     return null
   }
 }
 
-function writeToken(token) {
-  const data = safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(token) : Buffer.from(token, 'utf8')
-  fs.writeFileSync(tokenFile(), data, { mode: 0o600 })
+function readTokens() {
+  try { return JSON.parse(readFile(tokensFile()) || '{}') } catch { return {} }
 }
 
-function deleteToken() {
-  try { fs.unlinkSync(tokenFile()) } catch { /* already gone */ }
+function writeTokens(tokens) {
+  const text = JSON.stringify(tokens)
+  const data = safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(text) : Buffer.from(text, 'utf8')
+  fs.writeFileSync(tokensFile(), data, { mode: 0o600 })
+}
+
+function readToken(stationId) {
+  if (typeof stationId !== 'string' || !stationId) return null
+  const tokens = readTokens()
+  if (tokens[stationId]) return tokens[stationId]
+  const old = readFile(oldTokenFile())
+  if (!old) return null
+  writeTokens({ ...tokens, [stationId]: old })
+  try { fs.unlinkSync(oldTokenFile()) } catch { /* already gone */ }
+  return old
+}
+
+function writeToken(stationId, token) {
+  writeTokens({ ...readTokens(), [stationId]: token })
+}
+
+function deleteToken(stationId) {
+  const tokens = readTokens()
+  delete tokens[stationId]
+  writeTokens(tokens)
 }
 
 async function call(method, apiPath, body, token) {
@@ -87,23 +113,23 @@ function registerWebBridge() {
   ipcMain.handle('web:link', async (event, { email, password, stationId, createName } = {}) => {
     if (!fromApp(event)) return { ok: false, status: 403, body: {} }
     const res = await call('POST', '/api/desktop/link', { email, password, stationId, createName, deviceName: os.hostname() })
-    if (res.ok && res.body?.token) {
-      writeToken(res.body.token)
+    if (res.ok && res.body?.token && res.body.station?.id) {
+      writeToken(res.body.station.id, res.body.token)
       delete res.body.token
     }
     return res
   })
 
-  ipcMain.handle('web:request', async (event, { method = 'GET', path: apiPath, body } = {}) => {
+  ipcMain.handle('web:request', async (event, { method = 'GET', path: apiPath, body, stationId } = {}) => {
     if (!fromApp(event)) return { ok: false, status: 403, body: {} }
-    const token = readToken()
-    if (!token) return { ok: false, status: 401, body: { error: 'This computer is not linked' } }
+    const token = readToken(stationId)
+    if (!token) return { ok: false, status: 401, body: { error: 'This station is not linked' } }
     return call(method === 'POST' ? 'POST' : 'GET', apiPath, body, token)
   })
 
-  ipcMain.handle('web:unlink', async (event) => {
-    if (!fromApp(event)) return { ok: false }
-    deleteToken()
+  ipcMain.handle('web:unlink', async (event, stationId) => {
+    if (!fromApp(event) || typeof stationId !== 'string') return { ok: false }
+    deleteToken(stationId)
     return { ok: true }
   })
 
