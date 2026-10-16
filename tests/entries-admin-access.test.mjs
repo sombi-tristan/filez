@@ -34,10 +34,13 @@ const src = readFileSync(resolve(__dirname, '..', 'lib', 'entryHelpers.js'), 'ut
 const loadModule = (deps) =>
   new Function(
     'NextResponse', 'createClient', 'createServerClient', 'cookies', 'rateLimit', 'isAdmin',
+    'authenticateDevice', 'deviceTokenFrom',
     `${src}\n;return { authenticateUser };`
   )(
     deps.NextResponse, deps.createClient, deps.createServerClient,
-    deps.cookies, deps.rateLimit, deps.isAdmin
+    deps.cookies, deps.rateLimit, deps.isAdmin,
+    // A browser request carries no device token unless a test gives one.
+    deps.authenticateDevice || (async () => null), deps.deviceTokenFrom || (() => null)
   )
 
 let failures = 0
@@ -143,6 +146,24 @@ console.log('\n6. no session is still 401')
   const mod = loadModule(deps(null))
   const { error } = await mod.authenticateUser(request)
   check('rejected with 401', error?.status === 401, `status=${error?.status}`)
+}
+
+console.log('\n7. a linked desktop computer acts in its own station only')
+{
+  const OTHER = 'org_other'
+  const linkedDeps = {
+    ...deps(null),
+    deviceTokenFrom: () => 'dsk_token',
+    authenticateDevice: async () => ({ device: { id: 'dev_1' }, user: { ...OWNER }, station: { id: ORG, owner_id: OWNER.id } }),
+  }
+  const mod = loadModule(linkedDeps)
+  const { user, error, via } = await mod.authenticateUser({ url: `http://x/api/entries/nozzles?org_id=${OTHER}`, headers: new Map() })
+  check('admitted as the owner who linked it', !error && via === 'owner' && user?.id === OWNER.id, `via=${via}`)
+  check('in the linked station, whatever ?org_id= asks for', user?.org_id === ORG, `org=${user?.org_id}`)
+
+  const revoked = loadModule({ ...deps(null), deviceTokenFrom: () => 'dsk_revoked', authenticateDevice: async () => null })
+  const { error: revokedError } = await revoked.authenticateUser(request)
+  check('a revoked or unknown computer is 401', revokedError?.status === 401, `status=${revokedError?.status}`)
 }
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`)
