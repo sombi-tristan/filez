@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, Store, Globe, Upload } from 'lucide-react'
 import { INPUT, LABEL, BTN_PRIMARY, BTN_FRAMED, CARD } from '@/components/ui'
 import LinkForm from '@/components/desktop/LinkForm'
+import RestoreBackup from '@/components/desktop/RestoreBackup'
+import { PaidNote } from '@/components/desktop/LicenceGate'
+import { allLinks } from '@/lib/local/link'
+import { checkLicence, paidNow } from '@/lib/local/licence'
 
 /**
  * Desktop build: the owner adds a station to this computer (screens/dashboard/page.js). A
@@ -13,6 +17,8 @@ import LinkForm from '@/components/desktop/LinkForm'
  *             balances) and can be linked to the web later
  *   web       one of the owner's web stations, brought down with its records (LinkForm with no
  *             station here to link: it becomes a new station on this computer)
+ *   backup    a backup file becomes a station here (components/desktop/RestoreBackup.js); like
+ *             backing up, it needs a subscription running
  *
  *   onAdded(station)  called with the new station (or null) once it is here
  */
@@ -21,6 +27,12 @@ export default function AddStation({ onAdded, onCancel }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Restoring needs a subscription running on any station here, as the in-app server checks.
+  const [paid, setPaid] = useState(false)
+  useEffect(() => {
+    Promise.all(allLinks().map((l) => checkLicence(Date.now(), l.stationId)))
+      .then(() => setPaid(allLinks().some((l) => paidNow(l.stationId))))
+  }, [])
 
   const createOffline = async (e) => {
     e.preventDefault()
@@ -75,9 +87,7 @@ export default function AddStation({ onAdded, onCancel }) {
         <LinkForm localStationId={null} onLinked={(result) => onAdded?.(result?.station ? { ...result.station, onboarding_complete: true } : null)} />
       )}
 
-      {way === 'backup' && (
-        <p className="text-sm text-content-muted">Restoring a backup as another station comes in the next step of this update.</p>
-      )}
+      {way === 'backup' && (paid ? <RestoreBackup label="Choose the backup file" /> : <PaidNote what="Restoring a backup" />)}
 
       <button type="button" onClick={() => (way ? setWay(null) : onCancel?.())} className={`px-4 py-2 text-sm ${BTN_FRAMED}`}>
         {way ? 'Back' : 'Cancel'}
