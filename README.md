@@ -43,34 +43,48 @@ site changes. Rebuild only for a new icon, name or app setting. Without the inte
 `capacitor/www/offline.html`. The site knows it is inside the app by "StationMGRApp" in the user
 agent (`lib/platform.js`), so a wide tablet never gets the desktop download page.
 
-### Building it on your PC
+### Building it on your PC (no Android Studio)
 
-1. Install [Node.js 20 LTS](https://nodejs.org), [Git](https://git-scm.com) and
-   [Android Studio](https://developer.android.com/studio). Android Studio brings the Android SDK
-   and Java 21.
-2. In a terminal, in the project folder:
+You need Java 21 and Google's Android command-line tools. On Windows, once:
 
-   ```bash
-   npm ci
-   npm run android        # cap sync android: copies capacitor.config.json into android/
-   npm run android:open   # opens the android/ project in Android Studio
+1. Java 21, in PowerShell: `winget install Microsoft.OpenJDK.21`
+2. The Android command-line tools: from https://developer.android.com/studio, section
+   "Command line tools only", download the Windows zip. Unzip it so this file exists:
+   `C:\Android\cmdline-tools\latest\bin\sdkmanager.bat` (the zip's `cmdline-tools` folder
+   holds `bin` and `lib`: move those into a new `latest` folder).
+3. In PowerShell, then close and reopen it:
+
+   ```powershell
+   setx ANDROID_HOME C:\Android
    ```
 
-3. In Android Studio, wait for Gradle to finish, then:
-   - to try it: plug in a phone with USB debugging on (or start an emulator) and press Run;
-   - for an APK to share: Build → Build App Bundle(s) / APK(s) → Build APK(s). It is in
-     `android/app/build/outputs/apk/debug/app-debug.apk`.
+4. The Android parts the build needs, and their licences (answer `y`):
 
-   Or from a terminal, without opening Android Studio (Windows: `gradlew.bat`):
-
-   ```bash
-   cd android
-   ./gradlew assembleDebug     # android/app/build/outputs/apk/debug/app-debug.apk
+   ```powershell
+   C:\Android\cmdline-tools\latest\bin\sdkmanager.bat "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+   C:\Android\cmdline-tools\latest\bin\sdkmanager.bat --licenses
    ```
+
+Then, each time, in the project folder:
+
+```powershell
+npm ci
+npm run android            # cap sync android: copies capacitor.config.json into android/
+cd android
+.\gradlew.bat assembleDebug
+```
+
+The APK is `android\app\build\outputs\apk\debug\app-debug.apk`. Copy it to a phone and open
+it to install (allow installing from that source when asked). The first build downloads Gradle and
+takes a few minutes; later ones are quick.
+
+On GitHub: Actions → "Build Android app" → Run workflow builds the same APK
+(.github/workflows/android-build.yml) and attaches it to the run.
 
 ### A signed release (for the Play Store, or an APK that updates cleanly)
 
-1. Make a keystore once and keep it safe. Losing it means the app can never be updated:
+1. Make a keystore once and keep it safe. Losing it means the app can never be updated
+   (`keytool` comes with Java):
 
    ```bash
    keytool -genkeypair -v -keystore stationmgr-release.jks -alias stationmgr -keyalg RSA -keysize 2048 -validity 10000
@@ -91,8 +105,8 @@ agent (`lib/platform.js`), so a wide tablet never gets the desktop download page
 
    ```bash
    cd android
-   ./gradlew bundleRelease     # Play Store: android/app/build/outputs/bundle/release/app-release.aab
-   ./gradlew assembleRelease   # APK: android/app/build/outputs/apk/release/app-release.apk
+   .\gradlew.bat bundleRelease     # Play Store: android\app\build\outputs\bundle\release\app-release.aab
+   .\gradlew.bat assembleRelease   # APK: android\app\build\outputs\apk\release\app-release.apk
    ```
 
 Raise `versionCode` (a whole number, +1 each release) and `versionName` in
