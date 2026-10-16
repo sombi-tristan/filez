@@ -2,11 +2,19 @@ name: Build Windows desktop app
 
 # Builds StationMGR-Setup-<version>.exe on a Windows runner. Download it from this run's
 # "Artifacts" section (Actions tab → latest "Build Windows desktop app" run).
+#
+# A build of desktop/offline is also published as the release desktop-v<version>, with the
+# installer as StationMGR-Setup.exe: the web's download page links to the latest release's file
+# of that name (lib/platform.js on main). Raise "version" in package.json for a new release; a
+# build of the same version replaces that release's installer.
 on:
   push:
     branches:
       - 'desktop/**'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   windows:
@@ -45,3 +53,20 @@ jobs:
           path: dist/*.exe
           if-no-files-found: error
           retention-days: 30
+
+      - name: Name the installer for the download page
+        if: github.ref == 'refs/heads/desktop/offline'
+        shell: bash
+        run: |
+          cp dist/StationMGR-Setup-*.exe dist/StationMGR-Setup.exe
+          echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Publish the release
+        if: github.ref == 'refs/heads/desktop/offline'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v${{ env.VERSION }}
+          name: StationMGR for Windows ${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: dist/StationMGR-Setup.exe
