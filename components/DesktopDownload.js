@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Download, Monitor, Smartphone, CreditCard } from 'lucide-react'
 import Footer from '@/components/Footer'
 import { BTN_FRAMED, BTN_PRIMARY } from '@/components/ui'
-import { ANDROID_DOWNLOAD_URL, DESKTOP_DOWNLOAD_URL } from '@/lib/platform'
+import { DESKTOP_DOWNLOAD_URL } from '@/lib/platform'
 
 /**
  * What the web shows a computer (lib/platform.js): StationMGR on a computer is the desktop app.
@@ -63,13 +63,9 @@ export default function DesktopDownload({ signedIn = false }) {
               <Smartphone className="w-5 h-5 text-accent mt-0.5 shrink-0" />
               <div>
                 <h2 className="font-semibold text-content mb-1">On your phone</h2>
-                <p className="text-sm text-content-muted mb-3">
-                  Make entries and see your reports on the go: open this site on your phone, or get
-                  the Android app.
+                <p className="text-sm text-content-muted">
+                  Open this site on your phone to make entries and see your reports on the go.
                 </p>
-                <a href={ANDROID_DOWNLOAD_URL} className={`inline-flex px-4 py-2 text-sm font-semibold ${BTN_FRAMED}`}>
-                  Download the Android app
-                </a>
               </div>
             </div>
           </div>
