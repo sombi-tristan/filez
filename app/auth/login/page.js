@@ -37,6 +37,9 @@ export default function LoginPage() {
   // a linked computer holding another station's records (lib/local/restorePlan.js heldStation)
   const [rescue, setRescue] = useState(false)
   const [notice, setNotice] = useState('')
+  // the station on this computer to create (or link) on the web: after restoring another
+  // station's backup (?restored=), or chosen at the rescue
+  const [linkFor, setLinkFor] = useState(null)
 
   const loadStatus = () =>
     fetch('/api/local/status')
@@ -48,7 +51,11 @@ export default function LoginPage() {
       })
       .catch(() => setError('Could not open the local database.'))
 
-  useEffect(() => { loadStatus() }, [])
+  useEffect(() => {
+    loadStatus()
+    const restored = new URLSearchParams(window.location.search).get('restored')
+    if (restored !== null) setLinkFor(restored)
+  }, [])
 
   const goIn = (s) => {
     // A full load: the station is an Ionic app of its own (components/shell/IonicShell.js).
@@ -73,7 +80,7 @@ export default function LoginPage() {
     goIn(status)
   }
 
-  const choose = async (keep) => {
+  const choose = async (keep, { thenCreate = false } = {}) => {
     const held = status.heldStation.name || 'the other station'
     if (keep === 'web' && !window.confirm(`This removes ${held}'s records from this computer. Keep a backup of them first if you need them. Continue?`)) return
     setBusy(true); setError('')
@@ -91,7 +98,8 @@ export default function LoginPage() {
     }
     const next = await fetch('/api/local/status').then((r) => r.json())
     setStatus(next)
-    if (keep === 'held') goIn(next)
+    if (keep === 'held' && thenCreate) setLinkFor(status.heldStation.name || '')
+    else if (keep === 'held') goIn(next)
   }
 
   const setup = async (e) => {
@@ -144,7 +152,19 @@ export default function LoginPage() {
 
       {notice && <p className="text-sm text-content-muted mb-4" role="status">{notice}</p>}
 
-      {rescue ? (
+      {linkFor !== null ? (
+        <div className="space-y-4">
+          <p className="text-sm text-content">
+            <strong>{linkFor || 'This station'}</strong> is on this computer, with its setup and opening balances, and works
+            offline now. Create it as a new station on the web, or link it if it is there already, so it can sync once a
+            subscription is running.
+          </p>
+          <LinkForm createFor={linkFor} canBackUp={false} onLinked={() => { setLinkFor(null); window.history.replaceState(null, '', '/auth/login'); loadStatus() }} />
+          <button type="button" onClick={() => { setLinkFor(null); window.history.replaceState(null, '', '/auth/login') }} className="w-full py-2 text-sm text-content-muted">
+            Not now: work offline
+          </button>
+        </div>
+      ) : rescue ? (
         <div className="space-y-4">
           <p className="text-sm text-content">
             This computer holds the records of <strong>{status.heldStation.name || 'another station'}</strong>, but it is
@@ -163,6 +183,13 @@ export default function LoginPage() {
           <p className="text-xs text-content-faint">
             Keeps these records. This computer stops being linked to {status.stationName || 'the other station'}; you can
             link it to {status.heldStation.name || 'its own station'} later.
+          </p>
+          <button type="button" onClick={() => choose('held', { thenCreate: true })} disabled={busy} className={`w-full py-2.5 font-medium disabled:opacity-50 ${BTN_FRAMED}`}>
+            Create {status.heldStation.name || 'these records'} as a new station on the web
+          </button>
+          <p className="text-xs text-content-faint">
+            Keeps these records, unlinks from {status.stationName || 'the other station'}, and makes a new web station for them
+            with their setup and opening balances.
           </p>
           {errorBox}
         </div>
