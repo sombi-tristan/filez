@@ -7,14 +7,13 @@ import { db } from '@/lib/db'
 import { dailySalesRepo } from '@/lib/repositories/dailySales'
 import Toggle from '@/components/Toggle'
 import { useSavePush } from '@/components/SavePushProvider'
-import { useSubscription } from '@/lib/hooks/useSubscription'
 import { fmtDate } from '@/lib/formatDate'
 import { isDefaultAccount } from '@/lib/defaultAccounts'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, BTN_DANGER, BTN_FRAMED } from '@/components/ui'
 import {
   EntryScreen, DayBar, EntryCard, EntryTabs, Field, FieldGroup, FieldRow, NumberInput, AddEntryButton,
-  SubscribeNotice, SaveBar, EntryLoading, NotConfigured, adjacentDates,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
 
 function blankEntry(nozzles, tanks) {
@@ -84,7 +83,6 @@ export default function DailySalesFormPage() {
   const editId = searchParams.get('edit') || null
   const editDate = searchParams.get('edit_date') || null
   const qs = `org_id=${orgId}`
-  const { subscribed: isSubscribed, loading: subLoading } = useSubscription(orgId, 'fuel-operations')
 
   const [loading, setLoading] = useState(true)
   const [locked, setLocked] = useState(false)
@@ -481,8 +479,6 @@ export default function DailySalesFormPage() {
       }}>
         <DayBar label="Date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        {!subLoading && !isSubscribed && <SubscribeNotice />}
-
         <EntryTabs count={entries.length} active={activeTab} onChange={setActiveTab} />
 
         {current && (
@@ -585,7 +581,6 @@ export default function DailySalesFormPage() {
           saving={saving}
           saved={saved}
           isEditing={isEditing}
-          disabled={!subLoading && !isSubscribed}
           error={error}
           onErrorDone={() => setError('')}
         />
