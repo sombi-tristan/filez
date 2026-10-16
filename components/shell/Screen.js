@@ -9,7 +9,7 @@ import {
 import { homeOutline } from 'ionicons/icons'
 import { IconButton, Spinner } from '@/design'
 import { AreaContext, ScreenLocationContext } from '@/lib/nav'
-import { useLicence, ServiceLocked } from '@/components/desktop/LicenceGate'
+import { useLicence, ServiceLocked, FreeReportBanner } from '@/components/desktop/LicenceGate'
 import Footer from '@/components/Footer'
 
 /**
@@ -75,6 +75,7 @@ export default function Screen({ screen }) {
               at the bottom of a short screen and under the last line of a long one. */}
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
+              {screen.ranged && !locked && <FreeReportBanner />}
               {locked ? (
                 <ServiceLocked service={screen.service} />
               ) : (

@@ -15,13 +15,16 @@ The computer is linked to a station on the web platform (app/api/desktop/* on ma
 - The window never reaches the web itself. electron/web.js does, through electron/preload.js
   (window.stationmgr), holding the device token. Pages call lib/local/web.js.
 - The station's subscription is checked offline from the signed licence (lib/local/licence.js).
-  Free with no link: first-run setup, daily sales, lodgements, and reports of up to 5 days
-  (lib/reportRange.js, applied in components/reports/DateRange.js). A screen's service is the
+  Free with no link: first-run setup, daily sales, lodgements, and reports over any 5 days at a
+  time (lib/reportRange.js moveRange: in components/reports/DateRange.js moving one date brings
+  the other along). Report screens marked `ranged` in screens/routes.js carry FreeReportBanner
+  across the top, above the dates. A screen's service is the
   `service` field in screens/routes.js, and LicenceGate locks that screen when it is not running.
   Any running service (`paid` from useLicence, `paidNow()`) opens backup, longer reports, and
   Push and Pull; show PaidNote where a paid feature would be. The in-app server's requireService
   follows the licence.
-- No native menu bar (electron/main.js).
+- No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
+  (the end of app/globals.css re-sets the house colour variables on it).
 - Staff and their PINs stay on the computer: users and org_invites never sync.
 
 Important

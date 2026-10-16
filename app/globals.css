@@ -177,3 +177,32 @@ html.ionic-app body {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 }
+
+/* Desktop build: the station sidebar (components/StationSidebar.js, the IonMenu's content) is
+   blue with white words and icons, in light and dark alike. The house sidebar is drawn from the
+   house colour variables (design/house.css), so they are set again on it here: its ground is the
+   blue, its ink and its "accent" (the open row) are white. */
+ion-menu ion-content {
+  --background: #0077b6;
+}
+
+ion-menu .house-side {
+  --ground: #0077b6;
+  --ink: #ffffff;
+  --ink-rgb: 255, 255, 255;
+  --muted: rgba(255, 255, 255, 0.8);
+  --faint: rgba(255, 255, 255, 0.6);
+  --line: rgba(255, 255, 255, 0.35);
+  --accent: #ffffff;
+  --accent-rgb: 255, 255, 255;
+  color: #ffffff;
+}
+
+ion-menu .house-side ion-item {
+  --color: #ffffff;
+}
+
+ion-menu .house-side .house-side-on,
+ion-menu .house-side .house-side-on:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
