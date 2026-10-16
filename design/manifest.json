@@ -1,9 +1,9 @@
 {
   "from": "groo",
-  "commit": "639c48e",
+  "commit": "90f4a16",
   "synced": "2026-10-16",
   "files": {
-    "README.md": "f1b8d13c813e64c2879f95fe0920522f1e24a3dd4c4c82826a2b8f8e0d9e2f1f",
+    "README.md": "b51cb7389fcd65e73453c214b58137a5fa110aa85719eecd15100177d7fec06b",
     "check.mjs": "4fc19af8463cfb6aa376e5bdc4a55c7ffef151f8b60d8568581310af97ec6c4a",
     "components/AppHeader.jsx": "f24eb0e1fab1db76c636095173fd95d69cb273b992ffb11c392bb44111d73a15",
     "components/Avatar.jsx": "16c8178e62ee16a104970efd52181e9100223cc5dd633686e3d4f059634e8614",
@@ -19,7 +19,7 @@
     "components/ListRow.jsx": "33196932b458f75be38d02a62d66a38f8cf198a0cb57da5ef7c2d8dd0d1013b6",
     "components/LoadFailed.jsx": "6acc292341ad2e6539a9c15f6fb3fa260c6e1af103c28578a8f900fda463d122",
     "components/PageTitle.jsx": "d3ccb0e6771641c087f46e38bdb043e5057ff01d4dec22694e9114b677624da1",
-    "components/PoweredBy.jsx": "79d9e476594ee623c6117de627a0d6226a6618a557afa4ea9781974f3e66df5b",
+    "components/PoweredBy.jsx": "ded46ee534d510cf337932937e92061346e54a052a615d2b51c625d6252cc88c",
     "components/PremevalLogo.jsx": "7ffbd558242148ce31c7028bf79f05420b7836293a095f83a4a03406b4f2d621",
     "components/Report.jsx": "11265abfbf2e178eefa5c6c33e2f580ee90dcb6e970af3e671ae8b30acdf8d38",
     "components/RowGroup.jsx": "7d06b9bdc7c76b6af1d405accd5f7c071d018ac373123dab54c51d7bb5dcfd16",

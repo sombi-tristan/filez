@@ -7,7 +7,7 @@ import { Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildSalesOperationReport } from '@/lib/buildSalesOperationReport'
 import { exportSalesOperationExcel } from '@/lib/exportSalesOperationExcel'
-import DateInput from '@/components/DateInput'
+import DateRange from '@/components/reports/DateRange'
 import AccessGate from '@/components/AccessGate'
 
 function fmt(n) {
@@ -177,25 +177,15 @@ function SalesOperationContent() {
         <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-end py-3 shrink-0">
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <DateInput
-                value={startDate}
-                onChange={setStartDate}
-                className="px-2 py-2 border border-line text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
+              <DateRange
+                start={startDate}
+                end={endDate}
+                onStart={setStartDate}
+                onEnd={setEndDate}
+                onGenerate={handleGenerate}
+                generating={generating}
+                disabled={!startDate || !endDate || startDate > endDate}
               />
-              <span className="text-sm text-content-faint">to</span>
-              <DateInput
-                value={endDate}
-                onChange={setEndDate}
-                className="px-2 py-2 border border-line text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              <button
-                onClick={handleGenerate}
-                disabled={generating || !startDate || !endDate || startDate > endDate}
-                className="px-4 py-2 bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {generating && <Loader2 className="w-4 h-4 animate-spin" />}
-                {generating ? 'Generating...' : 'Generate'}
-              </button>
               {isOwner && (
                 <button
                   onClick={handleExport}

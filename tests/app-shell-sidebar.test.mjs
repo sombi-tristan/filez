@@ -40,7 +40,7 @@ check('the shell is loaded in the browser only', /ssr: false/.test(dashboardPage
 console.log('\nThe shell is an Ionic app with the sidebar in a split pane')
 
 check('IonApp around Ionic\'s router', /<IonApp>\s*<IonReactRouter>/s.test(shell))
-check('a split pane whose content is the outlet', /<IonSplitPane contentId="main"/.test(shell) && /<IonRouterOutlet id="main">/.test(shell))
+check('a split pane whose content is the outlet', /<IonSplitPane contentId="main"/.test(shell) && /<IonRouterOutlet id="main" animation=\{slideTransition\}>/.test(shell))
 check('the menu points at the same content', /<IonMenu contentId="main"/.test(shell))
 check('the dashboard menu renders the station sidebar with the open station', /<StationSidebar stationId=\{stationId\} \/>/.test(shell))
 check('the admin menu renders the admin sidebar', /<AdminSidebar \/>/.test(shell))

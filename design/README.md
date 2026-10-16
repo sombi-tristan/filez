@@ -43,7 +43,7 @@ http://localhost:8888/design). It is not on the public site.
 | `FloatingInput`, `FloatingTextarea`, `FloatingSelect` | Every form field: the label rests in the box and rises into its edge. |
 | `Toast` | Every notice. `tone`: error, success, info. |
 | `PremevalLogo` | The maker's mark. |
-| `PoweredBy` | "Operated by Premeval", at the foot of a page. |
+| `PoweredBy` | "Powered by Premeval", at the foot of a page. |
 | `PageTitle` | A screen's one heading; `hidden` when the top bar already says it. |
 | `ListRow` | A Settings-style row: label, value or switch, chevron. The whole row is the target. |
 | `SwipeRow` | A row that slides left to show its buttons (Archive, Delete). |

@@ -11,6 +11,7 @@ import StationSidebar from '@/components/StationSidebar'
 import AdminSidebar from '@/components/AdminSidebar'
 import Screen from '@/components/shell/Screen'
 import BackgroundSync, { stationIdFrom } from '@/components/shell/BackgroundSync'
+import slideTransition from '@/components/shell/slideTransition'
 
 /**
  * The dashboard, or the admin area, as one Ionic app: IonApp, Ionic's router, a split pane
@@ -57,7 +58,8 @@ export default function IonicShell({ area }) {
           <SavePushProvider>
             <IonSplitPane contentId="main" when={SPLIT_WHEN}>
               <Menu area={area} />
-              <IonRouterOutlet id="main">
+              {/* Screens slide in from the right when opened and out to the right on Back. */}
+              <IonRouterOutlet id="main" animation={slideTransition}>
                 {screens.map((screen) => (
                   <Route key={screen.path} path={screen.path} element={<Screen screen={screen} />} />
                 ))}

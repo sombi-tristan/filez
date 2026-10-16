@@ -152,9 +152,10 @@ export default function DateInput({ value, onChange, className = '' }) {
   }
 
   return (
-    // min-w: a full DD-MM-YYYY and the calendar button always fit. A report's controls share
-    // one row, and without a floor a phone squeezed the field down to "01-.".
-    <div className={`relative min-w-[8.5rem] ${className}`}>
+    // min-w: a full DD-MM-YYYY and the calendar button always fit. Without a floor a phone
+    // squeezed a report's date down to "01-."; at this width two dates and the Generate button
+    // still share one phone line.
+    <div className={`relative min-w-[7.5rem] ${className}`}>
       <div className="flex">
         <input
           ref={inputRef}
