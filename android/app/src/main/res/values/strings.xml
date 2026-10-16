@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">StationMGR</string>
-    <string name="title_activity_main">StationMGR</string>
-    <string name="package_name">site.stationmgr.app</string>
-    <string name="custom_url_scheme">site.stationmgr.app</string>
-</resources>
