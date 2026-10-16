@@ -48,9 +48,9 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
   Lube management, Accounts and the Account Ledger need Customer payments). Setting the
   computer's clock back closes the paid features until the web is reached again.
 - **Backups** (needs a subscription): the owner's station page has *Back up data* (saves one
-  `.json` file) and *Restore backup*. A backup restores only onto its own station (or, made
-  before linking, onto the station linked since); one of another station is refused and nothing
-  changes.
+  `.json` file) and *Restore backup*. A backup always replaces what is on this computer,
+  setup and opening balances included. A backup of another station than the linked one unlinks
+  this computer, and sign-in offers to create that station on the web (or link it).
 - Closing the app signs everyone out.
 
 ## How it works

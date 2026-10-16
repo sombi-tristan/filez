@@ -33,11 +33,15 @@ The computer is linked to a station on the web platform (app/api/desktop/* on ma
   Any running service (`paid` from useLicence, `paidNow()`) opens backup, longer reports,
   exporting a report (exportAllowed), and Push and Pull; show PaidNote where a paid feature would
   be. The in-app server's requireService follows the licence.
-- A restore (lib/local/routes/local/backup) takes a backup of this station only, decided before
-  anything is wiped (lib/local/restorePlan.js): one from before linking moves into the linked
-  station and is pushed; one of another station is refused. A linked computer that already holds
-  another station's records (heldStation) is offered at sign-in to get its station back from the
-  web or keep the held one and unlink (lib/local/routes/local/rescue).
+- A restore (lib/local/routes/local/backup) always overwrites this computer, setup and opening
+  balances included, so no setup wizard follows (lib/local/restorePlan.js). One from before
+  linking, or of a station made offline, moves into the linked station and is pushed. One of
+  another station moves under the local id and unlinks the computer; sign-in then offers to
+  create it as a new web station or link it (LinkForm createFor; app/api/desktop/link createName,
+  lib/newStation.js on main). A new web station has no subscription: the records wait for its
+  first push. A linked computer that already holds another station's records (heldStation) is
+  offered at sign-in to get its station back from the web, keep the held one and unlink, or
+  create the held one on the web (lib/local/routes/local/rescue).
 - No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
   (the end of app/globals.css re-sets the house colour variables on it).
 - Staff and their PINs stay on the computer: users and org_invites never sync.
