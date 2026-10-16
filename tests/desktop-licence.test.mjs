@@ -88,15 +88,15 @@ let refused = false
 try { await lic.saveLicence(await sign({ 'fuel-operations': soon }, { key: other.privateKey })) } catch { refused = true }
 check('one signed by another key is not kept', refused)
 refused = false
-try { await lic.saveLicence(await sign({ 'fuel-operations': soon }, { sub: 'someone-else' })) } catch { refused = true }
+try { await lic.saveLicence(await sign({ 'fuel-operations': soon }, { sub: 'someone-else' }), STATION) } catch { refused = true }
 check('one for another station is not kept', refused)
-const token = memory.get('stationmgr.licence')
+const token = memory.get(`stationmgr.licence:${STATION}`)
 const [h, p, sgn] = token.split('.')
 const edited = JSON.parse(Buffer.from(p, 'base64url').toString())
 edited.svc['lube-management'] = new Date(Date.now() + 365 * DAY).toISOString()
-memory.set('stationmgr.licence', [h, Buffer.from(JSON.stringify(edited)).toString('base64url'), sgn].join('.'))
+memory.set(`stationmgr.licence:${STATION}`, [h, Buffer.from(JSON.stringify(edited)).toString('base64url'), sgn].join('.'))
 check('one edited on this computer is invalid', (await lic.checkLicence()).status === 'invalid')
-memory.set('stationmgr.licence', token)
+memory.set(`stationmgr.licence:${STATION}`, token)
 
 console.log('\nThe computer clock')
 // The lapsed check above looked 11 days ahead, which the clock check rightly remembers.
