@@ -7,7 +7,8 @@ import { OUTLINE_WITHIN } from '@/components/ui'
 
 /**
  * A report's date range and its Generate button, on one line: from, to, and a round icon that
- * runs the report. The three never wrap apart, so on a phone the dates and the button that
+ * runs the report. The button is a square box (report-generate in app/globals.css), not the
+ * house's round icon button. The three never wrap apart, so on a phone the dates and the button that
  * acts on them stay together; anything else in the report's controls wraps after them.
  *
  *   disabled    when the range cannot be run (a date missing, or the start after the end)
@@ -25,7 +26,7 @@ export default function DateRange({ start, end, onStart, onEnd, onGenerate, gene
           <Spinner size={22} label="Generating report" />
         </span>
       ) : (
-        <IconButton icon={refreshOutline} label="Generate report" variant="primary" onClick={onGenerate} disabled={disabled} />
+        <IconButton icon={refreshOutline} label="Generate report" variant="primary" className="report-generate" onClick={onGenerate} disabled={disabled} />
       )}
     </div>
   )

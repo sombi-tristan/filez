@@ -177,3 +177,21 @@ html.ionic-app body {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 }
+
+/* A report's Generate button (components/reports/DateRange.js) is a square box with the house
+   corner, beside the date boxes, not the round icon button. */
+ion-button.house-btn-icon.report-generate {
+  --border-radius: var(--corner);
+}
+
+/* The top bar's icon buttons (Home, notifications: components/shell/Screen.js) are just the
+   icons, with no circle round them. */
+ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon {
+  --border-width: 0;
+  --border-style: none;
+  --background: transparent;
+}
+
+ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon::part(native) {
+  border: 0;
+}

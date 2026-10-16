@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Download, X } from 'lucide-react'
 import { OUTLINE } from '@/components/ui'
+import { ANDROID_DOWNLOAD_URL, androidBrowser, inAndroidApp } from '@/lib/platform'
 
+/**
+ * Invites a phone to install StationMGR: on Android, the app (an APK from the site,
+ * lib/platform.js); elsewhere, the site added to the home screen. Not shown inside the app.
+ */
 export default function InstallPWABanner() {
+  const [android, setAndroid] = useState(false)
+  const [inApp, setInApp] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [dismissed, setDismissed] = useState(false)
   const [installed, setInstalled] = useState(false)
@@ -14,6 +21,8 @@ export default function InstallPWABanner() {
     if (sessionStorage.getItem('pwa-install-dismissed')) {
       setDismissed(true)
     }
+    setAndroid(androidBrowser())
+    setInApp(inAndroidApp())
 
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
       setInstalled(true)
@@ -57,7 +66,32 @@ export default function InstallPWABanner() {
     setDismissed(true)
   }
 
-  if (installed || dismissed) return null
+  if (installed || dismissed || inApp) return null
+
+  if (android) {
+    return (
+      <div className="bg-primary-50 dark:bg-primary-950/30 border border-primary-500/40 dark:border-primary-400/40 px-4 py-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Download className="w-5 h-5 text-primary-600 dark:text-primary-300 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-content">Get the Android app</p>
+            <p className="text-sm text-content-muted">StationMGR on your phone’s home screen, in its own window.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <a
+            href={ANDROID_DOWNLOAD_URL}
+            className={`px-3 py-1.5 text-sm font-medium ${OUTLINE} hover:bg-primary-500/20 hover:border-primary-600 dark:hover:border-primary-400`}
+          >
+            Download
+          </a>
+          <button onClick={handleDismiss} aria-label="Dismiss" className="p-1 text-content-faint hover:text-content-strong">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

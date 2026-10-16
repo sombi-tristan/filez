@@ -81,6 +81,22 @@ takes a few minutes; later ones are quick.
 On GitHub: Actions → "Build Android app" → Run workflow builds the same APK
 (.github/workflows/android-build.yml) and attaches it to the run.
 
+### Putting the APK on stationmgr.site
+
+Android phones that open the site in their browser are offered the app (the home page and the
+dashboard's banner), and computers get it on the download page. The link is the file
+`StationMGR.apk` on the GitHub release tagged `android` (`lib/platform.js`):
+
+1. First time: https://github.com/sombi-tristan/filez/releases/new, tag `android` (create it),
+   title "StationMGR for Android". Later: open that release and Edit it.
+2. Attach the APK renamed to `StationMGR.apk` (delete the old one first when updating).
+3. **Untick "Set as the latest release"**: the latest release must stay the Windows one, or the
+   desktop download stops working. Publish (or Update).
+
+Phones only install an update over the app they have when both are signed with the same key. A
+debug APK is signed with the building computer's own debug key, so build every version on the
+same PC, or use a signed release (below).
+
 ### A signed release (for the Play Store, or an APK that updates cleanly)
 
 1. Make a keystore once and keep it safe. Losing it means the app can never be updated
