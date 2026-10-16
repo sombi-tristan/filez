@@ -36,5 +36,8 @@ for (const entry of FREE) {
   }
 }
 
+console.log('\nPush')
+check('product receipts push with no service', !/product_receipt_entries: \{[^}]*service:/.test(read('lib', 'desktopTables.js')))
+
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)
