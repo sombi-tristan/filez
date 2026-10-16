@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getServiceClient } from '@/lib/entryHelpers'
 import { rateLimit } from '@/lib/rateLimit'
-import { createDevice, signLicence } from '@/lib/desktop'
+import { createDevice, signLicence, stationHasRecords } from '@/lib/desktop'
+import { SYNC_TABLES } from '@/lib/desktopTables'
 
 /**
  * Links a StationMGR Desktop computer to one of the owner's web stations. The one step a
@@ -12,7 +13,9 @@ import { createDevice, signLicence } from '@/lib/desktop'
  *   - the owner's web sign-in, checked here against Supabase Auth; never stored
  *   - without stationId: the stations they own. One station is linked at once; several come
  *     back as a list to choose from, and the computer asks again with stationId
- *   - with stationId: { token, licence, station, owner }. The token is shown once.
+ *   - with stationId: { token, licence, station, owner, hasRecords }. The token is shown once.
+ *     hasRecords says whether the station has records here already, so a computer with its own
+ *     can ask which to keep without pulling (a pull needs a subscription).
  *
  * Only a station's owner can link a computer to it; staff sign in on the computer with PINs.
  */
@@ -60,6 +63,7 @@ export async function POST(request) {
       licence,
       station: { id: chosen.id, name: chosen.name, location: chosen.location || '' },
       owner: { id: owner.id, name: owner.name || '', email: owner.email || '' },
+      hasRecords: await stationHasRecords(chosen.id, Object.keys(SYNC_TABLES)),
     })
   } catch (e) {
     return NextResponse.json({ error: e?.message === 'DESKTOP_LICENCE_PRIVATE_KEY is not set' ? 'Desktop linking is not set up on the server yet' : 'Server error' }, { status: 500 })

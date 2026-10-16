@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getServiceClient, requireService } from '@/lib/entryHelpers'
-import { authenticateDevice, signLicence } from '@/lib/desktop'
+import { getServiceClient } from '@/lib/entryHelpers'
+import { authenticateDevice, signLicence, serviceDates } from '@/lib/desktop'
 import { SYNC_TABLES, PUSH_BATCH } from '@/lib/desktopTables'
 
 /**
@@ -12,8 +12,9 @@ import { SYNC_TABLES, PUSH_BATCH } from '@/lib/desktopTables'
  *                station setup rows are removed.
  *
  * Every row is written into the linked station whatever org_id it carries, and attributed to
- * the owner who linked the computer (its staff exist only on the computer). A write to an entry
- * table needs the same subscription the web asks for. Each change is answered on its own, so
+ * the owner who linked the computer (its staff exist only on the computer). A push needs any
+ * service running (403 otherwise, with a fresh licence), and a write to an entry table its own
+ * service (lib/desktopTables.js), grace included as in the licence. Each change is answered on its own, so
  * one refused row (a second close of business for a day, a lapsed service) does not stop the
  * rest: { results: [{ table, id, ok, error? }], licence }.
  */
@@ -26,10 +27,14 @@ export async function POST(request) {
     if (!Array.isArray(changes)) return NextResponse.json({ error: 'changes is required' }, { status: 400 })
     if (changes.length > PUSH_BATCH) return NextResponse.json({ error: `At most ${PUSH_BATCH} changes per push` }, { status: 400 })
 
-    const supabase = getServiceClient()
     const orgId = linked.station.id
-    const user = { ...linked.user, org_id: orgId }
-    const serviceOk = {}
+    const running = await serviceDates(orgId)
+    if (!Object.keys(running).length) {
+      const licence = await signLicence({ orgId, deviceId: linked.device.id, stationName: linked.station.name })
+      return NextResponse.json({ error: 'Push needs the station to have a subscription running', licence }, { status: 403 })
+    }
+
+    const supabase = getServiceClient()
     const results = []
 
     for (const change of changes) {
@@ -38,10 +43,7 @@ export async function POST(request) {
       const answer = (ok, error) => results.push({ table, id, ok, ...(error ? { error } : {}) })
       if (!spec || !id || (op !== 'upsert' && op !== 'delete')) { answer(false, 'Not a change this computer can make'); continue }
 
-      if (spec.service) {
-        if (serviceOk[spec.service] === undefined) serviceOk[spec.service] = (await requireService(user, spec.service)).subscribed
-        if (!serviceOk[spec.service]) { answer(false, 'Subscription required for this service'); continue }
-      }
+      if (spec.service && !running[spec.service]) { answer(false, 'Subscription required for this service'); continue }
 
       if (table === 'organizations') {
         if (id !== orgId || op !== 'upsert') { answer(false, 'Only this station can be changed'); continue }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/entryHelpers'
-import { authenticateDevice, signLicence } from '@/lib/desktop'
+import { authenticateDevice, signLicence, anyServiceRunning } from '@/lib/desktop'
 import { SYNC_TABLES } from '@/lib/desktopTables'
 
 const PAGE = 1000
@@ -23,20 +23,25 @@ async function allRows(supabase, table, orgId) {
  * `Authorization: Device <token>`. One request returns every synced table (lib/desktopTables.js)
  * in full, deleted entries included so the computer learns of deletions, and a fresh licence.
  *
- * Reads need no subscription, as on the web: a lapsed station can still pull its own data.
+ * Needs any service running: push and pull are paid features of the desktop. A station with none
+ * is answered 403 with a fresh licence, so the computer learns where it stands.
  */
 export async function GET(request) {
   try {
     const linked = await authenticateDevice(request)
     if (!linked) return NextResponse.json({ error: 'This computer is not linked' }, { status: 401 })
 
-    const supabase = getServiceClient()
     const orgId = linked.station.id
+    const licence = await signLicence({ orgId, deviceId: linked.device.id, stationName: linked.station.name })
+    if (!(await anyServiceRunning(orgId))) {
+      return NextResponse.json({ error: 'Pull needs the station to have a subscription running', licence }, { status: 403 })
+    }
+
+    const supabase = getServiceClient()
     const tables = Object.keys(SYNC_TABLES)
     const results = await Promise.all(tables.map((t) => allRows(supabase, t, orgId)))
     const rows = Object.fromEntries(tables.map((t, i) => [t, results[i]]))
 
-    const licence = await signLicence({ orgId, deviceId: linked.device.id, stationName: linked.station.name })
     return NextResponse.json({ station: { id: orgId, name: linked.station.name }, rows, serverTime: new Date().toISOString(), licence })
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
