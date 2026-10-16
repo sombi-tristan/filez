@@ -81,9 +81,9 @@ export default function InstallPWABanner() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <a
             href={ANDROID_DOWNLOAD_URL}
-            className={`px-3 py-1.5 text-sm font-medium ${OUTLINE} hover:bg-primary-500/20 hover:border-primary-600 dark:hover:border-primary-400`}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 border-2 border-primary-600 dark:border-primary-400 transition-colors"
           >
-            Download
+            <Download className="w-4 h-4" /> Download
           </a>
           <button onClick={handleDismiss} aria-label="Dismiss" className="p-1 text-content-faint hover:text-content-strong">
             <X className="w-4 h-4" />
