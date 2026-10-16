@@ -206,3 +206,9 @@ ion-menu .house-side .house-side-on,
 ion-menu .house-side .house-side-on:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* A report's Generate button (components/reports/DateRange.js) is a square box with the house
+   corner, beside the date boxes, not the round icon button. */
+ion-button.house-btn-icon.report-generate {
+  --border-radius: var(--corner);
+}
