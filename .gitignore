@@ -61,3 +61,8 @@ scripts/_*
 
 # Editor atomic-write leftovers, e.g. page.js.tmp.6600.1774719328381
 *.tmp.*
+
+# Android app signing: the keystore and its passwords stay on the computer that signs releases
+*.jks
+*.keystore
+android/keystore.properties

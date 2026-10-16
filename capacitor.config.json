@@ -1,0 +1,13 @@
+{
+  "appId": "site.stationmgr.app",
+  "appName": "StationMGR",
+  "webDir": "capacitor/www",
+  "server": {
+    "url": "https://stationmgr.site/dashboard",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "appendUserAgent": "StationMGRApp",
+    "allowMixedContent": false
+  }
+}
