@@ -5,8 +5,8 @@ import '@fontsource/outfit/800.css'
 import '@fontsource/source-sans-3/400.css'
 import '@fontsource/source-sans-3/600.css'
 import '@fontsource/source-sans-3/700.css'
-// Ionic's core only. Its structure.css pins <body> (position: fixed; overflow: hidden) for an
-// app that scrolls inside IonContent; every screen here scrolls the document, so it is left out.
+// Ionic's core only. Its structure.css pins <body> on every page; the home and auth pages scroll
+// the document, so the Ionic apps pin it themselves (html.ionic-app in globals.css).
 import '@ionic/react/css/core.css'
 import './globals.css'
 import '@/design/house.css'

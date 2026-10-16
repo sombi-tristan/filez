@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { IonIcon, useIonRouter } from '@ionic/react'
+import { IonAccordion, IonAccordionGroup, IonIcon, IonItem, IonLabel, useIonRouter } from '@ionic/react'
 import { checkmark, chevronExpandOutline } from 'ionicons/icons'
 import Avatar from './Avatar.jsx'
 import { Badge } from './Card.jsx'
@@ -90,6 +90,46 @@ export function SidebarGroupLabel({ children, trailing = null }) {
       <span>{children}</span>
       {trailing}
     </div>
+  )
+}
+
+/**
+ * The groups of a long menu as accordions, one open at a time: Ionic's IonAccordionGroup.
+ * Opening a group closes the one that was open; tapping the open one closes it.
+ *
+ *   value     the open group's `value`, or '' for none
+ *   onChange  called with the group that was opened, or '' when the open one was closed
+ *
+ * The caller owns which is open, so it can open the group holding the screen that is shown.
+ */
+export function SidebarSections({ value, onChange, children }) {
+  return (
+    <IonAccordionGroup
+      className="house-side-sections"
+      value={value || undefined}
+      onIonChange={(e) => {
+        // ionChange bubbles: answer only this group's own change, not a nested control's.
+        if (e.target !== e.currentTarget) return
+        onChange?.(e.detail.value || '')
+      }}
+    >
+      {children}
+    </IonAccordionGroup>
+  )
+}
+
+/** One group in SidebarSections: its heading, and its rows when open. `trailing` sits at the heading's end (a count). */
+export function SidebarSection({ value, label, trailing = null, children }) {
+  return (
+    <IonAccordion value={value} className="house-side-section">
+      <IonItem slot="header" lines="none" className="house-side-section-head">
+        <IonLabel>{label}</IonLabel>
+        {trailing}
+      </IonItem>
+      <div slot="content">
+        {children}
+      </div>
+    </IonAccordion>
   )
 }
 

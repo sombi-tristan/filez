@@ -34,6 +34,6 @@ export { parseDay, toIso, toDisplay, fromIso, addDays } from './components/dates
 export { Toggle, Spinner, LoadingOverlay } from './components/Toggle.jsx'
 export { default as ThemeControl, applyTheme, savedTheme } from './components/ThemeControl.jsx'
 export { default as AppHeader } from './components/AppHeader.jsx'
-export { Sidebar, SidebarBrand, SidebarSwitcher, SidebarGroupLabel, SidebarNavRow, SidebarUserFooter } from './components/Sidebar.jsx'
+export { Sidebar, SidebarBrand, SidebarSwitcher, SidebarGroupLabel, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter } from './components/Sidebar.jsx'
 export { ReportShell, ReportSection, ReportTable, TableFrame, Pager, Stat, StatGrid, BreakdownPanel, BreakdownRow, DayTabs, balanceTone, ALL_TAB } from './components/Report.jsx'
 export { PAGE_SIZE, pageCount, pageOf } from './components/paging.js'

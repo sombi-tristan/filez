@@ -1,9 +1,9 @@
 {
   "from": "groo",
-  "commit": "72e0c6c",
+  "commit": "639c48e",
   "synced": "2026-10-16",
   "files": {
-    "README.md": "cd099bc9e8ccd98f6d63fa7bdc01e26aa57b0ae9d3d961952fe2459d0d92c3ae",
+    "README.md": "f1b8d13c813e64c2879f95fe0920522f1e24a3dd4c4c82826a2b8f8e0d9e2f1f",
     "check.mjs": "4fc19af8463cfb6aa376e5bdc4a55c7ffef151f8b60d8568581310af97ec6c4a",
     "components/AppHeader.jsx": "f24eb0e1fab1db76c636095173fd95d69cb273b992ffb11c392bb44111d73a15",
     "components/Avatar.jsx": "16c8178e62ee16a104970efd52181e9100223cc5dd633686e3d4f059634e8614",
@@ -25,7 +25,7 @@
     "components/RowGroup.jsx": "7d06b9bdc7c76b6af1d405accd5f7c071d018ac373123dab54c51d7bb5dcfd16",
     "components/SearchableSelect.jsx": "8dad48bfeaf38f7561a658193baa2e3a692fa50eaa5cfc8e638c5c5686d9865d",
     "components/Sheet.jsx": "7eb524670497045a8c0a1c5184321d92fd47e140ea5db88f17a52668787bcb7e",
-    "components/Sidebar.jsx": "80c0558c396bee055f91a51cc585fd3b02627c34d21669fc261e559642043f1c",
+    "components/Sidebar.jsx": "b1ec65efa4088fe402791927ee515f156384bcea245223a73d74354eef59a8ec",
     "components/Skeleton.jsx": "99b2d4cb0eb1297be3a1b062448133999de4f6ed4264080d0b663598fd8d5b33",
     "components/SwipeRow.jsx": "8ebd55b374b90cf517f0870f0e5fce123cf157f33abd1000be59d685bacd0933",
     "components/Tabs.jsx": "46df8f1a9915866a4879df3f476eb89e98d049a071454ba252bb009534bf530f",
@@ -39,7 +39,7 @@
     "components/paging.js": "39c1d9e1d44f755718bb77d8c557396a23b027f3e696b0cc9188d9b8571b209d",
     "components/toastSlide.js": "38fec1ff19d15d4eda42ae60826eed1b3dc2749d522a03b872dfe0aaabffd594",
     "components/useOnline.js": "9ce782a78b9ff19eb76373e2d15e2ab67461ac91fd9f63c7539773cceba35e90",
-    "house.css": "ab208a43272fd79414739afab1785c60f50dad73e864ba7b7063d524bc393d3f",
-    "index.js": "bf6769ab1efa90807d8a5c5e4fb04ef39b58c1e972fcd70f7a69660e8a040d2d"
+    "house.css": "1f17acf91c1df42429ea3362ae85026ab24184fd1833de7c5f55d39da34f6c83",
+    "index.js": "ea0e0a67af5d18feb151a8f53813f672bae07729cd5939e745a8cefbfc5182a1"
   }
 }

@@ -1,7 +1,7 @@
 /*
  * The house style on Ionic: the one stylesheet every app takes (design/README.md).
  *
- * One accent, 4px corners on everything, flat (no gradients, nothing but a toast casts a
+ * One accent, 4px corners on everything but icons, which sit on round plates, flat (no gradients, nothing but a toast casts a
  * shadow), Outfit for headings and Source Sans 3 for the rest. The accent is orange or blue,
  * chosen per app: set data-accent on <html>. Dark is data-theme="dark" on <html>; the accent is
  * the same hex in both themes and only the neutrals turn.
@@ -17,6 +17,7 @@
 :root {
   --corner: 4px;
   --edge: 2px;
+  --round: 50%; /* every icon sits on a round plate */
 
   /* Orange, the default accent. */
   --accent: #f57d00;
@@ -167,7 +168,7 @@ ion-button[size='large'] {
 }
 
 ion-fab-button {
-  --border-radius: var(--corner);
+  --border-radius: var(--round);
   --box-shadow: none;
 }
 
@@ -626,15 +627,56 @@ ion-button.house-btn-danger {
   --background-hover-opacity: 0.08;
 }
 
-/* IconButton: a square of the button's own height. */
+/* IconButton: a circle of the button's own height. */
 ion-button.house-btn-icon {
   --padding-start: 0;
   --padding-end: 0;
+  --border-radius: var(--round);
   width: 48px;
 }
 
 ion-button.house-btn-icon ion-icon {
   font-size: 22px;
+}
+
+/* In a top bar. Ionic re-dresses every button inside ion-buttons with two-class selectors (a
+   2px corner, the toolbar's colours, a black outline), which outrank the rules above; these
+   hold the house dress there. */
+ion-buttons ion-button.house-btn.house-btn {
+  --border-radius: var(--corner);
+}
+
+ion-buttons ion-button.house-btn.house-btn-icon {
+  --border-radius: var(--round);
+}
+
+ion-buttons ion-button.house-btn.house-btn-primary {
+  --background: var(--accent);
+  --background-hover: var(--accent);
+  --color: var(--on-accent);
+}
+
+ion-buttons ion-button.house-btn.house-btn-secondary {
+  --border-color: var(--accent);
+  --color: var(--accent);
+  --background-hover: var(--accent);
+}
+
+ion-buttons ion-button.house-btn.house-btn-neutral {
+  --border-color: var(--line);
+  --color: var(--ink);
+  --background-hover: var(--ink);
+}
+
+/* A top bar draws an outline in the words' colour, not --border-color. */
+ion-buttons ion-button.house-btn.house-btn-neutral::part(native) {
+  border-color: var(--line);
+}
+
+ion-buttons ion-button.house-btn.house-btn-danger {
+  --border-color: var(--danger);
+  --color: var(--danger);
+  --background-hover: var(--danger);
 }
 
 /* ---- Toast: one neutral notice, an icon on a round plate telling the type. It floats over
@@ -727,9 +769,15 @@ ion-item.house-row ion-label p {
   font-size: 15px;
 }
 
+/* Ionicons holds its host to content-box, so the plate is the icon plus its padding. */
 ion-item.house-row .house-row-icon {
+  width: 22px;
+  height: 22px;
+  padding: 9px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
   color: var(--ink);
-  font-size: 24px;
+  font-size: 22px;
   margin-inline-end: 16px;
 }
 
@@ -747,6 +795,7 @@ ion-item.house-row .house-row-chevron {
 ion-item.house-row-danger,
 ion-item.house-row-danger .house-row-icon {
   --color: var(--danger);
+  background: rgba(217, 45, 32, 0.1);
   color: var(--danger);
 }
 
@@ -933,8 +982,13 @@ ion-modal.house-sheet-centred {
 
 .house-sheet-action ion-icon {
   flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 8px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
   color: var(--muted);
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .house-sheet-action-danger,
@@ -1133,7 +1187,7 @@ button.house-side-switch,
   display: inline-grid;
   flex: none;
   place-items: center;
-  border-radius: var(--corner);
+  border-radius: var(--round);
   background: rgba(var(--accent-rgb), 0.12);
   color: var(--accent);
   font-size: 20px;
@@ -1311,6 +1365,11 @@ button.house-side-switch,
 }
 
 .house-empty > ion-icon {
+  width: 40px;
+  height: 40px;
+  padding: 20px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
   color: var(--muted);
   font-size: 40px;
 }
@@ -1585,7 +1644,7 @@ ion-input.house-date {
   width: 40px;
   height: 40px;
   place-items: center;
-  border-radius: var(--corner);
+  border-radius: var(--round);
   color: var(--muted);
   font-size: 22px;
 }
@@ -1648,7 +1707,7 @@ ion-toggle.house-toggle {
   width: 44px;
   height: 44px;
   place-items: center;
-  border-radius: var(--corner);
+  border-radius: var(--round);
   color: var(--muted);
 }
 
@@ -1722,7 +1781,7 @@ button.house-side-switch {
   height: 32px;
   flex: none;
   place-items: center;
-  border-radius: var(--corner);
+  border-radius: var(--round);
   background: rgba(var(--accent-rgb), 0.12);
   color: var(--accent);
   font-weight: 800;
@@ -1781,6 +1840,49 @@ button.house-side-switch {
   font-weight: 700;
 }
 
+/* SidebarSections: the groups as accordions in the sidebar's own look, not Ionic's boxed one. */
+.house-side-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.house-side-sections ion-accordion {
+  margin: 0;
+  border: 0;
+  border-radius: var(--corner);
+  background: transparent;
+}
+
+.house-side-sections ion-accordion [slot='content'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 0 8px;
+}
+
+ion-item.house-side-section-head {
+  --background: transparent;
+  --background-hover: var(--ink);
+  --background-hover-opacity: 0.04;
+  --border-radius: var(--corner);
+  --min-height: 44px;
+  --padding-start: 12px;
+  --inner-padding-end: 8px;
+  --color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+ion-item.house-side-section-head ion-icon {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-side-section.accordion-expanded ion-item.house-side-section-head {
+  --color: var(--ink);
+}
+
 .house-side-row {
   position: relative;
   display: flex;
@@ -1804,8 +1906,13 @@ button.house-side-switch {
 
 .house-side-row ion-icon {
   flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 7px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
   color: var(--muted);
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .house-side-row:hover {
@@ -1820,6 +1927,7 @@ button.house-side-switch {
 }
 
 .house-side-on ion-icon {
+  background: rgba(var(--accent-rgb), 0.16);
   color: var(--accent);
 }
 

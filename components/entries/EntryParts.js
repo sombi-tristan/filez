@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/nav'
 import { IonIcon } from '@ionic/react'
 import {
   addOutline, chevronBack, chevronForward, documentTextOutline,
@@ -36,18 +36,22 @@ export function EntryScreen({ children }) {
 }
 
 /**
- * The day being entered, pinned under the header so it never scrolls away. The arrows open the
- * saved day before or after, so a day can be checked without going back to the list.
+ * The day being entered, pinned to the top of the screen's content so it never scrolls away.
+ * The arrows open the saved day before or after in place (the same screen, not a new one on
+ * the stack), so a day can be checked without going back to the list.
+ *
+ * Nothing here clips what overflows it: the date field's calendar opens below the field and
+ * has to show over the cards.
  */
 export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) {
   const router = useRouter()
   const arrow = 'flex items-center justify-center w-12 shrink-0 text-content-muted hover:bg-subtle hover:text-content disabled:opacity-30 disabled:hover:bg-transparent'
   return (
-    <div className="sticky top-14 z-20 -mx-4 sm:mx-0 mb-4 px-4 sm:px-0 py-2 bg-canvas">
-      <div className={`flex items-stretch border-card ${ENTRY_LINE} rounded-house overflow-hidden`}>
+    <div className="sticky top-0 z-20 -mx-4 sm:mx-0 mb-4 px-4 sm:px-0 py-2 bg-canvas">
+      <div className={`flex items-stretch border-card ${ENTRY_LINE} rounded-house bg-canvas`}>
         <button
           type="button"
-          onClick={() => prevHref && router.push(prevHref)}
+          onClick={() => prevHref && router.replace(prevHref)}
           disabled={!prevHref}
           aria-label="Previous saved day"
           className={`${arrow} border-r-2 border-line`}
@@ -60,7 +64,7 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
         </div>
         <button
           type="button"
-          onClick={() => nextHref && router.push(nextHref)}
+          onClick={() => nextHref && router.replace(nextHref)}
           disabled={!nextHref}
           aria-label="Next saved day"
           className={`${arrow} border-l-2 border-line`}
@@ -72,11 +76,14 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
   )
 }
 
-/** One entry: a titled card, with a way to remove it when there is more than one. */
+/**
+ * One entry: a titled card, with a way to remove it when there is more than one. It does not
+ * clip its contents, so a date field's calendar can open over the card below.
+ */
 export function EntryCard({ title, onRemove, children }) {
   return (
-    <section className={`border-card ${ENTRY_LINE} rounded-house overflow-hidden mb-4`}>
-      <div className="flex items-center justify-between min-h-[44px] pl-3 bg-subtle border-b-2 border-line">
+    <section className={`border-card ${ENTRY_LINE} rounded-house mb-4`}>
+      <div className="flex items-center justify-between min-h-[44px] pl-3 bg-subtle border-b-2 border-line rounded-t-[2px]">
         <h2 className="text-[15px] font-semibold text-content">{title}</h2>
         {onRemove && (
           <button
@@ -179,7 +186,7 @@ export function SaveBar({ listHref, saving, saved, isEditing, disabled, error, o
   return (
     <>
       <div
-        className="fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t-2 lg:border-t-0 border-line"
+        className="entry-actionbar fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t-2 lg:border-t-0 border-line"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-3xl mx-auto flex gap-3">

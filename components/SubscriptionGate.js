@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/lib/nav'
 import { Lock } from 'lucide-react'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { ENTRY_SERVICE_MAP } from '@/lib/entryHelpers'

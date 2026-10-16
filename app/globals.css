@@ -156,3 +156,24 @@ section,
 .sidebar-scroll { scrollbar-color: rgb(255 255 255 / 0.75) transparent; }
 .sidebar-scroll::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.75); }
 .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgb(255 255 255); }
+
+/* ── The Ionic apps ────────────────────────────────────────────────────────
+   The dashboard and the admin area run as Ionic apps (components/shell/IonicShell.js) that
+   scroll inside each screen's IonContent. While one is mounted the document itself must not
+   scroll or bounce. Scoped to html.ionic-app, which the shell sets, because the plain pages
+   (home, auth) still scroll the document; Ionic's structure.css would pin <body> everywhere. */
+html.ionic-app,
+html.ionic-app body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* A screen with an action bar pinned to the bottom of a phone (components/entries: Save, New
+   entry) keeps its footer clear of the bar: the footer sits at the bottom of the screen, and
+   the bar would otherwise cover it. On a computer the bar is in the flow and nothing is pinned. */
+@media (max-width: 1023px) {
+  .ion-page:has(.entry-actionbar) footer {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}

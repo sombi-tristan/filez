@@ -9,6 +9,9 @@ http://localhost:8888/design). It is not on the public site.
 - **One accent per app.** Orange `#F57D00` or blue `#0093DD`: set `data-accent="blue"` on
   `<html>` for blue, nothing for orange. The accent is the same in light and dark.
 - **4px corners** on everything: buttons, fields, cards, tiles, sheets.
+- **Icons on round plates.** An icon that stands on its own sits in a circle (`--round`): icon
+  buttons, chips, sidebar and list rows, sheet actions, the empty state, the FAB. An icon inside
+  a button with words stays bare.
 - **Flat.** No gradients and no shadows; a 2px line in the line colour marks an edge. The toast
   is the one thing that casts a shadow, because it floats over the screen.
 - **Type.** Outfit (800, 600) for headings, Source Sans 3 for the rest. 17px to read, 15px for
@@ -64,7 +67,7 @@ http://localhost:8888/design). It is not on the public site.
 | `Toggle`, `Spinner`, `LoadingOverlay` | A switch with its words; the spinner for a wait with no shape; the whole screen held. |
 | `ThemeControl` | Light, Dark or System, remembered on the device. Call `applyTheme()` before the app draws. |
 | `AppHeader` | A screen's top bar: back arrow and title, or the brand, and actions at the end. |
-| `Sidebar`, `SidebarBrand`, `SidebarSwitcher`, `SidebarGroupLabel`, `SidebarNavRow`, `SidebarUserFooter` | A business app's sidebar, for an IonMenu inside an IonSplitPane. |
+| `Sidebar`, `SidebarBrand`, `SidebarSwitcher`, `SidebarGroupLabel`, `SidebarSections`, `SidebarSection`, `SidebarNavRow`, `SidebarUserFooter` | A business app's sidebar, for an IonMenu inside an IonSplitPane. `SidebarSections` holds a long menu's groups as accordions, one open at a time. |
 | `ReportShell`, `ReportSection` | A report's frame (controls pinned to the top) and its titled blocks. |
 | `ReportTable`, `TableFrame`, `Pager` | The standard table: filled head, ruled rows, numeric columns right and tabular, a totals row, pages of `PAGE_SIZE`. `TableFrame` and `Pager` on their own for a table too unusual for it. |
 | `Stat`, `StatGrid` | Figure tiles in a ruled grid, two across on a phone and four on a computer. |

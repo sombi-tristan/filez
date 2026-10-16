@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import Link from '@/lib/nav'
+import { useRouter } from '@/lib/nav'
 import { IonIcon } from '@ionic/react'
 import { addOutline, chevronForward, cloudOfflineOutline, documentTextOutline, lockClosedOutline } from 'ionicons/icons'
 import { Button, EmptyState, Pager } from '@/design'
@@ -53,7 +53,7 @@ export function EntryListScreen({ newHref, newDisabled = false, top = null, chil
       <div className="hidden lg:flex justify-end mb-4"><div className="w-48">{button}</div></div>
       {children}
       <div
-        className="lg:hidden fixed inset-x-0 bottom-0 z-30 px-4 pt-3 bg-canvas border-t-2 border-line"
+        className="entry-actionbar lg:hidden fixed inset-x-0 bottom-0 z-30 px-4 pt-3 bg-canvas border-t-2 border-line"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         {button}

@@ -18,7 +18,8 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <>
+    // A column at least the screen's height, so the footer sits at the bottom of a short page.
+    <div className="min-h-screen flex flex-col">
     {/* The landing page gets no AppShell (see components/AppShell.js: `/` returns bare
         children), so it carries its own bar. Same chrome as the app header, h-14 and the blue
         rule, so arriving from the site into the dashboard is not a change of furniture.
@@ -54,7 +55,7 @@ export default function LandingPage() {
       </div>
     </header>
 
-    <div className="max-w-3xl mx-auto px-4 py-20">
+    <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-20">
       <div className="text-center mb-16">
         <div className="flex justify-center mb-5">
           <img src="/icon-192.png" alt="StationMGR" className="w-14 h-14" />
@@ -127,6 +128,6 @@ export default function LandingPage() {
       </div>
     </div>
     <Footer />
-    </>
+    </div>
   )
 }
