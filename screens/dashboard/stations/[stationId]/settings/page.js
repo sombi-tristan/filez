@@ -6,7 +6,7 @@ import Link from '@/lib/nav'
 import {
   Loader2, Fuel, Plus, Trash2, ArrowRight, Landmark,
   CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock,
-  ChevronDown
+  ChevronDown, Monitor, ChevronRight
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
@@ -540,6 +540,13 @@ export default function StationSettingsPage() {
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
         Save changes
       </button>
+
+      {/* The StationMGR Desktop computers linked to this owner's stations, and revoking one. */}
+      <Link href="/dashboard/computers" className={`mt-8 flex items-center gap-2 px-4 py-3 ${CARD_LINE}`}>
+        <IconChip icon={Monitor} className="w-8 h-8" iconClass="w-4 h-4" />
+        <span className="text-sm font-semibold text-content">Linked computers</span>
+        <ChevronRight className="w-4 h-4 text-content-faint ml-auto" />
+      </Link>
     </div>
   )
 }

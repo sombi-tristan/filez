@@ -15,6 +15,7 @@ import { lazy } from 'react'
 
 export const DASHBOARD_SCREENS = [
   { path: '/dashboard', title: 'Dashboard', Page: lazy(() => import('@/screens/dashboard/page')) },
+  { path: '/dashboard/computers', title: 'Linked computers', Page: lazy(() => import('@/screens/dashboard/computers/page')) },
   { path: '/dashboard/entries', title: 'Entries', Page: lazy(() => import('@/screens/dashboard/entries/page')) },
   { path: '/dashboard/entries/customer-payments', title: 'Account Payment', Page: lazy(() => import('@/screens/dashboard/entries/customer-payments/page')) },
   { path: '/dashboard/entries/customer-payments/list', title: 'Account Entries', Page: lazy(() => import('@/screens/dashboard/entries/customer-payments/list/page')) },
