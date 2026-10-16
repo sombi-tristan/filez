@@ -8,6 +8,17 @@ reached through the fetch shim in lib/local/installFetch.js). The sync engine be
 runs, but its target is that local store. See README.md. Do not push this branch under a
 claude/ prefix: the auto-merge workflow would merge it into main.
 
+The computer is linked to a station on the web platform (app/api/desktop/* on main):
+- Push and Pull move rows between the local store and the web station (lib/local/webSync.js).
+  Every write the in-app server makes to a synced table (lib/desktopTables.js) is recorded in
+  the outbox (lib/local/outbox.js); a pull writes the store directly and never echoes back.
+- The window never reaches the web itself. electron/web.js does, through electron/preload.js
+  (window.stationmgr), holding the device token. Pages call lib/local/web.js.
+- The station's subscription is checked offline from the signed licence (lib/local/licence.js).
+  A screen's service is the `service` field in screens/routes.js; LicenceGate locks the screen,
+  or the whole app when no service runs. The in-app server's requireService follows the licence.
+- Staff and their PINs stay on the computer: users and org_invites never sync.
+
 Important
 
 After every git push, always provide the pull request / merge link:
@@ -45,12 +56,12 @@ The UI uses the house design system from the groo repository, copied into "desig
 
 Ionic Screens
 
-The dashboard and the admin area each run as one Ionic app with Ionic's own router, so screens stack: a screen opens over the last, Back slides it away, and the one underneath is still there.
+The station's screens run as one Ionic app with Ionic's own router, so screens stack: a screen opens over the last, Back slides it away, and the one underneath is still there. Desktop build: no admin area.
 
-- app/dashboard/[[...path]]/page.js and app/admin/[[...path]]/page.js only mount components/shell/IonicShell.js (in the browser). Every address under the area lands there.
-- The screens live in screens/ (screens/dashboard, screens/admin), not app/. A new screen is a page.js there plus a row in screens/routes.js (path, title, lazy import).
+- app/dashboard/[[...path]]/page.js exports one page (generateStaticParams) that mounts components/shell/IonicShell.js; electron/resolve.js answers every /dashboard address with it.
+- The screens live in screens/dashboard, not app/. A new screen is a page.js there plus a row in screens/routes.js (path, title, lazy import).
 - Each screen is wrapped by components/shell/Screen.js: an IonPage with the top bar (menu, back, bell, home) and an IonContent that scrolls. Layout inside a screen is relative to IonContent: sticky things use top-0, not top-14.
-- Inside the Ionic apps, import useRouter / usePathname / useSearchParams / useParams / Link from "@/lib/nav", never from next/navigation or next/link. lib/nav moves within the stack for addresses inside the area and does a full page load for anything else, so middleware.js still checks sign-in and the admin role on the way into each area.
+- Inside the Ionic apps, import useRouter / usePathname / useSearchParams / useParams / Link from "@/lib/nav", never from next/navigation or next/link. lib/nav moves within the stack for addresses inside the app and does a full page load for anything else (sign-in is a plain page).
 - The sidebars are the content of the IonMenu inside an IonSplitPane: a column on a computer, a drawer on a phone. Their groups are accordions (the house SidebarSections), one open at a time, opening the group that holds the screen shown.
 - Screens slide sideways (components/shell/slideTransition.js): an opened screen comes in from the right; Back slides it out to the right and the one underneath comes back from the left.
 - A report's date range and its Generate button are components/reports/DateRange.js: the two dates and a round icon button that stay on one line.

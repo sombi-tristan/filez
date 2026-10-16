@@ -20,7 +20,8 @@ const read = (...p) => readFileSync(resolve(__dirname, '..', ...p), 'utf8')
 const shell = read('components', 'shell', 'IonicShell.js')
 const screen = read('components', 'shell', 'Screen.js')
 const dashboardPage = read('app', 'dashboard', '[[...path]]', 'page.js')
-const adminPage = read('app', 'admin', '[[...path]]', 'page.js')
+const dashboardApp = read('app', 'dashboard', '[[...path]]', 'DashboardApp.js')
+const resolver = read('electron', 'resolve.js')
 const nav = read('lib', 'nav.js')
 const routes = read('screens', 'routes.js')
 const tailwind = read('tailwind.config.js')
@@ -33,9 +34,10 @@ const check = (label, ok, detail = '') => {
 
 console.log('Each area mounts the Ionic app')
 
-check('/dashboard mounts the shell for its area', /<IonicShell area="\/dashboard" \/>/.test(dashboardPage))
-check('/admin mounts the shell for its area', /<IonicShell area="\/admin" \/>/.test(adminPage))
-check('the shell is loaded in the browser only', /ssr: false/.test(dashboardPage) && /ssr: false/.test(adminPage))
+check('/dashboard mounts the shell for its area', /<IonicShell area="\/dashboard" \/>/.test(dashboardApp))
+check('the shell is loaded in the browser only', /ssr: false/.test(dashboardApp))
+check('the export writes the one dashboard page', /generateStaticParams\(\)\s*\{\s*return \[\{ path: \[\] \}\]/.test(dashboardPage))
+check('Electron answers every /dashboard address with it', /p\.startsWith\('\/dashboard\/'\)/.test(resolver))
 
 console.log('\nThe shell is an Ionic app with the sidebar in a split pane')
 
@@ -43,7 +45,7 @@ check('IonApp around Ionic\'s router', /<IonApp>\s*<IonReactRouter>/s.test(shell
 check('a split pane whose content is the outlet', /<IonSplitPane contentId="main"/.test(shell) && /<IonRouterOutlet id="main" animation=\{slideTransition\}>/.test(shell))
 check('the menu points at the same content', /<IonMenu contentId="main"/.test(shell))
 check('the dashboard menu renders the station sidebar with the open station', /<StationSidebar stationId=\{stationId\} \/>/.test(shell))
-check('the admin menu renders the admin sidebar', /<AdminSidebar \/>/.test(shell))
+check('nothing opens before the licence gate', /<LicenceGate>[\s\S]*<IonSplitPane/.test(shell))
 check('every screen of the area is a route', /screens\.map\(\(screen\) => \(\s*<Route key=\{screen\.path\} path=\{screen\.path\} element=\{<Screen screen=\{screen\} \/>\}/s.test(shell))
 
 console.log('\nEach screen is an Ionic page that can open the menu and go back')
@@ -55,7 +57,7 @@ check('the top bar draws a back button off the area root', /<IonBackButton/.test
 check('the content scrolls in IonContent', /<IonContent>/.test(screen))
 check('the screen holds its own address for the hooks', /<ScreenLocationContext\.Provider value=\{held\}>/.test(screen))
 
-console.log('\nLeaving an area is a full page load, so middleware checks the way in')
+console.log('\nLeaving the app is a full page load (sign-in is a plain page)')
 
 check('nav only stacks addresses inside the area', /if \(insideArea\(href, area\)\) ionRouter\.push\(href, 'forward', 'push'\)\s*else window\.location\.assign\(href\)/.test(nav))
 check('the station screens are in the dashboard table', /path: '\/dashboard\/stations\/:stationId'/.test(routes))

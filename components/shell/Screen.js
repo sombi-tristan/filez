@@ -6,11 +6,10 @@ import {
   IonBackButton, IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar,
   useIonRouter,
 } from '@ionic/react'
-import { homeOutline, notificationsOutline } from 'ionicons/icons'
-import { Badge, IconButton, Spinner } from '@/design'
+import { homeOutline } from 'ionicons/icons'
+import { IconButton, Spinner } from '@/design'
 import { AreaContext, ScreenLocationContext } from '@/lib/nav'
-import useStationUnread from '@/lib/useStationUnread'
-import AdminViewingBanner from '@/components/AdminViewingBanner'
+import { useLicence, ServiceLocked } from '@/components/desktop/LicenceGate'
 import Footer from '@/components/Footer'
 
 /**
@@ -40,7 +39,9 @@ export default function Screen({ screen }) {
   const ionRouter = useIonRouter()
 
   const stationId = params.stationId || new URLSearchParams(held.search).get('org_id') || ''
-  const { unread } = useStationUnread(area === '/dashboard' ? stationId : null)
+  // Desktop build: a screen whose service has run out shows what it needs instead.
+  const licence = useLicence()
+  const locked = Boolean(screen.service) && !licence?.active?.[screen.service]
 
   const home = stationId ? `/dashboard/stations/${stationId}` : area
   const atHome = held.pathname === home
@@ -53,21 +54,11 @@ export default function Screen({ screen }) {
           <IonToolbar>
             <IonButtons slot="start">
               <IonMenuButton />
-              {held.pathname !== area && <IonBackButton defaultHref={atHome ? area : home} text="" />}
+              {/* Desktop build: the station home is the root; /dashboard only leads back to it. */}
+              {held.pathname !== area && !atHome && <IonBackButton defaultHref={home} text="" />}
             </IonButtons>
             <IonTitle>{screen.title || 'StationMGR'}</IonTitle>
             <IonButtons slot="end">
-              {area === '/dashboard' && stationId && (
-                <span className="relative inline-flex">
-                  <IconButton
-                    icon={notificationsOutline}
-                    label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
-                    variant="neutral"
-                    onClick={() => ionRouter.push(`/dashboard/stations/${stationId}/notifications`, 'forward', 'push')}
-                  />
-                  <Badge count={unread} className="absolute -top-1 -right-1 pointer-events-none" />
-                </span>
-              )}
               {!atHome && (
                 <span className="ml-2 inline-flex">
                   {/* Home goes back to the root of the stack rather than piling another
@@ -77,7 +68,6 @@ export default function Screen({ screen }) {
               )}
             </IonButtons>
           </IonToolbar>
-          {area === '/dashboard' && <AdminViewingBanner />}
         </IonHeader>
 
         <IonContent>
@@ -85,11 +75,15 @@ export default function Screen({ screen }) {
               at the bottom of a short screen and under the last line of a long one. */}
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
-              <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
-                <Page key={held.key} />
-              </Suspense>
+              {locked ? (
+                <ServiceLocked service={screen.service} />
+              ) : (
+                <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
+                  <Page key={held.key} />
+                </Suspense>
+              )}
             </div>
-            {!screen.report && <Footer app />}
+            {(!screen.report || locked) && <Footer />}
           </div>
         </IonContent>
       </IonPage>

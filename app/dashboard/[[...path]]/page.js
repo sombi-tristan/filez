@@ -1,14 +1,14 @@
-'use client'
-
-import dynamic from 'next/dynamic'
+import DashboardApp from './DashboardApp'
 
 /**
- * Every /dashboard address. The dashboard is one Ionic app (components/shell/IonicShell.js)
- * with its own router, so this page only mounts it, in the browser: Ionic's components and
- * its router need the window, and the screens read IndexedDB, not the server.
+ * Desktop build: the static export writes this one page (out/dashboard.html). Every other
+ * /dashboard address is answered with it by electron/resolve.js, and the Ionic app inside routes
+ * it, so no station id has to be known when the app is built.
  */
-const IonicShell = dynamic(() => import('@/components/shell/IonicShell'), { ssr: false })
+export function generateStaticParams() {
+  return [{ path: [] }]
+}
 
-export default function DashboardApp() {
-  return <IonicShell area="/dashboard" />
+export default function Page() {
+  return <DashboardApp />
 }

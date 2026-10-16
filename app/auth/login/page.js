@@ -2,19 +2,20 @@
 
 import '@/lib/local/installFetch'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Loader2, Lock, User, Store, AtSign } from 'lucide-react'
+import { Loader2, Lock, User, AtSign } from 'lucide-react'
 import { LABEL } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '../authStyles'
+import LinkForm from '@/components/desktop/LinkForm'
 
 /**
- * Desktop sign-in. Two modes:
- *   first run  → create the station and the owner (name, username, PIN), then go to setup
+ * Desktop sign-in. Three steps, the first two only once:
+ *   not linked → the owner links this computer to their station on the web (LinkForm), which
+ *                brings the station's records down
+ *   linked     → the owner chooses the username and PIN they sign in with here
  *   afterwards → pick your name, enter your PIN
  */
 export default function LoginPage() {
-  const router = useRouter()
   const [status, setStatus] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -24,24 +25,26 @@ export default function LoginPage() {
   const [pin, setPin] = useState('')
 
   // first run
-  const [stationName, setStationName] = useState('')
   const [ownerName, setOwnerName] = useState('')
   const [username, setUsername] = useState('')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
 
-  useEffect(() => {
+  const loadStatus = () =>
     fetch('/api/local/status')
       .then((r) => r.json())
       .then((s) => {
         setStatus(s)
         if (s.users?.length === 1) setUserId(s.users[0].id)
+        if (s.link?.ownerName) setOwnerName((n) => n || s.link.ownerName)
       })
       .catch(() => setError('Could not open the local database.'))
-  }, [])
+
+  useEffect(() => { loadStatus() }, [])
 
   const goIn = (s) => {
-    router.replace(s?.onboardingComplete === false
+    // A full load: the station is an Ionic app of its own (components/shell/IonicShell.js).
+    window.location.replace(s?.onboardingComplete === false
       ? `/dashboard/setup/${s.stationId}`
       : `/dashboard/stations/${s.stationId}`)
   }
@@ -68,12 +71,13 @@ export default function LoginPage() {
     const res = await fetch('/api/local/setup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stationName, ownerName, username, pin: newPin }),
+      body: JSON.stringify({ ownerName, username, pin: newPin }),
     })
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(body.error || 'Setup failed'); return }
-    router.replace(`/dashboard/setup/${body.stationId}`)
+    // A full load: the station is an Ionic app of its own (components/shell/IonicShell.js).
+    window.location.replace(body.onboardingComplete ? `/dashboard/stations/${body.stationId}` : `/dashboard/setup/${body.stationId}`)
   }
 
   if (!status) {
@@ -94,12 +98,14 @@ export default function LoginPage() {
       <div className="text-center mb-8">
         <Image src="/icon-192.png" alt="StationMGR" width={48} height={48} className="mx-auto mb-3 rounded-lg" />
         <h1 className="text-2xl font-bold text-content">
-          {status.setupDone ? (status.stationName || 'StationMGR') : 'Set up StationMGR'}
+          {status.setupDone ? (status.stationName || 'StationMGR') : status.linked ? status.stationName : 'Set up StationMGR'}
         </h1>
         <p className="text-sm text-content-muted mt-1">
           {status.setupDone
             ? 'Choose your name and enter your PIN'
-            : 'Everything is stored on this computer. No internet needed.'}
+            : status.linked
+              ? 'Linked. Now choose how you sign in on this computer.'
+              : 'Link this computer to your station on StationMGR. After that it works offline.'}
         </p>
       </div>
 
@@ -132,15 +138,10 @@ export default function LoginPage() {
           </button>
           <p className="text-xs text-content-faint text-center">Forgot your PIN? The owner can reset it from the station page.</p>
         </form>
+      ) : !status.linked ? (
+        <LinkForm onLinked={() => loadStatus()} />
       ) : (
         <form onSubmit={setup} className="space-y-4">
-          <div>
-            <label className={LABEL} htmlFor="station">Station name</label>
-            <div className="relative">
-              <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-              <input id="station" value={stationName} onChange={(e) => setStationName(e.target.value)} maxLength={100} className={AUTH_INPUT} placeholder="e.g. Rainoil Wuse" required />
-            </div>
-          </div>
           <div>
             <label className={LABEL} htmlFor="owner">Your name</label>
             <div className="relative">
@@ -173,7 +174,7 @@ export default function LoginPage() {
           </div>
           {errorBox}
           <button type="submit" disabled={busy || newPin.length < 4} className={submitCls}>
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Create station
+            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Save and sign in
           </button>
         </form>
       )}

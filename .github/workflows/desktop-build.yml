@@ -22,11 +22,25 @@ jobs:
       - name: Install
         run: npm ci
 
+      # The web station this build links to, and the key it checks licences with. Set both as
+      # repository variables (Settings → Secrets and variables → Actions → Variables):
+      #   STATIONMGR_WEB_ORIGIN                    e.g. https://stationmgr.example.com
+      #   NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY   from scripts/gen-desktop-licence-keys.mjs on main
+      # Without them the app builds, but cannot link, push, pull or unlock.
+      - name: Point the build at the web station
+        shell: bash
+        run: |
+          if [ -z "${{ vars.STATIONMGR_WEB_ORIGIN }}" ] || [ -z "${{ vars.NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY }}" ]; then
+            echo "::warning::STATIONMGR_WEB_ORIGIN or NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY is not set: this installer cannot link to the web."
+          fi
+          npm pkg set "stationmgr.webOrigin=${{ vars.STATIONMGR_WEB_ORIGIN }}"
+
       - name: Build installer
         run: npm run dist:win
         env:
           # No code-signing certificate: build an unsigned installer.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY }}
 
       - uses: actions/upload-artifact@v4
         with:

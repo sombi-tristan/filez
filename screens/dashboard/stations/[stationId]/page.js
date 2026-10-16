@@ -14,6 +14,8 @@ import Modal from '@/components/Modal'
 import { db } from '@/lib/db'
 import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
+import { store } from '@/lib/local/store'
+import { push as webPush, pull as webPull } from '@/lib/local/webSync'
 import { supabase } from '@/lib/supabaseClient'
 import StationWallet from '@/components/StationWallet'
 import { ThemeControl } from '@/design'
@@ -75,30 +77,24 @@ export default function StationPage() {
   const [clearConfirm, setClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
 
-  const pendingCount = useLiveQuery(
-    () => stationId ? db.syncQueue.where('orgId').equals(stationId).count() : 0,
-    [stationId],
-    0
-  )
+  // Changes on this computer the web station does not have yet (lib/local/outbox.js).
+  const pendingCount = useLiveQuery(() => store.outbox.count(), [], 0)
 
+  // Desktop build: Push and Pull reach the station on the web (lib/local/webSync.js). Both need
+  // the internet; everything else on this screen works without it.
   const handleSync = async () => {
     if (syncing) return
     setSyncing(true)
-    const before = await db.syncQueue.where('orgId').equals(stationId).count()
-    let result = { pushed: 0, dropped: 0, pending: 0, errors: [] }
-    try { result = await processQueue() || result } catch (e) { /* offline */ }
+    const result = await webPush().catch((e) => ({ ok: false, error: e.message }))
     const lines = []
-    if (before === 0) lines.push('Queue was empty — nothing to push')
-    if (result.pushed > 0) lines.push(`${result.pushed} item${result.pushed > 1 ? 's' : ''} pushed successfully`)
-    if (result.dropped > 0) lines.push(`${result.dropped} item${result.dropped > 1 ? 's' : ''} rejected by server`)
-    if (result.pending > 0) lines.push(`${result.pending} item${result.pending > 1 ? 's' : ''} still pending`)
-    if (result.errors.length > 0) {
-      lines.push('')
-      lines.push('Errors:')
-      result.errors.forEach(e => lines.push(`• ${e}`))
+    if (!result.ok) lines.push(result.error || 'Push failed')
+    else if (result.pushed === 0 && !result.refused.length) lines.push('Nothing to push')
+    else if (result.pushed > 0) lines.push(`${result.pushed} change${result.pushed > 1 ? 's' : ''} sent to the web station`)
+    if (result.refused?.length) {
+      lines.push('', `${result.refused.length} not accepted, still waiting here:`)
+      result.refused.slice(0, 10).forEach((r) => lines.push(`• ${r.error}`))
     }
-    if (result.pushed > 0 && result.dropped === 0 && result.pending === 0) lines.push('All synced!')
-    setSyncModal({ title: 'Push Results', lines })
+    setSyncModal({ title: 'Push', lines })
     setSyncing(false)
   }
 
@@ -106,19 +102,16 @@ export default function StationPage() {
     if (refreshingRef.current || !stationId) return
     setRefreshing(true)
     refreshingRef.current = true
-    const tables = ['dailySales', 'productReceipts', 'lodgements', 'lubeSales', 'lubeStock', 'customerPayments']
-    let syncResult = null
-    try {
-      syncResult = await initialSync(stationId, { force: true })
-    } catch (e) { /* offline */ }
+    const result = await webPull().catch((e) => ({ ok: false, error: e.message }))
     const lines = []
-    for (const t of tables) {
-      const local = await db[t].where('orgId').equals(stationId).count()
-      const server = syncResult?.serverCounts?.[t] ?? '?'
-      const label = t.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())
-      lines.push(`${label}: ${server} from server → ${local} local`)
+    if (!result.ok) lines.push(result.error || 'Pull failed')
+    else {
+      const counts = result.counts || {}
+      const label = { daily_sales_entries: 'Daily sales', product_receipt_entries: 'Product receipts', lodgement_entries: 'Lodgements', lube_sales_entries: 'Lube sales', lube_stock_entries: 'Lube stock', customer_payment_entries: 'Account payments' }
+      for (const [table, name] of Object.entries(label)) lines.push(`${name}: ${counts[table] ?? 0} on the web`)
+      lines.push('', 'Changes still waiting to push were kept as they are on this computer.')
     }
-    setSyncModal({ title: 'Pull Results', lines })
+    setSyncModal({ title: 'Pull', lines })
     setRefreshing(false)
     refreshingRef.current = false
   }, [stationId])
@@ -465,7 +458,6 @@ export default function StationPage() {
           refreshing={refreshing}
           onPush={handleSync}
           onPull={handleRefresh}
-          onClear={() => setClearConfirm(true)}
         />
 
 <div className="mb-4" />
