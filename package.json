@@ -82,5 +82,8 @@
     "recharts": "^3.7.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1"
+  },
+  "stationmgr": {
+    "licencePublicKey": "-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+oi+8sMjVp6bvaleOlEO2mqLOZxu\\nKAEbOTQaZ43FWZvcBtwYEGqk1tczF7+ZAvAdhLT9gC3VGquli0fksPKTtA==\\n-----END PUBLIC KEY-----"
   }
 }
