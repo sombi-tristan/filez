@@ -177,3 +177,9 @@ html.ionic-app body {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 }
+
+/* A report's Generate button (components/reports/DateRange.js) is a square box with the house
+   corner, beside the date boxes, not the round icon button. */
+ion-button.house-btn-icon.report-generate {
+  --border-radius: var(--corner);
+}
