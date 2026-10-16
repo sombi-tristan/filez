@@ -9,6 +9,8 @@ import { lazy } from 'react'
  *   path    React Router's pattern: :stationId and :id are the old [stationId] and [id]
  *   title   the top bar's words
  *   report  a full-height report: it pins its own controls, so no footer under it
+ *   desktopOnly  a report the web does not keep (lib/platform.js): it is in the desktop app,
+ *           and Screen.js says so instead of opening it
  */
 
 export const DASHBOARD_SCREENS = [
@@ -27,15 +29,15 @@ export const DASHBOARD_SCREENS = [
   { path: '/dashboard/feedback', title: 'Help & feedback', Page: lazy(() => import('@/screens/dashboard/feedback/page')) },
   { path: '/dashboard/reports/account-ledger', title: 'Account Ledger', Page: lazy(() => import('@/screens/dashboard/reports/account-ledger/page')), report: true },
   { path: '/dashboard/reports/analytics', title: 'Analytics', Page: lazy(() => import('@/screens/dashboard/reports/analytics/page')), report: true },
-  { path: '/dashboard/reports/audit-report', title: 'Audit Report', Page: lazy(() => import('@/screens/dashboard/reports/audit-report/page')), report: true },
-  { path: '/dashboard/reports/daily-sales-report', title: 'Daily Sales Report', Page: lazy(() => import('@/screens/dashboard/reports/daily-sales-report/page')), report: true },
-  { path: '/dashboard/reports/dip-calculator', title: 'Dip Calculator', Page: lazy(() => import('@/screens/dashboard/reports/dip-calculator/page')), report: true },
-  { path: '/dashboard/reports/imprest', title: 'Imprest', Page: lazy(() => import('@/screens/dashboard/reports/imprest/page')), report: true },
+  { path: '/dashboard/reports/audit-report', title: 'Audit Report', Page: lazy(() => import('@/screens/dashboard/reports/audit-report/page')), report: true, desktopOnly: true },
+  { path: '/dashboard/reports/daily-sales-report', title: 'Daily Sales Report', Page: lazy(() => import('@/screens/dashboard/reports/daily-sales-report/page')), report: true, desktopOnly: true },
+  { path: '/dashboard/reports/dip-calculator', title: 'Dip Calculator', Page: lazy(() => import('@/screens/dashboard/reports/dip-calculator/page')), report: true, desktopOnly: true },
+  { path: '/dashboard/reports/imprest', title: 'Imprest', Page: lazy(() => import('@/screens/dashboard/reports/imprest/page')), report: true, desktopOnly: true },
   { path: '/dashboard/reports/inventory-log', title: 'Inventory Log', Page: lazy(() => import('@/screens/dashboard/reports/inventory-log/page')), report: true },
-  { path: '/dashboard/reports/lube-report', title: 'Lube Report', Page: lazy(() => import('@/screens/dashboard/reports/lube-report/page')), report: true },
-  { path: '/dashboard/reports/product-received', title: 'Product Received', Page: lazy(() => import('@/screens/dashboard/reports/product-received/page')), report: true },
-  { path: '/dashboard/reports/sales-operation', title: 'Sales Operation', Page: lazy(() => import('@/screens/dashboard/reports/sales-operation/page')), report: true },
-  { path: '/dashboard/reports/sales-overview', title: 'Sales Overview', Page: lazy(() => import('@/screens/dashboard/reports/sales-overview/page')), report: true },
+  { path: '/dashboard/reports/lube-report', title: 'Lube Report', Page: lazy(() => import('@/screens/dashboard/reports/lube-report/page')), report: true, desktopOnly: true },
+  { path: '/dashboard/reports/product-received', title: 'Product Received', Page: lazy(() => import('@/screens/dashboard/reports/product-received/page')), report: true, desktopOnly: true },
+  { path: '/dashboard/reports/sales-operation', title: 'Sales Operation', Page: lazy(() => import('@/screens/dashboard/reports/sales-operation/page')), report: true, desktopOnly: true },
+  { path: '/dashboard/reports/sales-overview', title: 'Sales Overview', Page: lazy(() => import('@/screens/dashboard/reports/sales-overview/page')), report: true, desktopOnly: true },
   { path: '/dashboard/reports/summary', title: 'Summary', Page: lazy(() => import('@/screens/dashboard/reports/summary/page')), report: true },
   { path: '/dashboard/setup/:stationId', title: 'Setup', Page: lazy(() => import('@/screens/dashboard/setup/[stationId]/page')) },
   { path: '/dashboard/stations/:stationId', title: 'Station', Page: lazy(() => import('@/screens/dashboard/stations/[stationId]/page')) },

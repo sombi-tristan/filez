@@ -35,6 +35,14 @@ The UI uses the house design system from the groo repository, copied into "desig
 
 ---
 
+Where it runs (lib/platform.js)
+
+- On a computer (1024px and wider), StationMGR is the Windows desktop app (desktop/* branches). The web shows a computer the download page (components/DesktopDownload.js): the landing page by CSS, the dashboard by ComputerGate in components/shell/IonicShell.js. Kept on a computer: sign-in, /dashboard/subscribe (buying and renewing), the admin area, and platform admins everywhere.
+- The download button points at the latest GitHub release's StationMGR-Setup.exe, published by the desktop build (NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL overrides it).
+- Phones and tablets keep the entries and four reports: Summary, Analytics, Inventory Log, Account Ledger (WEB_REPORT_KEYS). The rest are `desktopOnly` in screens/routes.js: gone from the hub and sidebar (REPORT_LINKS), and a link to one says it is in the desktop app. An Android app (Capacitor) is planned for phones.
+
+---
+
 Ionic Screens
 
 The dashboard and the admin area each run as one Ionic app with Ionic's own router, so screens stack: a screen opens over the last, Back slides it away, and the one underneath is still there.
