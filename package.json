@@ -15,6 +15,7 @@
     "dist:win": "next build && electron-builder --win nsis --x64 --publish never"
   },
   "build": {
+    "publish": null,
     "appId": "com.premeval.stationmgr",
     "productName": "StationMGR",
     "directories": {

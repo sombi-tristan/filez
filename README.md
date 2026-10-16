@@ -78,5 +78,24 @@ npm run build && npm run serve-out   # or test the export in a browser at :4173
 npm run dist:win     # build the Windows installer (on Windows)
 ```
 
+### Building the installer on a Windows PC
+
+1. Install [Node.js 20 LTS](https://nodejs.org) and [Git](https://git-scm.com).
+2. In a terminal (PowerShell):
+
+   ```powershell
+   git clone https://github.com/sombi-tristan/filez.git
+   cd filez
+   git checkout desktop/offline
+   npm ci
+   npm run dist:win
+   ```
+
+3. The installer is `dist\StationMGR-Setup-<version>.exe`.
+
+The web address and the licence key come from package.json "stationmgr", so nothing else is
+needed. Raise "version" in package.json for each release. On Linux or a Mac the same command
+works with Wine installed (64- and 32-bit).
+
 Removed from this branch: Supabase auth/storage, the admin panel, buying a subscription (done on
 the web), email invites, chat/notifications, feedback, WhatsApp/Tawk support, PWA/service worker.
