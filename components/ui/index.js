@@ -8,15 +8,16 @@
  * tokens for light/dark. Screens compose these instead of re-deriving classes.
  *
  * Two deliberate differences from store-portal's copy:
- *   - Links are next/link, not RippleLink. station-portal has no Ripple primitive, and
- *     adding tap-ripple to every row is a behaviour change, not a styling one.
+ *   - Links are lib/nav's Link (Ionic's stack, with next/link's props), not RippleLink.
+ *     station-portal has no Ripple primitive, and adding tap-ripple to every row is a
+ *     behaviour change, not a styling one.
  *   - Tile / HeroTile / Row take `allowed` + `onBlocked`. store filters destinations a member
  *     cannot open out of the nav entirely; station shows them dimmed and explains on tap.
  *
  * FilterRail is still not ported — no station screen has a filter column yet.
  */
 
-import Link from 'next/link'
+import Link from '@/lib/nav'
 import { ChevronRight } from 'lucide-react'
 
 // Shared class fragments.
@@ -83,7 +84,7 @@ export const REPORT_SUBHEAD = 'bg-primary-50 dark:bg-primary-950/40 text-primary
 export function IconChip({ icon: Icon, className = 'w-8 h-8', iconClass = 'w-4 h-4', variant = 'mono' }) {
   const styles = variant === 'onColor' ? 'bg-white/20 text-white' : CHIP_MONO
   return (
-    <div className={`flex items-center justify-center shrink-0 ${styles} ${className}`}>
+    <div className={`flex items-center justify-center shrink-0 rounded-full ${styles} ${className}`}>
       <Icon className={iconClass} />
     </div>
   )

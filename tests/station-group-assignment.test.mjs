@@ -6,7 +6,7 @@
  * selects `station_group_id, station_groups(name)` and never returns the old text column,
  * and PATCH /api/station-groups writes `station_group_id`.
  *
- * app/admin/settings/page.js did not move. It bound the dropdown with
+ * screens/admin/settings/page.js did not move. It bound the dropdown with
  *   groups.find((g) => g.name === station.station_group)?.id
  * against a field the API stopped sending, so the lookup resolved to undefined and the select
  * rendered "None" for every station however the group was actually set. The write reached the
@@ -28,7 +28,7 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const read = (...p) => readFileSync(resolve(__dirname, '..', ...p), 'utf8')
 
-const settings = read('app', 'admin', 'settings', 'page.js')
+const settings = read('screens', 'admin', 'settings', 'page.js')
 const stationsApi = read('app', 'api', 'admin', 'stations', 'route.js')
 const groupsApi = read('app', 'api', 'station-groups', 'route.js')
 

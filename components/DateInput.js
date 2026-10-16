@@ -152,7 +152,10 @@ export default function DateInput({ value, onChange, className = '' }) {
   }
 
   return (
-    <div className={`relative ${className}`}>
+    // min-w: a full DD-MM-YYYY and the calendar button always fit. Without a floor a phone
+    // squeezed a report's date down to "01-."; at this width two dates and the Generate button
+    // still share one phone line.
+    <div className={`relative min-w-[7.5rem] ${className}`}>
       <div className="flex">
         <input
           ref={inputRef}
@@ -164,8 +167,11 @@ export default function DateInput({ value, onChange, className = '' }) {
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder="DD-MM-YYYY"
+          // A date's own width: an input otherwise asks for twenty characters, which pushed a
+          // report's controls onto three lines on a phone.
+          size={10}
           autoComplete="off"
-          className={`block w-full bg-transparent focus:outline-none placeholder:text-content-faint ${error ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+          className={`block w-full min-w-0 tabular-nums bg-transparent focus:outline-none placeholder:text-content-faint ${error ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
         />
         <button
           type="button"

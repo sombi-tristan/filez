@@ -1,0 +1,2258 @@
+/*
+ * The house style on Ionic: the one stylesheet every app takes (design/README.md).
+ *
+ * One accent, 4px corners on everything but icons, which sit on round plates, flat (no gradients, nothing but a toast casts a
+ * shadow), Outfit for headings and Source Sans 3 for the rest. The accent is orange or blue,
+ * chosen per app: set data-accent on <html>. Dark is data-theme="dark" on <html>; the accent is
+ * the same hex in both themes and only the neutrals turn.
+ *
+ * Consumer apps may add the pastels, the dark ink button on an accent block and emoji stickers
+ * (the .consumer rules). Business apps use none of the three.
+ *
+ * In three parts: the tokens, Ionic's own components dressed in them, then the system's
+ * components (design/components) under their .house-* classes.
+ * This file is served, so it names no product.
+ */
+
+:root {
+  --corner: 4px;
+  --edge: 2px;
+  --round: 50%; /* every icon sits on a round plate */
+
+  /* Orange, the default accent. */
+  --accent: #f57d00;
+  --accent-rgb: 245, 125, 0;
+  --accent-shade: #d86e00;
+  --accent-tint: #f68a1a;
+  --on-accent: #ffffff;
+  --accent-ink: #22160a; /* words set straight on an accent block */
+  --accent-wash: #fff6ea; /* a quiet band behind a section */
+
+  --ground: #ffffff;
+  --raised: #f7f9f9;
+  --ink: #0f1419;
+  --ink-rgb: 15, 20, 25;
+  --muted: #536471;
+  --line: #cfd9de;
+
+  /* What a colour means, apart from the accent: something went wrong, something went right. */
+  --danger: #d92d20;
+  --success: #12805c;
+
+  --cream: #ffeccf;
+  --pink: #ffd9e2;
+  --mint: #cdf3de;
+  --sky: #cfe8ff;
+  --lemon: #fff3b0;
+  --lilac: #e4dbff;
+}
+
+:root[data-accent='blue'] {
+  --accent: #0093dd;
+  --accent-rgb: 0, 147, 221;
+  --accent-shade: #0081c2;
+  --accent-tint: #1a9ee0;
+  --accent-ink: #06202e;
+  --accent-wash: #eef8fe;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ground: #0e161e;
+  --raised: #17202a;
+  --ink: #f7f9f9;
+  --ink-rgb: 247, 249, 249;
+  --muted: #a3b1bd;
+  --line: #38444d;
+  --accent-wash: #141d26;
+}
+
+/* ---- Ionic's own variables, fed from the tokens above ---- */
+
+:root {
+  --ion-font-family: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ion-background-color: var(--ground);
+  --ion-background-color-rgb: 255, 255, 255;
+  --ion-text-color: var(--ink);
+  --ion-text-color-rgb: var(--ink-rgb);
+  --ion-border-color: var(--line);
+  --ion-item-background: var(--ground);
+  --ion-item-border-color: var(--line);
+  --ion-toolbar-background: var(--ground);
+  --ion-toolbar-border-color: var(--line);
+  --ion-tab-bar-background: var(--ground);
+  --ion-tab-bar-border-color: var(--line);
+  --ion-tab-bar-color: var(--muted);
+  --ion-tab-bar-color-selected: var(--accent);
+  --ion-card-background: var(--ground);
+  --ion-overlay-background-color: var(--ground);
+  --ion-placeholder-color: var(--muted);
+  --ion-color-step-50: var(--raised);
+  --ion-color-step-100: var(--raised);
+  --ion-color-step-150: var(--line);
+  --ion-color-step-200: var(--line);
+  --ion-color-step-300: var(--line);
+  --ion-color-step-600: var(--muted);
+  --ion-background-color-step-50: var(--raised);
+  --ion-background-color-step-100: var(--raised);
+  --ion-background-color-step-150: var(--line);
+  --ion-background-color-step-200: var(--line);
+  --ion-background-color-step-300: var(--line);
+  --ion-text-color-step-400: var(--muted);
+  --ion-text-color-step-600: var(--muted);
+
+  --ion-color-primary: var(--accent);
+  --ion-color-primary-rgb: var(--accent-rgb);
+  --ion-color-primary-contrast: var(--on-accent);
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: var(--accent-shade);
+  --ion-color-primary-tint: var(--accent-tint);
+
+  --ion-color-medium: var(--muted);
+  --ion-color-medium-rgb: 83, 100, 113;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-shade: #465560;
+  --ion-color-medium-tint: #64737f;
+
+  --ion-color-danger: var(--danger);
+  --ion-color-danger-rgb: 217, 45, 32;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-shade: #bf281c;
+  --ion-color-danger-tint: #dd4236;
+
+  --ion-color-success: var(--success);
+  --ion-color-success-rgb: 18, 128, 92;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-shade: #107151;
+  --ion-color-success-tint: #2a8d6c;
+}
+
+:root[data-theme='dark'] {
+  --ion-background-color-rgb: 14, 22, 30;
+}
+
+body {
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+ion-title,
+ion-card-title,
+ion-list-header {
+  font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+}
+
+/* ---- one corner, and nothing casts a shadow ---- */
+
+ion-button {
+  --border-radius: var(--corner);
+  --box-shadow: none;
+  --border-width: var(--edge);
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+ion-button[size='small'] {
+  min-height: 36px;
+  font-size: 15px;
+}
+
+ion-button[size='large'] {
+  min-height: 56px;
+}
+
+ion-fab-button {
+  --border-radius: var(--round);
+  --box-shadow: none;
+}
+
+ion-card {
+  margin: 0;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  box-shadow: none;
+}
+
+ion-card-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+ion-chip {
+  border-radius: var(--corner);
+  font-weight: 600;
+}
+
+ion-badge {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  border-radius: var(--corner);
+  font-weight: 700;
+}
+
+ion-avatar,
+ion-thumbnail {
+  --border-radius: var(--corner);
+}
+
+ion-skeleton-text {
+  --border-radius: var(--corner);
+}
+
+ion-toolbar {
+  --border-width: 0 0 var(--edge) 0;
+  --border-color: var(--line);
+}
+
+ion-header,
+ion-footer,
+ion-header.header-md,
+ion-footer.footer-md {
+  box-shadow: none;
+}
+
+ion-header::after,
+ion-footer::before {
+  display: none;
+}
+
+ion-title {
+  font-weight: 800;
+}
+
+ion-tab-bar {
+  --border: var(--edge) solid var(--line);
+}
+
+ion-searchbar {
+  padding-inline: 0;
+}
+
+ion-segment {
+  border-radius: var(--corner);
+}
+
+ion-segment-button {
+  --border-radius: var(--corner);
+  --indicator-color: var(--accent);
+  --color-checked: var(--accent);
+  min-height: 44px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Fields: a 2px edge, no fill, the label above. */
+ion-input.sc-ion-input-md-h,
+ion-input,
+ion-textarea,
+ion-select {
+  --border-radius: var(--corner);
+  --border-width: var(--edge);
+  --border-color: var(--line);
+  --highlight-color-focused: var(--accent);
+  --highlight-color-valid: var(--accent);
+  --background: transparent;
+  min-height: 48px;
+}
+
+ion-checkbox {
+  --border-radius: var(--corner);
+  --border-width: var(--edge);
+  --border-color: var(--line);
+  --size: 22px;
+}
+
+ion-radio {
+  --border-radius: var(--corner);
+  --inner-border-radius: 2px;
+}
+
+ion-toggle {
+  --border-radius: var(--corner);
+  --handle-border-radius: 2px;
+  --handle-box-shadow: none;
+  --track-background: var(--line);
+  --track-background-checked: rgba(var(--accent-rgb), 0.35);
+  --handle-background: var(--muted);
+  --handle-background-checked: var(--accent);
+}
+
+ion-range {
+  --bar-border-radius: var(--corner);
+  --knob-border-radius: var(--corner);
+  --knob-box-shadow: none;
+  --bar-background: var(--line);
+  --bar-height: 4px;
+}
+
+ion-progress-bar {
+  height: 6px;
+  border-radius: var(--corner);
+  --buffer-background: var(--line);
+}
+
+ion-item {
+  --border-color: var(--line);
+  --inner-border-width: 0 0 1px 0;
+  --min-height: 56px;
+}
+
+ion-item-divider {
+  --background: var(--raised);
+  --color: var(--muted);
+  font-weight: 700;
+}
+
+ion-list-header {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+ion-accordion-group ion-accordion {
+  margin-bottom: 8px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  overflow: hidden;
+}
+
+ion-accordion ion-item {
+  --inner-border-width: 0;
+  font-weight: 600;
+}
+
+ion-accordion [slot='content'] {
+  padding: 0 16px 16px;
+}
+
+ion-datetime {
+  --background: var(--ground);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+}
+
+ion-datetime-button::part(native) {
+  border-radius: var(--corner);
+  background: var(--raised);
+}
+
+/* Overlays. */
+ion-modal {
+  --border-radius: var(--corner);
+  --box-shadow: none;
+  --backdrop-opacity: 0.7;
+}
+
+ion-popover {
+  --box-shadow: none;
+  --backdrop-opacity: 0.2;
+}
+
+ion-popover::part(content) {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+}
+
+ion-toast {
+  --border-radius: var(--corner);
+  --box-shadow: none;
+  --background: var(--ink);
+  --color: var(--ground);
+  --button-color: var(--accent);
+  font-weight: 600;
+}
+
+ion-alert {
+  --backdrop-opacity: 0.7;
+}
+
+.alert-wrapper.sc-ion-alert-md,
+.alert-wrapper.sc-ion-alert-ios {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  box-shadow: none;
+}
+
+.alert-button.sc-ion-alert-md,
+.alert-button.sc-ion-alert-ios {
+  border-radius: var(--corner);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.action-sheet-group.sc-ion-action-sheet-md,
+.action-sheet-group.sc-ion-action-sheet-ios {
+  border-radius: var(--corner) var(--corner) 0 0;
+}
+
+.loading-wrapper.sc-ion-loading-md,
+.loading-wrapper.sc-ion-loading-ios {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  box-shadow: none;
+}
+
+ion-menu {
+  --background: var(--ground);
+}
+
+ion-split-pane {
+  --border: var(--edge) solid var(--line);
+  --side-max-width: 260px;
+}
+
+/* ---- type: 17px to read, 15px for the small print, 13px only on a badge or under a tab.
+   Ionic's own small print is 12px, and its overlays fall back to the device's font. ---- */
+
+ion-note,
+ion-item-divider,
+ion-chip,
+ion-breadcrumb,
+ion-card-subtitle,
+ion-card-content,
+ion-input .helper-text,
+ion-textarea .helper-text {
+  font-size: 15px;
+}
+
+ion-badge,
+ion-tab-button ion-label {
+  font-size: 13px;
+}
+
+/* `.hydrated` so this outranks Ionic's own scoped rule, which sets the same variables. */
+ion-searchbar.hydrated {
+  --border-radius: var(--corner);
+  --box-shadow: none;
+  --background: var(--raised);
+  --color: var(--ink);
+  --icon-color: var(--muted);
+  --placeholder-color: var(--muted);
+  --placeholder-opacity: 1;
+}
+
+.alert-title.sc-ion-alert-md,
+.alert-title.sc-ion-alert-ios {
+  font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.alert-message.sc-ion-alert-md,
+.alert-message.sc-ion-alert-ios {
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.alert-button.sc-ion-alert-md,
+.alert-button.sc-ion-alert-ios,
+.action-sheet-button.sc-ion-action-sheet-md,
+.action-sheet-button.sc-ion-action-sheet-ios,
+.action-sheet-title.sc-ion-action-sheet-md,
+.action-sheet-title.sc-ion-action-sheet-ios {
+  font-family: var(--ion-font-family);
+  font-size: 17px;
+}
+
+/* One clear button, Ionic's: the browser draws its own on a search field as well. */
+ion-searchbar input::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* ---- consumer apps only: pastels, the dark button on an accent block, stickers ---- */
+
+.consumer .accent-block {
+  padding: 24px;
+  border-radius: var(--corner);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.consumer .accent-block ion-button {
+  --background: var(--accent-ink);
+  --background-hover: var(--accent-ink);
+  --background-activated: var(--accent-ink);
+  --color: var(--cream);
+}
+
+.consumer .pastels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.consumer .pastels div {
+  padding: 16px 12px;
+  border-radius: var(--corner);
+  color: #22160a;
+  font-weight: 700;
+}
+
+.consumer .sticker {
+  display: inline-grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: var(--corner);
+  background: #ffffff;
+  font-size: 30px;
+}
+
+/* ==========================================================================
+   The system's own components (design/components), dressed in the tokens above.
+   Element names in the selectors so these outrank Ionic's scoped rules.
+   ========================================================================== */
+
+/* ---- FloatingInput, FloatingTextarea, FloatingSelect: the label rests inside the box and
+   rises into its edge. 16px or more: anything smaller makes iOS zoom the page on focus. ---- */
+
+ion-input.house-field,
+ion-textarea.house-field,
+ion-select.house-field {
+  --background: transparent;
+  --color: var(--ink);
+  --placeholder-color: var(--muted);
+  --placeholder-opacity: 1;
+  --border-color: var(--line);
+  --border-width: var(--edge);
+  --border-radius: var(--corner);
+  --highlight-color-focused: var(--accent);
+  --highlight-color-valid: var(--accent);
+  --highlight-color-invalid: var(--danger);
+  --padding-start: 12px;
+  --padding-end: 12px;
+  min-height: 56px;
+  font-size: 17px;
+}
+
+ion-input.house-field .label-text-wrapper,
+ion-textarea.house-field .label-text-wrapper,
+ion-input.house-field .helper-text,
+ion-textarea.house-field .helper-text,
+ion-select.house-field::part(label),
+ion-select.house-field::part(placeholder),
+ion-select.house-field::part(helper-text),
+ion-select.house-field::part(icon) {
+  color: var(--muted);
+  opacity: 1;
+}
+
+ion-input.house-field.has-focus .label-text-wrapper,
+ion-textarea.house-field.has-focus .label-text-wrapper,
+ion-select.house-field.has-focus::part(label),
+ion-select.house-field.select-expanded::part(label) {
+  color: var(--accent);
+}
+
+ion-input.house-field .error-text,
+ion-textarea.house-field .error-text {
+  color: var(--danger);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---- Button: flat, the accent with white words, the same in both themes. 48px, 56px when
+   large (the one main action of a screen), 36px when small. ---- */
+
+ion-button.house-btn {
+  --border-radius: var(--corner);
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --box-shadow: none;
+  height: 48px;
+  min-height: 0;
+  margin: 0;
+  font-family: var(--ion-font-family);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+ion-button.house-btn-large {
+  --padding-start: 28px;
+  --padding-end: 28px;
+  height: 56px;
+  font-size: 17px;
+}
+
+ion-button.house-btn-small {
+  --padding-start: 14px;
+  --padding-end: 14px;
+  height: 36px;
+  font-size: 15px;
+}
+
+ion-button.house-btn-primary {
+  --background: var(--accent);
+  --background-hover: var(--accent);
+  --background-activated: var(--accent);
+  --background-focused: var(--accent);
+  --color: var(--on-accent);
+}
+
+ion-button.house-btn-secondary,
+ion-button.house-btn-neutral,
+ion-button.house-btn-danger {
+  --border-width: var(--edge);
+  --border-style: solid;
+}
+
+ion-button.house-btn-secondary {
+  --border-color: var(--accent);
+  --color: var(--accent);
+  --background-hover: var(--accent);
+  --background-hover-opacity: 0.08;
+}
+
+ion-button.house-btn-neutral {
+  --border-color: var(--line);
+  --color: var(--ink);
+  --background-hover: var(--ink);
+  --background-hover-opacity: 0.06;
+}
+
+ion-button.house-btn-danger {
+  --border-color: var(--danger);
+  --color: var(--danger);
+  --background-hover: var(--danger);
+  --background-hover-opacity: 0.08;
+}
+
+/* IconButton: a circle of the button's own height. */
+ion-button.house-btn-icon {
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: var(--round);
+  width: 48px;
+}
+
+ion-button.house-btn-icon ion-icon {
+  font-size: 22px;
+}
+
+/* In a top bar. Ionic re-dresses every button inside ion-buttons with two-class selectors (a
+   2px corner, the toolbar's colours, a black outline), which outrank the rules above; these
+   hold the house dress there. */
+ion-buttons ion-button.house-btn.house-btn {
+  --border-radius: var(--corner);
+}
+
+ion-buttons ion-button.house-btn.house-btn-icon {
+  --border-radius: var(--round);
+}
+
+ion-buttons ion-button.house-btn.house-btn-primary {
+  --background: var(--accent);
+  --background-hover: var(--accent);
+  --color: var(--on-accent);
+}
+
+ion-buttons ion-button.house-btn.house-btn-secondary {
+  --border-color: var(--accent);
+  --color: var(--accent);
+  --background-hover: var(--accent);
+}
+
+ion-buttons ion-button.house-btn.house-btn-neutral {
+  --border-color: var(--line);
+  --color: var(--ink);
+  --background-hover: var(--ink);
+}
+
+/* A top bar draws an outline in the words' colour, not --border-color. */
+ion-buttons ion-button.house-btn.house-btn-neutral::part(native) {
+  border-color: var(--line);
+}
+
+ion-buttons ion-button.house-btn.house-btn-danger {
+  --border-color: var(--danger);
+  --color: var(--danger);
+  --background-hover: var(--danger);
+}
+
+/* ---- Toast: one neutral notice, an icon on a round plate telling the type. It floats over
+   whatever is on screen, so it is the one thing here that casts a shadow. ---- */
+
+ion-toast.house-toast {
+  --toast-tint: #eef1f4;
+  --toast-ink: #0f1419;
+  --toast-plate: #ffffff;
+  --background: var(--toast-tint);
+  --color: var(--toast-ink);
+  --border-color: rgb(255 255 255 / 0.9);
+  --border-style: solid;
+  --border-width: var(--edge);
+  --border-radius: var(--corner);
+  --max-width: 24rem;
+  --box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  --button-color: var(--toast-ink);
+  font-weight: 400;
+}
+
+ion-toast.house-toast-success {
+  --toast-tint: #eaf7f1;
+  --toast-icon: #2db47a;
+}
+
+ion-toast.house-toast-error {
+  --toast-tint: #fdecec;
+  --toast-icon: #ef4444;
+}
+
+ion-toast.house-toast-info {
+  --toast-tint: #e8f4fd;
+  --toast-icon: #1d9bf0;
+}
+
+ion-toast.house-toast::part(container) {
+  padding: 4px 4px 4px 12px;
+  align-items: center;
+}
+
+ion-toast.house-toast::part(icon) {
+  box-sizing: content-box;
+  width: 22px;
+  height: 22px;
+  padding: 10px;
+  border-radius: 50%;
+  background: var(--toast-plate);
+  color: var(--toast-icon, var(--toast-ink));
+  font-size: 22px;
+}
+
+/* On the part itself: the message lives in ion-toast's shadow DOM. */
+ion-toast.house-toast::part(message) {
+  font-size: 17px;
+  line-height: 22px;
+}
+
+ion-toast.house-toast::part(button cancel) {
+  color: var(--toast-ink);
+  opacity: 0.55;
+}
+
+/* ---- PremevalLogo: the mark in Premeval's own blue. ---- */
+
+.house-mark {
+  width: 22px;
+  height: auto;
+  color: #0093dd;
+}
+
+/* ---- ListRow: a 56px row, the label at 17px, the value muted, a chevron when it goes somewhere. ---- */
+
+ion-item.house-row {
+  --background: transparent;
+  --background-hover: var(--ink);
+  --background-hover-opacity: 0.04;
+  --background-activated: var(--ink);
+  --background-activated-opacity: 0.08;
+  --color: var(--ink);
+  --min-height: 56px;
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+  --inner-border-width: 0;
+  font-size: 17px;
+}
+
+ion-item.house-row ion-label p {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* Ionicons holds its host to content-box, so the plate is the icon plus its padding. */
+ion-item.house-row .house-row-icon {
+  width: 22px;
+  height: 22px;
+  padding: 9px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--ink);
+  font-size: 22px;
+  margin-inline-end: 16px;
+}
+
+ion-item.house-row .house-row-value {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+ion-item.house-row .house-row-chevron {
+  margin-inline-start: 8px;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+ion-item.house-row-danger,
+ion-item.house-row-danger .house-row-icon {
+  --color: var(--danger);
+  background: rgba(217, 45, 32, 0.1);
+  color: var(--danger);
+}
+
+/* ---- SwipeRow: the row's own content edge to edge, flat buttons behind it. ---- */
+
+ion-item.house-swipe-item {
+  --background: var(--ground);
+  --padding-start: 0;
+  --padding-end: 0;
+  --inner-padding-end: 0;
+  --min-height: 0;
+}
+
+.house-swipe-body {
+  width: 100%;
+}
+
+ion-item-sliding.house-swipe ion-item-option.house-swipe-option {
+  --background: var(--muted);
+  --color: #ffffff;
+  padding: 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+ion-item-sliding.house-swipe ion-item-option.house-swipe-danger {
+  --background: var(--danger);
+}
+
+ion-item-sliding.house-swipe ion-item-option.house-swipe-accent {
+  --background: var(--accent);
+  --color: var(--on-accent);
+}
+
+/* ---- Tabs: each tab as wide as its words, the chosen one bold over a 3px accent bar. ---- */
+
+ion-segment.house-tabs {
+  --background: transparent;
+  display: flex;
+  justify-content: flex-start;
+  gap: 24px;
+  border-radius: 0;
+  scrollbar-width: none;
+}
+
+ion-segment.house-tabs-centered {
+  justify-content: center;
+}
+
+ion-segment.house-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+ion-segment.house-tabs ion-segment-button {
+  --color: var(--muted);
+  --color-checked: var(--ink);
+  --color-hover: var(--ink);
+  --background: transparent;
+  --background-checked: transparent;
+  --background-hover: transparent;
+  --background-focused: transparent;
+  --indicator-color: var(--accent);
+  --indicator-height: 3px;
+  --indicator-box-shadow: none;
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 10px;
+  --margin-top: 0;
+  --margin-bottom: 0;
+  --margin-start: 0;
+  --margin-end: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: none;
+  min-height: 34px;
+  font-size: 17px;
+  font-weight: 400;
+}
+
+ion-segment.house-tabs ion-segment-button.segment-button-checked {
+  font-weight: 700;
+}
+
+ion-segment.house-tabs ion-segment-button ion-label {
+  margin: 0;
+  line-height: 24px;
+}
+
+ion-segment.house-tabs ion-segment-button ion-icon {
+  margin: 0 6px 0 0;
+  font-size: 18px;
+}
+
+/* ---- Skeleton: a quiet pulse in the line colour. ---- */
+
+.house-skeleton {
+  border-radius: var(--corner);
+  background: var(--line);
+  animation: house-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.house-skeleton-round {
+  border-radius: 50%;
+}
+
+.house-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  padding: 0 16px;
+}
+
+@keyframes house-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-skeleton {
+    animation: none;
+  }
+}
+
+/* ---- BottomSheet: as tall as its content, three quarters of the screen at most. ---- */
+
+ion-modal.house-sheet {
+  --height: auto;
+  --max-height: 75dvh;
+  --border-radius: var(--corner) var(--corner) 0 0;
+  --backdrop-opacity: 0.55;
+}
+
+ion-modal.house-sheet-centred {
+  --width: min(100vw - 32px, 400px);
+  --border-radius: var(--corner);
+}
+
+.house-sheet-panel {
+  max-height: 75dvh;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.house-sheet-centred .house-sheet-panel {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+}
+
+.house-sheet-handle {
+  display: block;
+  width: 34px;
+  height: 4px;
+  margin: 8px auto 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.house-sheet-action {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.house-sheet-action:hover {
+  background: rgba(var(--ink-rgb), 0.04);
+}
+
+.house-sheet-action ion-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 8px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.house-sheet-action-danger,
+.house-sheet-action-danger ion-icon {
+  color: var(--danger);
+}
+
+/* ---- SheetHero: an icon on a round plate, and a title. ---- */
+
+.house-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px;
+  text-align: center;
+}
+
+.house-hero-plate {
+  display: grid;
+  width: 120px;
+  height: 120px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  font-size: 56px;
+}
+
+.house-hero-emoji {
+  line-height: 1;
+}
+
+.house-hero-title {
+  margin: 16px 0 0;
+  font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* ---- LoadFailed ---- */
+
+.house-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.house-failed-why {
+  color: var(--muted);
+}
+
+/* ---- PageTitle ---- */
+
+.house-title h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.house-title p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.house-title-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- Avatar ---- */
+
+.house-avatar {
+  flex: none;
+  border-radius: var(--corner);
+  object-fit: cover;
+}
+
+.house-avatar-round {
+  border-radius: 50%;
+}
+
+/* ---- PoweredBy: one colour, the mark knocked out of a square plate. ---- */
+
+.house-credit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.house-credit-plate {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.house-credit-plate svg {
+  width: auto;
+  height: 14px;
+}
+
+/* ---- Fab: clear of the edge and of the phone's home bar. ---- */
+
+ion-fab.house-fab {
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---- ThickCaret: the browser's caret is hidden only while the component is mounted. ---- */
+
+html.house-thick-caret textarea,
+html.house-thick-caret input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):not([type='color']) {
+  caret-color: transparent;
+}
+
+.house-caret {
+  position: fixed;
+  z-index: 100000;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  animation: house-caret-blink 1.06s step-end infinite;
+}
+
+@keyframes house-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   The dashboard and business components.
+   ========================================================================== */
+
+/* A plain button that is one of the system's parts gives up the browser's own look. */
+.house-tile,
+.house-rows-row,
+.house-rail button,
+.house-pick,
+.house-pick-sheet li button,
+.house-side-row,
+button.house-side-switch,
+.house-side-options button,
+.house-theme button,
+.house-theme-cycle,
+.house-dialog-head button,
+.house-date-open {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* ---- Card, SectionHeader, IconChip, Badge ---- */
+
+.house-card {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.house-section {
+  margin: 0 0 12px;
+  font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.house-chip {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  border-radius: var(--round);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.house-chip-on {
+  background: rgb(255 255 255 / 0.22);
+  color: var(--on-accent);
+}
+
+.house-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--corner);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ---- Tile, HeroTile ---- */
+
+.house-tile {
+  position: relative;
+  display: flex;
+  aspect-ratio: 1;
+  min-width: 0;
+  flex-direction: column;
+  padding: 12px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.house-tile:hover,
+.house-tile:focus-visible {
+  border-color: var(--accent);
+  outline: 0;
+}
+
+.house-tile-go {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.house-tile-label {
+  display: block;
+  margin-top: auto;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.house-tile-desc {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-tile-hero {
+  aspect-ratio: auto;
+  min-height: 112px;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--accent-wash);
+}
+
+.house-tile-hero .house-tile-label {
+  margin-top: 0;
+  font-size: 18px;
+}
+
+.house-tile-solid {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.house-tile-solid .house-tile-desc {
+  color: var(--on-accent);
+  opacity: 0.85;
+}
+
+.house-tile-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.house-tile-solid .house-tile-badge {
+  background: var(--on-accent);
+  color: var(--accent);
+}
+
+.house-tile-words {
+  display: block;
+  min-width: 0;
+}
+
+/* ---- RowGroup, Row ---- */
+
+.house-rows {
+  overflow: hidden;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  background: var(--ground);
+}
+
+.house-rows > * + * {
+  border-top: 1px solid var(--line);
+}
+
+.house-rows-row {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+}
+
+.house-rows-row:hover,
+.house-rows-row:focus-visible {
+  background: rgba(var(--ink-rgb), 0.04);
+  outline: 0;
+}
+
+.house-rows-words {
+  min-width: 0;
+  flex: 1;
+}
+
+.house-rows-label,
+.house-rows-desc {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-rows-label {
+  font-weight: 700;
+}
+
+.house-rows-desc {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.house-rows-go {
+  flex: none;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+/* ---- EmptyState ---- */
+
+.house-empty {
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.house-empty > ion-icon {
+  width: 40px;
+  height: 40px;
+  padding: 20px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--muted);
+  font-size: 40px;
+}
+
+.house-empty-title {
+  margin: 12px 0 0;
+  font-weight: 700;
+}
+
+.house-empty-line {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+.house-empty-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* ---- FilterRail: a wrapped row on a phone, a column with an accent rail on a computer. ---- */
+
+.house-rail ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.house-rail button {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--corner);
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.house-rail button:hover {
+  background: rgba(var(--ink-rgb), 0.04);
+  color: var(--ink);
+}
+
+.house-rail button.house-rail-on {
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+@media (min-width: 1024px) {
+  .house-rail {
+    width: 176px;
+    flex: none;
+    padding-right: 8px;
+    border-right: var(--edge) solid var(--line);
+  }
+
+  .house-rail ul {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .house-rail button.house-rail-on::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    border-radius: var(--corner) 0 0 var(--corner);
+    background: var(--accent);
+    content: '';
+  }
+}
+
+/* ---- Dialog, ConfirmDialog ---- */
+
+ion-modal.house-dialog {
+  --width: min(100vw - 32px, 440px);
+  --height: auto;
+  --max-height: 85dvh;
+  --border-radius: var(--corner);
+  --backdrop-opacity: 0.7;
+}
+
+ion-modal.house-dialog-bottom {
+  --width: 100%;
+  --max-width: 520px;
+  --border-radius: var(--corner) var(--corner) 0 0;
+}
+
+.house-dialog-panel {
+  max-height: 85dvh;
+  overflow-y: auto;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.house-dialog-bottom .house-dialog-panel {
+  border-bottom: 0;
+  border-radius: var(--corner) var(--corner) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.house-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px;
+}
+
+.house-dialog-head h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.house-dialog-head button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--corner);
+  color: var(--muted);
+  font-size: 22px;
+}
+
+.house-dialog-head button:hover {
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--ink);
+}
+
+.house-dialog-body {
+  padding: 0 20px 20px;
+}
+
+.house-dialog-line {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.house-dialog-error {
+  margin: 0 0 16px;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.house-dialog-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ---- SearchableSelect: a field that opens a sheet with a search box over the options. ---- */
+
+.house-pick {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.house-pick:focus-visible {
+  border-color: var(--accent);
+  outline: 0;
+}
+
+.house-pick:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.house-pick > ion-icon {
+  flex: none;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-pick-words {
+  min-width: 0;
+  flex: 1;
+}
+
+.house-pick-label {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.house-pick-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-pick-empty,
+.house-pick small,
+.house-pick-sheet small {
+  color: var(--muted);
+}
+
+.house-pick-sheet {
+  padding: 0 8px 8px;
+}
+
+.house-pick-sheet ul {
+  max-height: 45dvh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.house-pick-sheet li button {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: var(--corner);
+  color: var(--ink);
+}
+
+.house-pick-sheet li button > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-pick-sheet li button:hover {
+  background: rgba(var(--ink-rgb), 0.04);
+}
+
+.house-pick-sheet li button.house-pick-on {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.house-pick-none {
+  padding: 16px 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ---- DateInput ---- */
+
+ion-input.house-date {
+  font-variant-numeric: tabular-nums;
+}
+
+.house-date-open {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--round);
+  color: var(--muted);
+  font-size: 22px;
+}
+
+.house-date-open:hover {
+  color: var(--ink);
+}
+
+ion-modal.house-date-modal {
+  --width: 350px;
+  --height: auto;
+  --border-radius: var(--corner);
+  --backdrop-opacity: 0.7;
+}
+
+ion-modal.house-date-modal ion-datetime {
+  width: 100%;
+  max-width: none;
+}
+
+/* ---- Toggle ---- */
+
+ion-toggle.house-toggle {
+  font-size: 17px;
+}
+
+/* ---- ThemeControl ---- */
+
+.house-theme {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.house-theme button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.house-theme button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.house-theme ion-icon,
+.house-theme-cycle ion-icon {
+  font-size: 20px;
+}
+
+.house-theme-cycle {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--round);
+  color: var(--muted);
+}
+
+.house-theme-cycle:hover {
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--ink);
+}
+
+/* ---- AppHeader ---- */
+
+ion-header.house-header ion-toolbar {
+  --min-height: 56px;
+}
+
+.house-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* ---- Sidebar: the neutrals, with the accent only on the row that is open. ---- */
+
+.house-side {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.house-side-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 12px;
+  font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.house-side-switch {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+}
+
+button.house-side-switch {
+  border: var(--edge) solid var(--line);
+}
+
+.house-side-switch > ion-icon {
+  flex: none;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-side-initial {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--round);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.house-side-words {
+  min-width: 0;
+  flex: 1;
+}
+
+.house-side-words b,
+.house-side-words small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-side-words small {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.house-side-options {
+  margin: 0;
+  padding: 0 8px 8px;
+  list-style: none;
+}
+
+.house-side-options button {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--corner);
+}
+
+.house-side-options button:hover {
+  background: rgba(var(--ink-rgb), 0.04);
+}
+
+.house-side-options ion-icon {
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.house-side-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 4px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* SidebarSections: the groups as accordions in the sidebar's own look, not Ionic's boxed one. */
+.house-side-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.house-side-sections ion-accordion {
+  margin: 0;
+  border: 0;
+  border-radius: var(--corner);
+  background: transparent;
+}
+
+.house-side-sections ion-accordion [slot='content'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 0 8px;
+}
+
+ion-item.house-side-section-head {
+  --background: transparent;
+  --background-hover: var(--ink);
+  --background-hover-opacity: 0.04;
+  --border-radius: var(--corner);
+  --min-height: 44px;
+  --padding-start: 12px;
+  --inner-padding-end: 8px;
+  --color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+ion-item.house-side-section-head ion-icon {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-side-section.accordion-expanded ion-item.house-side-section-head {
+  --color: var(--ink);
+}
+
+.house-side-row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: var(--corner);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.house-side-row > span:not(.house-count) {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-side-row ion-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 7px;
+  border-radius: var(--round);
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-side-row:hover {
+  background: rgba(var(--ink-rgb), 0.04);
+}
+
+.house-side-on,
+.house-side-on:hover {
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.house-side-on ion-icon {
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+}
+
+.house-side-on::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  border-radius: var(--corner) 0 0 var(--corner);
+  background: var(--accent);
+  content: '';
+}
+
+.house-side-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: 12px 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+/* ==========================================================================
+   Reports. Every line is the line colour at 2px; the head is the accent, filled.
+   ========================================================================== */
+
+.house-report {
+  width: 100%;
+  max-width: 896px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.house-report-wide {
+  max-width: 1024px;
+}
+
+.house-report-controls {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  padding: 12px 0;
+  border-bottom: var(--edge) solid var(--line);
+  background: var(--ground);
+}
+
+.house-report-section {
+  margin-top: 24px;
+}
+
+.house-report-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.house-report-heading h2,
+.house-report-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.house-report-heading h2 {
+  font-size: 20px;
+}
+
+.house-report-frame {
+  overflow-x: auto;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+}
+
+.house-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.house-report-nowrap {
+  white-space: nowrap;
+}
+
+.house-report-table th,
+.house-report-table td {
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.house-report-table thead th {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.house-report-table tbody tr,
+.house-report-table tfoot tr {
+  border-top: var(--edge) solid var(--line);
+}
+
+.house-report-table tbody tr:first-child {
+  border-top: 0;
+}
+
+.house-report-table tfoot td {
+  background: rgba(var(--accent-rgb), 0.08);
+  font-weight: 700;
+}
+
+.house-report-opens {
+  cursor: pointer;
+}
+
+.house-report-opens:hover {
+  background: rgba(var(--ink-rgb), 0.04);
+}
+
+/* Right-aligned means tabular, always together. */
+.house-report-num,
+.house-report-table th.house-report-num,
+.house-report-table td.house-report-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.house-report-none {
+  margin: 0;
+  color: var(--muted);
+}
+
+.house-report-good {
+  color: var(--success);
+}
+
+.house-report-bad {
+  color: var(--danger);
+}
+
+.house-report-quiet {
+  color: var(--muted);
+}
+
+/* ---- Pager ---- */
+
+.house-report-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.house-report-pager button,
+.house-report-days button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.house-report-pager button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  font-weight: 700;
+}
+
+.house-report-pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---- Stat, StatGrid: the gaps between the tiles are the lines. ---- */
+
+.house-report-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--edge);
+  overflow: hidden;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+  background: var(--line);
+}
+
+@media (min-width: 640px) {
+  .house-report-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.house-report-stat {
+  padding: 12px;
+  background: var(--ground);
+}
+
+.house-report-stat p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.house-report-stat b {
+  display: block;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+/* ---- BreakdownPanel, BreakdownRow ---- */
+
+.house-report-lines {
+  overflow: hidden;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--corner);
+}
+
+.house-report-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.house-report-line + .house-report-line {
+  border-top: var(--edge) solid var(--line);
+}
+
+.house-report-line ion-icon {
+  flex: none;
+  align-self: center;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.house-report-label {
+  min-width: 0;
+  flex: 1;
+  color: var(--muted);
+}
+
+.house-report-label small {
+  display: block;
+  font-size: 15px;
+}
+
+.house-report-strong {
+  background: rgba(var(--accent-rgb), 0.08);
+  font-weight: 700;
+}
+
+.house-report-strong .house-report-label {
+  color: var(--ink);
+}
+
+/* ---- DayTabs: pinned to the bottom of the report. ---- */
+
+.house-report-days {
+  position: sticky;
+  z-index: 20;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  margin-top: 24px;
+  border-top: var(--edge) solid var(--line);
+  background: var(--ground);
+}
+
+.house-report-strip {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.house-report-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.house-report-days button {
+  min-width: 44px;
+  min-height: 44px;
+  flex: none;
+  padding: 0 12px;
+  border-right: var(--edge) solid var(--line);
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.house-report-days button.house-report-blank {
+  background: var(--raised);
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.house-report-days button.house-report-all {
+  color: var(--ink);
+}
+
+.house-report-days button[aria-current='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+/* The arrows are for a mouse; a finger drags the strip. */
+.house-report-days button.house-report-arrow {
+  display: none;
+  color: var(--ink);
+}
+
+@media (min-width: 768px) {
+  .house-report-days button.house-report-arrow {
+    display: grid;
+    place-items: center;
+  }
+}
