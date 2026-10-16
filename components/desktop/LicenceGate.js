@@ -76,11 +76,12 @@ export function UnlockActions({ compact = false }) {
   const [error, setError] = useState('')
   const link = getLink()
 
-  if (!link) {
+  // Not linked yet, or linked once and since revoked on the web (lib/local/webSync.js).
+  if (!link || link.revoked) {
     return (
       <>
         <div className={compact ? '' : 'w-full max-w-xs mx-auto'}>
-          <Button icon={linkOutline} expand={compact ? 'inline' : 'block'} onClick={() => setLinking(true)}>Link this computer</Button>
+          <Button icon={linkOutline} expand={compact ? 'inline' : 'block'} onClick={() => setLinking(true)}>{link ? 'Link again' : 'Link this computer'}</Button>
         </div>
         <Dialog open={linking} onClose={() => setLinking(false)} title="Link this computer" placement="bottom">
           <p className="text-[15px] text-content-muted mb-4">The station’s owner signs in with their StationMGR web account, once, online. The station’s subscription then works on this computer, offline.</p>

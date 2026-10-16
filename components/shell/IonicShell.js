@@ -12,6 +12,7 @@ import Screen from '@/components/shell/Screen'
 import BackgroundSync, { stationIdFrom } from '@/components/shell/BackgroundSync'
 import slideTransition from '@/components/shell/slideTransition'
 import LicenceGate from '@/components/desktop/LicenceGate'
+import AutoSync from '@/components/desktop/AutoSync'
 
 /**
  * Desktop build: the station as one Ionic app: IonApp, Ionic's router, a split pane with the
@@ -57,6 +58,7 @@ export default function IonicShell({ area }) {
               subscription runs (components/desktop/LicenceGate.js). */}
           <LicenceGate>
           <BackgroundSync />
+          <AutoSync />
           <SavePushProvider>
             <IonSplitPane contentId="main" when={SPLIT_WHEN}>
               <Menu />

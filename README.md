@@ -35,7 +35,10 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
   PINs stay on this computer.
 - **Free:** daily sales, lodgements, station setup, staff and PINs, and reports over up to 5
   days (Dip Calculator included).
-- **Push and Pull** (station page, needs the internet and a subscription): Push sends what was entered here to the
+- **Push and Pull** (station page, needs the internet and a subscription). With a subscription
+  the app also does both on its own while online: it pulls when it opens and every 10 minutes,
+  so entries the staff make on their phones reach the computer's reports, and pushes a minute
+  after a change here. The buttons do it at once. Push sends what was entered here to the
   web station; Pull brings the web station's records here. Changes not yet pushed are kept as
   they are on a pull. Everything else works offline.
 - **Subscription:** the web platform sells it; the desktop checks it offline from a licence the
