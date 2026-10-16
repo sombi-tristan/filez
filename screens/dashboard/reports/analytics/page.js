@@ -11,7 +11,7 @@ import {
 import { db } from '@/lib/db'
 import { buildAnalyticsReport } from '@/lib/buildAnalyticsReport'
 import { fmtDate } from '@/lib/formatDate'
-import DateInput from '@/components/DateInput'
+import DateRange from '@/components/reports/DateRange'
 import AccessGate from '@/components/AccessGate'
 import { REPORT_HEAD, OUTLINE_WITHIN, BTN_PRIMARY, CARD } from '@/components/ui'
 
@@ -164,17 +164,15 @@ function AnalyticsContent() {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-end py-3">
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <DateInput value={startDate} onChange={setStartDate} className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-            <span className="text-sm text-content-faint">to</span>
-            <DateInput value={endDate} onChange={setEndDate} className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-            <button
-              onClick={handleGenerate}
-              disabled={generating || !startDate || !endDate || startDate > endDate || dateRangeDays > 92}
-              className={`px-4 py-2 text-sm font-medium disabled:opacity-50 flex items-center gap-1.5 ${BTN_PRIMARY}`}
-            >
-              {generating && <Loader2 className="w-4 h-4 animate-spin" />}
-              {generating ? 'Generating...' : 'Generate'}
-            </button>
+            <DateRange
+              start={startDate}
+              end={endDate}
+              onStart={setStartDate}
+              onEnd={setEndDate}
+              onGenerate={handleGenerate}
+              generating={generating}
+              disabled={!startDate || !endDate || startDate > endDate || dateRangeDays > 92}
+            />
           </div>
         </div>
         {dateRangeDays > 92 && (

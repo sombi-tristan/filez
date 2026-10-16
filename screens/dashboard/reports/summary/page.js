@@ -7,7 +7,7 @@ import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildDailyReport } from '@/lib/buildDailyReport'
 import { fmtDate } from '@/lib/formatDate'
-import DateInput from '@/components/DateInput'
+import DateRange from '@/components/reports/DateRange'
 import AccessGate from '@/components/AccessGate'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
 
@@ -171,25 +171,15 @@ function SummaryContent() {
       {/* Header */}
       <div className="flex items-center justify-end py-3 shrink-0">
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <DateInput
-            value={startDate}
-            onChange={setStartDate}
-            className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`}
+          <DateRange
+            start={startDate}
+            end={endDate}
+            onStart={setStartDate}
+            onEnd={setEndDate}
+            onGenerate={handleGenerate}
+            generating={generating}
+            disabled={!startDate || !endDate || startDate > endDate}
           />
-          <span className="text-sm text-content-faint">to</span>
-          <DateInput
-            value={endDate}
-            onChange={setEndDate}
-            className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`}
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={generating || !startDate || !endDate || startDate > endDate}
-            className={`px-4 py-2 text-sm font-medium disabled:opacity-50 flex items-center gap-1.5 ${BTN_PRIMARY}`}
-          >
-            {generating && <Loader2 className="w-4 h-4 animate-spin" />}
-            {generating ? 'Generating...' : 'Generate'}
-          </button>
         </div>
       </div>
 

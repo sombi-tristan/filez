@@ -9,7 +9,7 @@ import { buildAuditReport } from '@/lib/buildAuditReport'
 import { exportAuditExcel } from '@/lib/exportAuditExcel'
 import { exportAuditGenericExcel } from '@/lib/exportAuditGenericExcel'
 import { isRainoilGroup } from '@/lib/exportGroup'
-import DateInput from '@/components/DateInput'
+import DateRange from '@/components/reports/DateRange'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
@@ -303,17 +303,15 @@ function AuditReportContent() {
       {/* Header + date range */}
       <div className="flex items-center justify-end py-3 shrink-0">
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <DateInput value={startDate} onChange={setStartDate} className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-          <span className="text-sm text-content-faint">to</span>
-          <DateInput value={endDate} onChange={setEndDate} className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-          <button
-            onClick={handleGenerate}
-            disabled={generating || !startDate || !endDate || startDate > endDate || dateRangeDays > 32}
-            className={`px-4 py-2 text-sm font-medium disabled:opacity-50 flex items-center gap-1.5 ${BTN_PRIMARY}`}
-          >
-            {generating && <Loader2 className="w-4 h-4 animate-spin" />}
-            {generating ? 'Generating...' : 'Generate'}
-          </button>
+          <DateRange
+            start={startDate}
+            end={endDate}
+            onStart={setStartDate}
+            onEnd={setEndDate}
+            onGenerate={handleGenerate}
+            generating={generating}
+            disabled={!startDate || !endDate || startDate > endDate || dateRangeDays > 32}
+          />
           {isOwner && report && (
             <button
               onClick={handleExport}

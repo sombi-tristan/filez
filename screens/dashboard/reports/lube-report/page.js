@@ -5,7 +5,7 @@ import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Loader2 } from 'lucide-react'
 import { db } from '@/lib/db'
-import DateInput from '@/components/DateInput'
+import DateRange from '@/components/reports/DateRange'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
@@ -260,16 +260,14 @@ function LubeReportContent() {
       <div className="flex items-center justify-between py-3 shrink-0">
         <h1 className="text-lg font-bold text-content">Lube Report</h1>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <DateInput value={startDate} onChange={setStartDate} className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-          <span className="text-sm text-content-faint">to</span>
-          <DateInput value={endDate} onChange={setEndDate} className={`px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-          <button
-            onClick={handleGenerate}
+          <DateRange
+            start={startDate}
+            end={endDate}
+            onStart={setStartDate}
+            onEnd={setEndDate}
+            onGenerate={handleGenerate}
             disabled={!startDate || !endDate || startDate > endDate}
-            className={`px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
-          >
-            Generate
-          </button>
+          />
         </div>
       </div>
 

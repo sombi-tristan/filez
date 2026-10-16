@@ -3,14 +3,21 @@
 import { Suspense, useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2, Plus, ChevronLeft, ChevronRight, X, Pencil, Trash2 } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import {
+  checkmarkCircleOutline, createOutline, ellipseOutline, ellipsisHorizontal, peopleOutline,
+  personAddOutline, readerOutline, trashOutline,
+} from 'ionicons/icons'
+import {
+  BottomSheet, Button, ConfirmDialog, Dialog, EmptyState, IconButton, Pager, SheetAction, Stat, StatGrid,
+} from '@/design'
 import { db } from '@/lib/db'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import DateInput from '@/components/DateInput'
 import SearchableSelect from '@/components/SearchableSelect'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
-import { REPORT_HEAD, REPORT_LINE, REPORT_RULE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, INPUT, BTN_PRIMARY, BTN_FRAMED, CARD_LINE, REPORT_CARD } from '@/components/ui'
+import { REPORT_HEAD, REPORT_LINE, REPORT_RULE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, INPUT, BTN_PRIMARY, CARD_LINE, REPORT_CARD } from '@/components/ui'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -56,6 +63,9 @@ function AccountLedgerContent() {
   const [formBalance, setFormBalance] = useState('')
   const [formSaving, setFormSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  // The account whose actions sheet is open, and the one waiting on "Delete?".
+  const [actionsId, setActionsId] = useState(null)
+  const [deleteId, setDeleteId] = useState(null)
 
   // Live data from IndexedDB
   const customers = useLiveQuery(
@@ -300,8 +310,8 @@ function AccountLedgerContent() {
     setFormSaving(false)
   }
 
+  // Asked first in the ConfirmDialog below, which holds while this runs.
   const handleDelete = async (acctId) => {
-    if (!confirm('Delete this account? Transaction history will be preserved but unlinked.')) return
     await db.customers.delete(acctId)
     setSelectedAccounts(prev => prev.filter(id => id !== acctId))
     if (formId === acctId) closeForm()
@@ -318,243 +328,264 @@ function AccountLedgerContent() {
     }).catch(() => {})
   }
 
-  const cell = `border ${REPORT_LINE} px-3 py-1.5 text-sm whitespace-nowrap`
-  const cellR = cell + ' text-right'
-  const hdr = `${REPORT_HEAD} font-bold text-sm`
-
   if (!orgId) return <div className="p-6 text-content-muted">No station selected.</div>
+
+  const actionsFor = actionsId ? allLedgerData.find((d) => d.id === actionsId) : null
+  const deleting = deleteId ? allLedgerData.find((d) => d.id === deleteId) : null
 
   return (
     <AccessGate orgId={orgId} pageKey="report-account-ledger">
-      {({ isOwner }) => (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-5xl mx-auto px-4 sm:px-6">
-      <div className="shrink-0 pt-4 flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold">Account Ledger</h1>
-        {!formMode && (
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-1 text-sm text-primary-600 font-medium hover:text-primary-700"
-          >
-            <Plus className="w-4 h-4" /> New Account
-          </button>
-        )}
+      {() => (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-3 pb-10">
+      {/* Controls: the period and a new account on one line, the account picker under it. */}
+      <div className="flex items-center gap-2 mb-3">
+        <DateInput value={startDate} onChange={setStartDate} className={`flex-1 px-2 py-2.5 text-sm font-medium ${OUTLINE_WITHIN}`} />
+        <span className="text-sm text-content-faint">to</span>
+        <DateInput value={endDate} onChange={setEndDate} className={`flex-1 px-2 py-2.5 text-sm font-medium ${OUTLINE_WITHIN}`} />
+        <IconButton icon={personAddOutline} label="New account" variant="secondary" onClick={openCreate} />
       </div>
 
-      {/* Account form (create or edit) */}
-      {formMode && (
-        <div className={`p-4 mb-4 bg-subtle ${CARD_LINE}`}>
-          <h3 className="text-sm font-semibold mb-3">{formMode === 'edit' ? 'Edit Account' : 'Create Account'}</h3>
-          <div className="flex flex-wrap gap-2 items-end">
-            <div className="flex-1 min-w-[140px]">
-              <label className="block text-xs text-content-muted mb-1">Name</label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Account name"
-                maxLength={200}
-                className={INPUT}
-              />
-            </div>
-            <div className="w-32">
-              <label className="block text-xs text-content-muted mb-1">Phone</label>
-              <input
-                type="tel"
-                value={formPhone}
-                onChange={(e) => setFormPhone(e.target.value)}
-                placeholder="Optional"
-                maxLength={20}
-                className={INPUT}
-              />
-            </div>
-            <div className="w-32">
-              <label className="block text-xs text-content-muted mb-1">Opening Bal</label>
-              <input
-                type="number"
-                value={formBalance}
-                onChange={(e) => setFormBalance(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className={INPUT}
-              />
-            </div>
-            <button
-              onClick={handleSaveForm}
-              disabled={formSaving}
-              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
-            >
-              {formSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Save
-            </button>
-            <button
-              onClick={closeForm}
-              className={`px-4 py-2 text-sm ${BTN_FRAMED}`}
-            >
-              Cancel
-            </button>
-          </div>
-          {formError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{formError}</p>}
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="shrink-0 flex flex-wrap gap-3 items-end mb-4">
-        <div>
-          <label className="block text-xs font-medium text-content-muted mb-1">From</label>
-          <DateInput value={startDate} onChange={setStartDate} className={`w-36 px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-content-muted mb-1">To</label>
-          <DateInput value={endDate} onChange={setEndDate} className={`w-36 px-2 py-2 text-sm font-medium ${OUTLINE_WITHIN}`} />
-        </div>
-        <div className="min-w-[200px]">
-          <label className="block text-xs font-medium text-content-muted mb-1">Account (select up to 10)</label>
-          <SearchableSelect
-            value={selectedAccounts.length === 0 ? '__all__' : ''}
-            onChange={handleAccountChange}
-            options={accountOptions}
-            placeholder="Select account..."
-          />
-          {selectedLabels.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {selectedLabels.map(s => (
-                <span
-                  key={s.id}
-                  className="inline-flex items-center gap-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 text-xs font-medium px-2 py-0.5 cursor-pointer hover:bg-primary-200 dark:hover:bg-primary-900/50"
-                  onClick={() => handleAccountChange(s.id)}
-                >
-                  {s.name}
-                  <X className="w-3 h-3" />
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Scrollable content area */}
-      <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 pb-4 ${REPORT_CARD}`}>
-        {creditCustomers.length === 0 && !formMode && (
-          <p className="text-content-muted text-sm p-4">No credit customers configured.</p>
-        )}
-
-        {/* Multiple accounts — merged journal */}
-        {selectedAccounts.length >= 2 && mergedJournal && (
-          <MergedJournalTable data={mergedJournal} startDate={startDate} endDate={endDate} />
-        )}
-
-        {/* Single account — full journal view */}
-        {selectedAccounts.length === 1 && selectedData[0] && (
-          <JournalTable data={selectedData[0]} startDate={startDate} endDate={endDate} />
-        )}
-
-        {/* All accounts — simple clickable list */}
-        {selectedAccounts.length === 0 && pagedData.length > 0 && (
-          <div className="p-2">
-            {/* Grand totals summary */}
-            <table className={`w-full border-collapse border ${REPORT_LINE} mb-4`}>
-              <thead>
-                <tr className={hdr}>
-                  <th className={cell + ' text-left'}>All Accounts ({sortedAll.length})</th>
-                  <th className={cell + ' text-right'}>Opening Bal</th>
-                  <th className={cell + ' text-right'}>Sales</th>
-                  <th className={cell + ' text-right'}>Payment</th>
-                  <th className={cell + ' text-right'}>Closing Bal</th>
-                  <th className={cell + ' text-center w-20'}></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className={`${REPORT_TOTAL_FILL} font-bold`}>
-                  <td className={cell}>Totals</td>
-                  <td className={cellR}>{fmtBal(totals.openingBalance)}</td>
-                  <td className={cellR}>{fmt(totals.totalDebit)}</td>
-                  <td className={cellR}>{fmt(totals.totalCredit)}</td>
-                  <td className={cellR}>{fmtBal(totals.closingBalance)}</td>
-                  <td className={cell}></td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* Account list */}
-            <table className={`w-full border-collapse border ${REPORT_LINE}`}>
-              <thead>
-                <tr className={`${REPORT_HEAD} text-sm font-semibold`}>
-                  <th className={cell + ' text-left'}>Account</th>
-                  <th className={cell + ' text-right'}>Opening Bal</th>
-                  <th className={cell + ' text-right'}>Sales</th>
-                  <th className={cell + ' text-right'}>Payment</th>
-                  <th className={cell + ' text-right'}>Closing Bal</th>
-                  <th className={cell + ' text-center w-20'}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagedData.map(acct => (
-                    <tr
-                      key={acct.id}
-                      onClick={() => handleAccountChange(acct.id)}
-                      className="cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-950/40"
-                    >
-                      <td className={cell + ' text-primary-600 font-medium'}>{acct.name}</td>
-                      <td className={cellR}>{fmtBal(acct.openingBalance)}</td>
-                      <td className={cellR}>{acct.totalDebit ? fmt(acct.totalDebit) : ''}</td>
-                      <td className={cellR}>{acct.totalCredit ? fmt(acct.totalCredit) : ''}</td>
-                      <td className={cellR + ' font-medium'}>{fmtBal(acct.closingBalance)}</td>
-                      <td className={cell + ' text-center'} onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <input
-                            type="checkbox"
-                            checked={acct.station_value_tracked}
-                            onChange={() => handleToggleTracked(acct.id, acct.station_value_tracked)}
-                            title="Track in Station Value"
-                            className="w-3.5 h-3.5 accent-green-600 cursor-pointer"
-                          />
-                          <button onClick={() => openEdit(creditCustomers.find(c => c.id === acct.id))} className="text-content-faint hover:text-primary-600 p-0.5">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => handleDelete(acct.id)} className="text-content-faint hover:text-red-600 dark:text-red-400 p-0.5">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 mt-6">
-                <button
-                  onClick={() => setPage(p => p - 1)}
-                  disabled={page === 0}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-sm disabled:opacity-30 disabled:cursor-not-allowed ${BTN_PRIMARY}`}
-                >
-                  <ChevronLeft className="w-4 h-4" /> Prev
-                </button>
-                <span className="text-sm text-content-muted">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={page >= totalPages - 1}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-sm disabled:opacity-30 disabled:cursor-not-allowed ${BTN_PRIMARY}`}
-                >
-                  Next <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+      <div className="mb-4">
+        <SearchableSelect
+          value={selectedAccounts.length === 0 ? '__all__' : ''}
+          onChange={handleAccountChange}
+          options={accountOptions}
+          placeholder="Select account..."
+        />
+        {selectedLabels.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {selectedLabels.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => handleAccountChange(s.id)}
+                className="inline-flex items-center gap-1.5 min-h-[36px] pl-3 pr-2 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 text-sm font-semibold"
+                aria-label={`Remove ${s.name}`}
+              >
+                {s.name}
+                <X className="w-4 h-4" />
+              </button>
+            ))}
+            {selectedLabels.length > 1 && (
+              <button type="button" onClick={() => handleAccountChange('__all__')} className="min-h-[36px] px-3 text-sm font-semibold text-content-muted">
+                Clear
+              </button>
             )}
           </div>
         )}
-
-        {/* Station Value section */}
-        {selectedAccounts.length === 0 && stationValueData && (
-          <StationValueSection data={stationValueData} startDate={startDate} endDate={endDate} />
-        )}
       </div>
+
+      {creditCustomers.length === 0 && (
+        <EmptyState
+          icon={peopleOutline}
+          title="No credit accounts yet"
+          action={<Button expand="inline" icon={personAddOutline} onClick={openCreate}>New account</Button>}
+        >
+          Add the customers who buy on credit to follow what each one owes.
+        </EmptyState>
+      )}
+
+      {/* Several accounts: one journal across them */}
+      {selectedAccounts.length >= 2 && mergedJournal && (
+        <LedgerView
+          title={mergedJournal.names.length <= 3 ? mergedJournal.names.join(' & ') : `${mergedJournal.names.slice(0, 3).join(', ')} + ${mergedJournal.names.length - 3} more`}
+          data={mergedJournal}
+          startDate={startDate}
+          endDate={endDate}
+          withAccount
+          table={<MergedJournalTable data={mergedJournal} startDate={startDate} endDate={endDate} />}
+        />
+      )}
+
+      {/* One account: its journal */}
+      {selectedAccounts.length === 1 && selectedData[0] && (
+        <LedgerView
+          title={selectedData[0].name}
+          data={selectedData[0]}
+          startDate={startDate}
+          endDate={endDate}
+          table={<JournalTable data={selectedData[0]} startDate={startDate} endDate={endDate} />}
+        />
+      )}
+
+      {/* Every account: the totals, then one card per account, most owed first */}
+      {selectedAccounts.length === 0 && pagedData.length > 0 && (
+        <>
+          <StatGrid>
+            <Stat label="Opening" value={fmtBal(totals.openingBalance)} />
+            <Stat label="Sales" value={fmt(totals.totalDebit) || '0'} />
+            <Stat label="Payments" value={fmt(totals.totalCredit) || '0'} />
+            <Stat label="Closing" value={fmtBal(totals.closingBalance)} />
+          </StatGrid>
+
+          <div className="flex items-baseline justify-between mt-5 mb-2">
+            <h2 className="font-semibold text-content">All accounts</h2>
+            <span className="text-[15px] text-content-muted">{sortedAll.length}</span>
+          </div>
+
+          <div className={`border-card ${CARD_LINE} rounded-house divide-y-2 divide-line overflow-hidden`}>
+            {pagedData.map(acct => (
+              <div key={acct.id} className="flex items-stretch">
+                <button
+                  type="button"
+                  onClick={() => handleAccountChange(acct.id)}
+                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3 text-left hover:bg-subtle active:bg-subtle"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-content truncate">
+                      {acct.name}
+                      {acct.station_value_tracked && <span className="ml-2 text-[13px] font-semibold text-primary-600 dark:text-primary-300">Station value</span>}
+                    </p>
+                    <p className="text-[13px] text-content-muted tabular-nums">
+                      Opening {fmtBal(acct.openingBalance) || '0'} · Sales {fmt(acct.totalDebit) || '0'} · Paid {fmt(acct.totalCredit) || '0'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[13px] text-content-muted">Closing</p>
+                    <p className="font-bold text-content tabular-nums">{fmtBal(acct.closingBalance) || '0'}</p>
+                  </div>
+                </button>
+                <div className="flex items-center pr-2">
+                  <IconButton icon={ellipsisHorizontal} label={`More for ${acct.name}`} variant="neutral" onClick={() => setActionsId(acct.id)} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Pager page={page} pageCount={totalPages} onChange={setPage} />
+        </>
+      )}
+
+      {/* Station value: the accounts tracked together */}
+      {selectedAccounts.length === 0 && stationValueData && (
+        <div className="mt-8">
+          <LedgerView
+            title="Station value"
+            subtitle={`Tracking ${stationValueData.accountCount} account${stationValueData.accountCount !== 1 ? 's' : ''}`}
+            data={stationValueData}
+            startDate={startDate}
+            endDate={endDate}
+            withAccount
+            labels={{ debit: 'Credit given', credit: 'Collected', balance: 'Outstanding' }}
+            table={<StationValueSection data={stationValueData} startDate={startDate} endDate={endDate} />}
+          />
+        </div>
+      )}
+
+      {/* An account's actions, from its card */}
+      <BottomSheet open={Boolean(actionsFor)} onClose={() => setActionsId(null)} label={actionsFor?.name || 'Account'}>
+        {actionsFor && (
+          <>
+            <p className="px-4 pt-1 pb-2 font-semibold text-content">{actionsFor.name}</p>
+            <SheetAction icon={readerOutline} label="Open ledger" onClick={() => { setActionsId(null); handleAccountChange(actionsFor.id) }} />
+            <SheetAction
+              icon={actionsFor.station_value_tracked ? checkmarkCircleOutline : ellipseOutline}
+              label={actionsFor.station_value_tracked ? 'Tracked in station value' : 'Track in station value'}
+              onClick={() => handleToggleTracked(actionsFor.id, actionsFor.station_value_tracked)}
+            />
+            <SheetAction icon={createOutline} label="Edit account" onClick={() => { setActionsId(null); openEdit(creditCustomers.find(c => c.id === actionsFor.id)) }} />
+            <SheetAction icon={trashOutline} label="Delete account" tone="danger" onClick={() => { setActionsId(null); setDeleteId(actionsFor.id) }} />
+          </>
+        )}
+      </BottomSheet>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onClose={() => setDeleteId(null)}
+        onConfirm={async () => { await handleDelete(deleteId); setDeleteId(null) }}
+        title={`Delete ${deleting?.name || 'this account'}?`}
+        confirmLabel="Delete"
+      >
+        Its transaction history is kept but no longer linked to an account.
+      </ConfirmDialog>
+
+      {/* Create or edit an account */}
+      <Dialog open={Boolean(formMode)} onClose={closeForm} title={formMode === 'edit' ? 'Edit account' : 'New account'} placement="bottom">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-[13px] font-semibold text-content-muted mb-1">Name</label>
+            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Account name" maxLength={200} autoCapitalize="words" className={INPUT} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[13px] font-semibold text-content-muted mb-1">Phone</label>
+              <input type="tel" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Optional" maxLength={20} className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-[13px] font-semibold text-content-muted mb-1">Opening balance</label>
+              <input type="text" inputMode="decimal" value={formBalance} onChange={(e) => setFormBalance(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" className={INPUT} />
+            </div>
+          </div>
+          {formError && <p className="text-[15px] font-semibold text-red-600 dark:text-red-400">{formError}</p>}
+          <Button size="large" onClick={handleSaveForm} disabled={formSaving}>
+            {formSaving ? 'Saving…' : 'Save account'}
+          </Button>
+        </div>
+      </Dialog>
     </div>
       )}
     </AccessGate>
+  )
+}
+
+/**
+ * A journal: on a phone a card per entry (date, what it was, the amount in or out, and the
+ * running balance), between the opening and closing balance; on a computer the table.
+ * `withAccount` shows which account each entry belongs to, for a journal across accounts.
+ */
+const LEDGER_PAGE = 20
+
+function LedgerView({ title, subtitle = null, data, startDate, endDate, withAccount = false, labels = {}, table }) {
+  const [page, setPage] = useState(0)
+  const words = { debit: 'Sales', credit: 'Payment', balance: 'Balance', ...labels }
+  const pageCount = Math.ceil(data.rows.length / LEDGER_PAGE)
+  const rows = data.rows.slice(page * LEDGER_PAGE, (page + 1) * LEDGER_PAGE)
+
+  return (
+    <section>
+      <div className="mb-3">
+        <h2 className="text-lg font-bold text-content">{title}</h2>
+        {subtitle && <p className="text-[15px] text-content-muted">{subtitle}</p>}
+      </div>
+
+      {/* A phone: the summary, then the entries as cards. */}
+      <div className="md:hidden">
+        <StatGrid>
+          <Stat label={`Opening · ${fmtDate(startDate)}`} value={fmtBal(data.openingBalance) || '0'} />
+          <Stat label={`Closing · ${fmtDate(endDate)}`} value={fmtBal(data.closingBalance) || '0'} />
+          <Stat label={words.debit} value={fmt(data.totalDebit) || '0'} />
+          <Stat label={words.credit} value={fmt(data.totalCredit) || '0'} />
+        </StatGrid>
+
+        {data.rows.length === 0 ? (
+          <p className="py-6 text-center text-[15px] text-content-muted">No transactions in this period.</p>
+        ) : (
+          <ol className={`mt-4 border-card ${CARD_LINE} rounded-house divide-y-2 divide-line`}>
+            {rows.map((row, i) => (
+              <li key={`${row.id}-${i}`} className="flex items-start gap-3 px-3 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-content-muted">
+                    {fmtDate(row.date)}
+                    {withAccount && row.account ? <> · <span className="font-semibold">{row.account}</span></> : null}
+                  </p>
+                  <p className="text-content truncate">{row.particulars || '—'}</p>
+                </div>
+                <div className="text-right shrink-0 tabular-nums">
+                  {row.debit ? <p className="font-semibold text-content">+{fmt(row.debit)}</p> : null}
+                  {row.credit ? <p className="font-semibold text-content">−{fmt(row.credit)}</p> : null}
+                  <p className="text-[13px] text-content-muted">{words.balance} {fmtBal(row.balance) || '0'}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+        <Pager page={page} pageCount={pageCount} onChange={setPage} />
+        <p className="mt-2 text-[13px] text-content-faint">+ {words.debit.toLowerCase()} · − {words.credit.toLowerCase()} · balances in brackets are in the account&apos;s favour</p>
+      </div>
+
+      {/* A computer: the table. */}
+      <div className={`hidden md:block overflow-x-auto ${REPORT_CARD}`}>{table}</div>
+    </section>
   )
 }
 
@@ -565,7 +596,6 @@ function JournalTable({ data, startDate, endDate }) {
 
   return (
     <div>
-      <h2 className="text-sm font-bold mb-2">{data.name}</h2>
       <table className={`w-full border-collapse border ${REPORT_LINE}`}>
         <thead>
           <tr className={hdr}>
@@ -630,9 +660,6 @@ function MergedJournalTable({ data, startDate, endDate }) {
 
   return (
     <div>
-      <h2 className="text-sm font-bold mb-2">
-        {data.names.length <= 3 ? data.names.join(' & ') : `${data.names.slice(0, 3).join(', ')} + ${data.names.length - 3} more`}
-      </h2>
       <table className={`w-full border-collapse border ${REPORT_LINE}`}>
         <thead>
           <tr className={hdr}>
@@ -723,11 +750,7 @@ function StationValueSection({ data, startDate, endDate }) {
   const pagedRows = data.rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   return (
-    <div className={`mt-8 p-2 ${REPORT_RULE}`}>
-      <h2 className="text-sm font-bold mb-1">Station Value</h2>
-      <p className="text-xs text-content-muted mb-3">
-        Tracking {data.accountCount} account{data.accountCount !== 1 ? 's' : ''}. Outstanding: {fmtBal(data.closingBalance)}
-      </p>
+    <div>
 
       <table className={`w-full border-collapse border ${REPORT_LINE}`}>
         <thead>
