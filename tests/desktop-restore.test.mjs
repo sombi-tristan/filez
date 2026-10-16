@@ -62,5 +62,14 @@ check('linked to B and holding A beside a pulled B is offered it too', heldStati
 check('a fresh linked computer is not', heldStation({ stationId: B, linked: true, stations: [] }) === null)
 check('a computer that is not linked is not', heldStation({ stationId: LOCAL_STATION_ID, linked: false, stations: [{ id: A, name: 'Wuse' }] }) === null)
 
+console.log('\nA station that cannot be opened')
+// It says why on screen; only a signed-out person (401) goes back to sign-in, so it cannot loop.
+{
+  const page = readFileSync(resolve(root, 'screens', 'dashboard', 'stations', '[stationId]', 'page.js'), 'utf8')
+  const redirects = page.match(/router\.replace\('\/auth\/login'\)/g) || []
+  check('goes back to sign-in only when signed out, or on Sign out', redirects.length === 2 && page.includes("orgRes.status === 401) { router.replace('/auth/login')"))
+  check('shows the reason instead', page.includes('This station could not be opened'))
+}
+
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)
