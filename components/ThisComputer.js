@@ -5,6 +5,8 @@ import { Download, Upload, KeyRound, Loader2, AlertTriangle } from 'lucide-react
 import Modal from '@/components/Modal'
 import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import { INPUT, BTN_PRIMARY, BTN_FRAMED, BTN_DANGER, CARD, SectionHeader } from '@/components/ui'
+import { getLink } from '@/lib/local/link'
+import { LOCAL_STATION_ID } from '@/lib/local/constants'
 
 /**
  * Desktop build: the station's data lives only on this computer, so the hub carries the tools
@@ -17,6 +19,8 @@ export default function ThisComputer({ isOwner, stationName }) {
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState(null) // { title, text }
   const [restoreFile, setRestoreFile] = useState(null)
+  // the station in the chosen backup, when it is not the one this computer is linked to
+  const [otherStation, setOtherStation] = useState('')
   const [pinOpen, setPinOpen] = useState(false)
   const [currentPin, setCurrentPin] = useState('')
   const [newPin, setNewPin] = useState('')
@@ -45,6 +49,17 @@ export default function ThisComputer({ isOwner, stationName }) {
     setBusy('')
   }
 
+  const chooseBackup = async (file) => {
+    setOtherStation('')
+    setRestoreFile(file)
+    if (!file) return
+    try {
+      const held = JSON.parse(await file.text())?.tables?.organizations?.[0]
+      const link = getLink()
+      if (link?.stationId && held && held.id !== link.stationId && held.id !== LOCAL_STATION_ID) setOtherStation(held.name || 'another station')
+    } catch { /* the restore itself says it is not a backup */ }
+  }
+
   const restore = async () => {
     if (!restoreFile) return
     setBusy('restore')
@@ -53,7 +68,8 @@ export default function ThisComputer({ isOwner, stationName }) {
       const res = await fetch('/api/local/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error || 'Restore failed')
-      window.location.href = '/auth/login'
+      // Another station's backup unlinked this computer: sign-in offers to create it on the web.
+      window.location.href = body.unlinked ? `/auth/login?restored=${encodeURIComponent(body.stationName || '')}` : '/auth/login'
     } catch (e) {
       setRestoreFile(null)
       setMessage({ title: 'Restore failed', text: e.message })
@@ -89,7 +105,7 @@ export default function ThisComputer({ isOwner, stationName }) {
               <Upload className="w-4 h-4" /> Restore backup
             </button>
             <input ref={fileRef} type="file" accept=".json,application/json" className="hidden"
-              onChange={(e) => { setRestoreFile(e.target.files?.[0] || null); e.target.value = '' }} />
+              onChange={(e) => { chooseBackup(e.target.files?.[0] || null); e.target.value = '' }} />
           </>
         )}
         <button onClick={() => { setPinOpen(true); setPinError('') }} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}>
@@ -105,7 +121,7 @@ export default function ThisComputer({ isOwner, stationName }) {
         </p>
       )}
 
-      <Modal open={!!restoreFile} onClose={() => setRestoreFile(null)} title="Restore backup?">
+      <Modal open={!!restoreFile} onClose={() => { setRestoreFile(null); setOtherStation('') }} title="Restore backup?">
         <div className="space-y-4">
           <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50">
             <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -114,6 +130,13 @@ export default function ThisComputer({ isOwner, stationName }) {
               Back up first if you might need what is here now.
             </p>
           </div>
+          {otherStation && (
+            <p className="text-sm text-content">
+              This backup is of <strong>{otherStation}</strong>, not {stationName || 'the station this computer is linked to'}. Restoring it
+              unlinks this computer from {stationName || 'that station'}; you can then create {otherStation} as a new station on the web
+              (or link it, if it is there already).
+            </p>
+          )}
           <div className="flex gap-2">
             <button onClick={() => setRestoreFile(null)} className={`flex-1 py-2 text-sm font-medium ${BTN_FRAMED}`}>Cancel</button>
             <button onClick={restore} disabled={busy === 'restore'} className={`flex-1 py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${BTN_DANGER}`}>
