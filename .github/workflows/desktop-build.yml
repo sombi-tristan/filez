@@ -22,18 +22,15 @@ jobs:
       - name: Install
         run: npm ci
 
-      # The web station this build links to, and the key it checks licences with. Set both as
-      # repository variables (Settings → Secrets and variables → Actions → Variables):
-      #   STATIONMGR_WEB_ORIGIN                    e.g. https://stationmgr.example.com
-      #   NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY   from scripts/gen-desktop-licence-keys.mjs on main
-      # Without them the app builds, but cannot link, push, pull or unlock.
+      # The web station this build links to and the key it checks licences with are in
+      # package.json "stationmgr" (webOrigin, licencePublicKey); both are public. Repository
+      # variables STATIONMGR_WEB_ORIGIN and NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY override them
+      # when set (Settings → Secrets and variables → Actions → Variables).
       - name: Point the build at the web station
         shell: bash
         run: |
-          if [ -z "${{ vars.STATIONMGR_WEB_ORIGIN }}" ] || [ -z "${{ vars.NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY }}" ]; then
-            echo "::warning::STATIONMGR_WEB_ORIGIN or NEXT_PUBLIC_DESKTOP_LICENCE_PUBLIC_KEY is not set: this installer cannot link to the web."
-          fi
-          npm pkg set "stationmgr.webOrigin=${{ vars.STATIONMGR_WEB_ORIGIN }}"
+          if [ -n "${{ vars.STATIONMGR_WEB_ORIGIN }}" ]; then npm pkg set "stationmgr.webOrigin=${{ vars.STATIONMGR_WEB_ORIGIN }}"; fi
+          echo "Web station: $(npm pkg get stationmgr.webOrigin)"
 
       - name: Build installer
         run: npm run dist:win
