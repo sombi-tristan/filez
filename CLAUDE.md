@@ -62,7 +62,11 @@ on main), with its own link, licence and device token, or stay offline only:
   days it has none of that kind). Rows put get new ids and the backup's entries are pointed at
   the station's own pumps, tanks, banks, customers and products, so nothing doubles and no other
   station is touched; every change is recorded for a push. Add a station → From a backup file
-  makes a new station and overwrites it. Backup and restore need a subscription running on a
+  makes a new station and overwrites it. On a linked station a restore is a correction: the station here
+  is the source of truth, so it replaces the web copy (webSync replaceWeb: app/api/desktop/wipe
+  on main clears it, then every row is pushed), and until that has gone through a pull does it
+  instead of taking the web's rows. The station card's "Make the web match this computer" does the
+  same on demand. Otherwise the PC takes from the web only by pull (staff entries from phones). Backup and restore need a subscription running on a
   station here. The Link form can also create a new web station for a station's records
   (app/api/desktop/link createName, lib/newStation.js on main); it has no subscription, so the
   records wait for its first push.

@@ -26,8 +26,9 @@ function when(iso) {
   return d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function StationWallet({ station, pendingCount = 0, syncing, refreshing, onPush, onPull, onDiscarded }) {
+export default function StationWallet({ station, pendingCount = 0, syncing, refreshing, onPush, onPull, onDiscarded, onReplace }) {
   const [reviewing, setReviewing] = useState(false)
+  const [replacing, setReplacing] = useState(false)
   // The link carries the last push, pull and sync error, which the automatic sync updates.
   const [link, setLink] = useState(getLink)
   useEffect(() => {
@@ -89,6 +90,30 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
     </div>
     <PendingChanges open={reviewing} onClose={() => setReviewing(false)} stationId={station.id} onDiscarded={onDiscarded} />
     {!paid && <div className="mb-4"><PaidNote what="Push and Pull" verb="need" /></div>}
+    {paid && link && !link.revoked && (
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3 border-2 border-line rounded-house bg-subtle">
+        <p className="text-[15px] text-content">
+          {link.replacePending
+            ? 'A correction here is waiting to replace the web copy of this station. It happens at the next sync.'
+            : 'This computer is the source of truth for corrections: the web copy can be made to match it.'}
+        </p>
+        <button onClick={() => setReplacing(true)} disabled={syncing || refreshing} className={`px-3 py-1.5 text-sm font-semibold border-2 border-line rounded-house disabled:opacity-50`}>
+          Make the web match this computer
+        </button>
+      </div>
+    )}
+    {replacing && (
+      <div className="mb-4 p-3 border-2 border-red-300 dark:border-red-800 rounded-house bg-subtle space-y-3" role="alertdialog">
+        <p className="text-[15px] text-content">
+          The web copy of <strong>{station.name}</strong> will be cleared and replaced by this computer&apos;s records: setup,
+          opening balances and entries. Anything entered on the web since the last pull (on a phone, say) is removed.
+        </p>
+        <div className="flex gap-2">
+          <button onClick={() => setReplacing(false)} className="px-3 py-1.5 text-sm font-semibold border-2 border-line rounded-house">Cancel</button>
+          <button onClick={() => { setReplacing(false); onReplace?.() }} className="px-3 py-1.5 text-sm font-semibold rounded-house bg-red-600 text-white">Replace the web copy</button>
+        </div>
+      </div>
+    )}
     {paid && link?.revoked && (
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3 border-2 border-line rounded-house bg-subtle">
         <p className="text-[15px] text-content">This computer was unlinked from its station on the web, so it no longer syncs.</p>
