@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useRouter } from '@/lib/nav'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useSearchParams } from '@/lib/nav'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
 import { lubeSalesRepo } from '@/lib/repositories/lubeSales'
@@ -12,9 +13,10 @@ import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_SELECT } from '@/components/ui'
 import { Tabs } from '@/design'
 import {
-  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, AddEntryButton, SubscribeNotice,
+  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, SubscribeNotice,
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
+import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
 function blankSalesEntry() {
   return { _key: crypto.randomUUID(), id: null, productId: '', unitSold: '', unitReceived: '', price: '', notes: '' }
@@ -22,6 +24,41 @@ function blankSalesEntry() {
 
 function blankStockEntry() {
   return { _key: crypto.randomUUID(), id: null, productId: '', stock: '', notes: '' }
+}
+
+function salesToForm(e) {
+  return {
+    _key: e.id, id: e.id,
+    productId: e.productId || '',
+    unitSold: String(e.unitSold ?? ''),
+    unitReceived: String(e.unitReceived ?? ''),
+    price: String(e.price ?? ''),
+    notes: e.notes || '',
+  }
+}
+
+function stockToForm(e) {
+  return {
+    _key: e.id, id: e.id,
+    productId: e.productId || '',
+    stock: String(e.stock ?? ''),
+    notes: e.notes || '',
+  }
+}
+
+/** The day's saved entries of one table, oldest first, and the days that have any. */
+function useDay(table, orgId, formDate) {
+  const dayEntries = useLiveQuery(
+    () => (orgId && formDate
+      ? table.where('orgId').equals(orgId).filter((e) => e.entryDate === formDate).toArray().then((r) => r.sort(byCreatedAt))
+      : []),
+    [orgId, formDate], []
+  )
+  const savedDates = useLiveQuery(
+    () => (orgId ? table.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate).filter(Boolean))].sort()) : []),
+    [orgId], []
+  )
+  return { dayEntries: dayEntries || [], savedDates: savedDates || [] }
 }
 
 export default function LubeFormPage() {
@@ -38,7 +75,6 @@ export default function LubeFormPage() {
   const [locked, setLocked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [products, setProducts] = useState([])
-  const [allDates, setAllDates] = useState([])
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return }
@@ -46,12 +82,6 @@ export default function LubeFormPage() {
       const prods = await db.lubeProducts.where('orgId').equals(orgId).toArray()
       if (prods.length === 0) setLocked(true)
       setProducts(prods)
-
-      const table = tab === 'stock' ? db.lubeStock : db.lubeSales
-      const allEntries = await table.where('orgId').equals(orgId).toArray()
-      const uniqueDates = [...new Set(allEntries.map(e => e.entryDate).filter(Boolean))].sort()
-      setAllDates(uniqueDates)
-
       setLoading(false)
     }
     load()
@@ -61,10 +91,10 @@ export default function LubeFormPage() {
 
   if (locked) return <NotConfigured orgId={orgId} />
 
-  const formProps = { products, qs, orgId, editId, editDate, subBlocked, allDates }
+  const formProps = { products, qs, orgId, editId, editDate, subBlocked }
 
   return (
-    <EntryScreen>
+    <EntryScreen wide>
       {!editId && !editDate && (
         <div className="mb-2 border-b-2 border-line">
           <Tabs
@@ -86,8 +116,7 @@ export default function LubeFormPage() {
   )
 }
 
-function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allDates }) {
-  const router = useRouter()
+function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   const { promptPush } = useSavePush()
   const [loading, setLoading] = useState(!!(editId || editDate))
   const [saving, setSaving] = useState(false)
@@ -98,7 +127,9 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
   const [entries, setEntries] = useState([blankSalesEntry()])
   const [originalIds, setOriginalIds] = useState([])
 
-  const isEditing = !!(editId || editDate || originalIds.length > 0)
+  const isEditing = originalIds.length > 0
+  const clearForm = () => { setOriginalIds([]); setEntries([blankSalesEntry()]) }
+  const { dayEntries, savedDates } = useDay(db.lubeSales, orgId, formDate)
 
   useEffect(() => {
     const load = async () => {
@@ -107,83 +138,40 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
         if (entry) {
           setFormDate(entry.entryDate || '')
           setOriginalIds([entry.id])
-          setEntries([{
-            _key: entry.id, id: entry.id,
-            productId: entry.productId || '',
-            unitSold: String(entry.unitSold ?? ''),
-            unitReceived: String(entry.unitReceived ?? ''),
-            price: String(entry.price ?? ''),
-            notes: entry.notes || '',
-          }])
+          setEntries([salesToForm(entry)])
         }
       } else if (editDate) {
-        const all = await db.lubeSales.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === editDate).sort(byCreatedAt)
-        if (dateEntries.length > 0) {
-          setFormDate(editDate)
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(dateEntries.map(e => ({
-            _key: e.id, id: e.id,
-            productId: e.productId || '',
-            unitSold: String(e.unitSold ?? ''),
-            unitReceived: String(e.unitReceived ?? ''),
-            price: String(e.price ?? ''),
-            notes: e.notes || '',
-          })))
-        }
-      } else {
-        // Create mode: auto-load existing entries for today's date
-        const today = new Date().toISOString().split('T')[0]
-        const all = await db.lubeSales.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === today).sort(byCreatedAt)
-        if (dateEntries.length > 0) {
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(dateEntries.map(e => ({
-            _key: e.id, id: e.id,
-            productId: e.productId || '',
-            unitSold: String(e.unitSold ?? ''),
-            unitReceived: String(e.unitReceived ?? ''),
-            price: String(e.price ?? ''),
-            notes: e.notes || '',
-          })))
-        }
+        // A day opened from the list or the arrows: an empty form, its entries listed beside it.
+        setFormDate(editDate)
+        setOriginalIds([])
+        setEntries([blankSalesEntry()])
       }
       setLoading(false)
     }
     load()
   }, [editId, editDate, orgId])
 
-  // When date changes in create mode, auto-load existing entries for that date
-  const handleDateChange = async (newDate) => {
+  // Another day: an empty form, and that day's entries in the list.
+  const handleDateChange = (newDate) => {
     setFormDate(newDate)
-    if (editId || editDate || !orgId || !newDate) return
-    const all = await db.lubeSales.where('orgId').equals(orgId).toArray()
-    const dateEntries = all.filter(e => e.entryDate === newDate).sort(byCreatedAt)
-    if (dateEntries.length > 0) {
-      setOriginalIds(dateEntries.map(e => e.id))
-      setEntries(dateEntries.map(e => ({
-        _key: e.id, id: e.id,
-        productId: e.productId || '',
-        unitSold: String(e.unitSold ?? ''),
-        unitReceived: String(e.unitReceived ?? ''),
-        price: String(e.price ?? ''),
-        notes: e.notes || '',
-      })))
-    } else {
-      setOriginalIds([])
-      setEntries([blankSalesEntry()])
-    }
+    clearForm()
+  }
+
+  const editEntry = (item) => {
+    const entry = dayEntries.find((e) => e.id === item.id)
+    if (!entry) return
+    setOriginalIds([entry.id])
+    setEntries([salesToForm(entry)])
+    setError('')
+  }
+
+  const deleteEntry = async (item) => {
+    await lubeSalesRepo.remove(item.id, orgId)
+    if (originalIds.includes(item.id)) clearForm()
   }
 
   const updateEntry = (idx, field, value) => {
     setEntries(prev => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e))
-  }
-
-  const addEntry = () => setEntries(prev => [...prev, blankSalesEntry()])
-
-  const removeEntry = (idx) => {
-    if (entries.length === 1) return
-    setEntries(prev => prev.filter((_, i) => i !== idx))
   }
 
   const submittingRef = useRef(false)
@@ -192,7 +180,7 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
     if (submittingRef.current) return
     submittingRef.current = true
     for (let i = 0; i < entries.length; i++) {
-      if (!entries[i].productId) { setError(`Entry ${i + 1}: Product is required`); submittingRef.current = false; return }
+      if (!entries[i].productId) { setError('Product is required'); submittingRef.current = false; return }
     }
     setSaving(true)
     setError('')
@@ -226,8 +214,8 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
           const existing = await lubeSalesRepo.getById(entry.id)
           await lubeSalesRepo.update({ ...existing, ...record })
         } else {
-          // Distinct, increasing createdAt by position so a multi-entry save keeps its
-          // order when the day is reopened (the loader sorts by createdAt).
+          // Distinct, increasing createdAt by position so the day's entries keep their order
+          // when it is reopened (the list sorts by createdAt).
           record.createdAt = orderedCreatedAt(nowMs, i)
           await lubeSalesRepo.create(record)
         }
@@ -235,7 +223,10 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
 
       setSaving(false)
       setSaved(true)
-      promptPush(() => router.push(`/dashboard/entries/lube/list?${qs}`))
+      promptPush()
+      // Ready for the next entry: the one saved is in the day's list.
+      clearForm()
+      setTimeout(() => { setSaved(false); submittingRef.current = false }, 1200)
     } catch (err) {
       setError('Failed to save')
       setSaving(false)
@@ -245,15 +236,22 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
 
   if (loading) return <EntryLoading />
 
-  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const { prev: prevDate, next: nextDate } = adjacentDates(savedDates, formDate)
   const dayHref = (d) => d && `/dashboard/entries/lube?${qs}&edit_date=${d}&type=sales`
+  const productName = (id) => products.find((p) => p.id === id)?.product_name || 'No product'
+  const listItems = dayEntries.map((e) => ({
+    id: e.id,
+    primary: productName(e.productId),
+    secondary: `Sold ${Number(e.unitSold || 0).toLocaleString()} · Received ${Number(e.unitReceived || 0).toLocaleString()} · ₦${Number(e.price || 0).toLocaleString()}`,
+  }))
 
   return (
+    <EntryWithDayList list={<DayEntries title="Lube sales this day" items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>
     <form onSubmit={handleSubmit}>
       <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
       {entries.map((entry, idx) => (
-        <EntryCard key={entry._key} title={`Entry ${idx + 1}`} onRemove={entries.length > 1 ? () => removeEntry(idx) : null}>
+        <EntryCard key={entry._key} title={isEditing ? 'Editing entry' : 'New entry'}>
           <Field label="Product">
             <SearchableSelect
               value={entry.productId}
@@ -280,7 +278,11 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
         </EntryCard>
       ))}
 
-      <AddEntryButton onClick={addEntry} />
+      {isEditing && (
+        <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
+          Cancel editing
+        </button>
+      )}
 
       <SaveBar
         listHref={`/dashboard/entries/lube/list?${qs}`}
@@ -292,11 +294,11 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked, allD
         onErrorDone={() => setError('')}
       />
     </form>
+    </EntryWithDayList>
   )
 }
 
-function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allDates }) {
-  const router = useRouter()
+function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   const { promptPush } = useSavePush()
   const [loading, setLoading] = useState(!!(editId || editDate))
   const [saving, setSaving] = useState(false)
@@ -307,6 +309,10 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
   const [entries, setEntries] = useState([blankStockEntry()])
   const [originalIds, setOriginalIds] = useState([])
 
+  const isEditing = originalIds.length > 0
+  const clearForm = () => { setOriginalIds([]); setEntries([blankStockEntry()]) }
+  const { dayEntries, savedDates } = useDay(db.lubeStock, orgId, formDate)
+
   useEffect(() => {
     const load = async () => {
       if (editId) {
@@ -314,77 +320,40 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
         if (entry) {
           setFormDate(entry.entryDate || '')
           setOriginalIds([entry.id])
-          setEntries([{
-            _key: entry.id, id: entry.id,
-            productId: entry.productId || '',
-            stock: String(entry.stock ?? ''),
-            notes: entry.notes || '',
-          }])
+          setEntries([stockToForm(entry)])
         }
       } else if (editDate) {
-        const all = await db.lubeStock.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === editDate).sort(byCreatedAt)
-        if (dateEntries.length > 0) {
-          setFormDate(editDate)
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(dateEntries.map(e => ({
-            _key: e.id, id: e.id,
-            productId: e.productId || '',
-            stock: String(e.stock ?? ''),
-            notes: e.notes || '',
-          })))
-        }
-      } else {
-        // Create mode: auto-load existing entries for today's date
-        const today = new Date().toISOString().split('T')[0]
-        const all = await db.lubeStock.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === today).sort(byCreatedAt)
-        if (dateEntries.length > 0) {
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(dateEntries.map(e => ({
-            _key: e.id, id: e.id,
-            productId: e.productId || '',
-            stock: String(e.stock ?? ''),
-            notes: e.notes || '',
-          })))
-        }
+        // A day opened from the list or the arrows: an empty form, its entries listed beside it.
+        setFormDate(editDate)
+        setOriginalIds([])
+        setEntries([blankStockEntry()])
       }
       setLoading(false)
     }
     load()
   }, [editId, editDate, orgId])
 
-  // When date changes in create mode, auto-load existing entries for that date
-  const handleStockDateChange = async (newDate) => {
+  // Another day: an empty form, and that day's entries in the list.
+  const handleStockDateChange = (newDate) => {
     setFormDate(newDate)
-    if (editId || editDate || !orgId || !newDate) return
-    const all = await db.lubeStock.where('orgId').equals(orgId).toArray()
-    const dateEntries = all.filter(e => e.entryDate === newDate).sort(byCreatedAt)
-    if (dateEntries.length > 0) {
-      setOriginalIds(dateEntries.map(e => e.id))
-      setEntries(dateEntries.map(e => ({
-        _key: e.id, id: e.id,
-        productId: e.productId || '',
-        stock: String(e.stock ?? ''),
-        notes: e.notes || '',
-      })))
-    } else {
-      setOriginalIds([])
-      setEntries([blankStockEntry()])
-    }
+    clearForm()
   }
 
-  const isEditing = !!(editId || editDate || originalIds.length > 0)
+  const editEntry = (item) => {
+    const entry = dayEntries.find((e) => e.id === item.id)
+    if (!entry) return
+    setOriginalIds([entry.id])
+    setEntries([stockToForm(entry)])
+    setError('')
+  }
+
+  const deleteEntry = async (item) => {
+    await lubeStockRepo.remove(item.id, orgId)
+    if (originalIds.includes(item.id)) clearForm()
+  }
 
   const updateEntry = (idx, field, value) => {
     setEntries(prev => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e))
-  }
-
-  const addEntry = () => setEntries(prev => [...prev, blankStockEntry()])
-
-  const removeEntry = (idx) => {
-    if (entries.length === 1) return
-    setEntries(prev => prev.filter((_, i) => i !== idx))
   }
 
   const submittingRef = useRef(false)
@@ -393,7 +362,7 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
     if (submittingRef.current) return
     submittingRef.current = true
     for (let i = 0; i < entries.length; i++) {
-      if (!entries[i].productId) { setError(`Entry ${i + 1}: Product is required`); submittingRef.current = false; return }
+      if (!entries[i].productId) { setError('Product is required'); submittingRef.current = false; return }
     }
     setSaving(true)
     setError('')
@@ -425,8 +394,8 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
           const existing = await lubeStockRepo.getById(entry.id)
           await lubeStockRepo.update({ ...existing, ...record })
         } else {
-          // Distinct, increasing createdAt by position so a multi-entry save keeps its
-          // order when the day is reopened (the loader sorts by createdAt).
+          // Distinct, increasing createdAt by position so the day's entries keep their order
+          // when it is reopened (the list sorts by createdAt).
           record.createdAt = orderedCreatedAt(nowMs, i)
           await lubeStockRepo.create(record)
         }
@@ -434,7 +403,10 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
 
       setSaving(false)
       setSaved(true)
-      promptPush(() => router.push(`/dashboard/entries/lube/list?${qs}`))
+      promptPush()
+      // Ready for the next entry: the one saved is in the day's list.
+      clearForm()
+      setTimeout(() => { setSaved(false); submittingRef.current = false }, 1200)
     } catch (err) {
       setError('Failed to save')
       setSaving(false)
@@ -444,15 +416,18 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
 
   if (loading) return <EntryLoading />
 
-  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const { prev: prevDate, next: nextDate } = adjacentDates(savedDates, formDate)
   const dayHref = (d) => d && `/dashboard/entries/lube?${qs}&edit_date=${d}&type=stock`
+  const productName = (id) => products.find((p) => p.id === id)?.product_name || 'No product'
+  const listItems = dayEntries.map((e) => ({ id: e.id, primary: productName(e.productId), secondary: `Stock ${Number(e.stock || 0).toLocaleString()} units` }))
 
   return (
+    <EntryWithDayList list={<DayEntries title="Lube stock this day" items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>
     <form onSubmit={handleSubmit}>
       <DayBar label="Entry date" value={formDate} onChange={handleStockDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
       {entries.map((entry, idx) => (
-        <EntryCard key={entry._key} title={`Entry ${idx + 1}`} onRemove={entries.length > 1 ? () => removeEntry(idx) : null}>
+        <EntryCard key={entry._key} title={isEditing ? 'Editing entry' : 'New entry'}>
           <Field label="Product">
             <SearchableSelect
               value={entry.productId}
@@ -471,7 +446,11 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
         </EntryCard>
       ))}
 
-      <AddEntryButton onClick={addEntry} />
+      {isEditing && (
+        <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
+          Cancel editing
+        </button>
+      )}
 
       <SaveBar
         listHref={`/dashboard/entries/lube/list?${qs}`}
@@ -483,5 +462,6 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked, allD
         onErrorDone={() => setError('')}
       />
     </form>
+    </EntryWithDayList>
   )
 }

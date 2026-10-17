@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useRouter } from '@/lib/nav'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useSearchParams } from '@/lib/nav'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
 import { customerPaymentsRepo } from '@/lib/repositories/customerPayments'
@@ -10,17 +11,28 @@ import { useSavePush } from '@/components/SavePushProvider'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_SELECT } from '@/components/ui'
 import {
-  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, AddEntryButton, SubscribeNotice,
+  EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, SubscribeNotice,
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
+import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
 function blankEntry() {
   return { _key: crypto.randomUUID(), id: null, customerId: '', amountPaid: '', salesAmount: '', notes: '' }
 }
 
+// One entry in the form; the day's saved entries are listed beside it (components/entries/DayEntries.js).
+function toForm(e) {
+  return {
+    _key: e.id, id: e.id,
+    customerId: e.customerId || '',
+    amountPaid: String(e.amountPaid ?? ''),
+    salesAmount: String(e.salesAmount ?? ''),
+    notes: e.notes || '',
+  }
+}
+
 export default function CustomerPaymentsFormPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { promptPush } = useSavePush()
   const orgId = searchParams.get('org_id') || ''
   const editId = searchParams.get('edit') || null
@@ -38,7 +50,6 @@ export default function CustomerPaymentsFormPage() {
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0])
   const [entries, setEntries] = useState([blankEntry()])
   const [originalIds, setOriginalIds] = useState([])
-  const [allDates, setAllDates] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -57,89 +68,58 @@ export default function CustomerPaymentsFormPage() {
         if (entry && !cancelled) {
           setFormDate(entry.entryDate || '')
           setOriginalIds([entry.id])
-          setEntries([{
-            _key: entry.id, id: entry.id,
-            customerId: entry.customerId || '',
-            amountPaid: String(entry.amountPaid ?? ''),
-            salesAmount: String(entry.salesAmount ?? ''),
-            notes: entry.notes || '',
-          }])
+          setEntries([toForm(entry)])
         }
-      } else if (editDate) {
-        const all = await db.customerPayments.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === editDate).sort(byCreatedAt)
-        if (dateEntries.length > 0 && !cancelled) {
-          setFormDate(editDate)
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(dateEntries.map(e => ({
-            _key: e.id, id: e.id,
-            customerId: e.customerId || '',
-            amountPaid: String(e.amountPaid ?? ''),
-            salesAmount: String(e.salesAmount ?? ''),
-            notes: e.notes || '',
-          })))
-        }
-      } else {
-        // Create mode: auto-load existing entries for today's date
-        const today = new Date().toISOString().split('T')[0]
-        const all = await db.customerPayments.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === today).sort(byCreatedAt)
-        if (dateEntries.length > 0 && !cancelled) {
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(dateEntries.map(e => ({
-            _key: e.id, id: e.id,
-            customerId: e.customerId || '',
-            amountPaid: String(e.amountPaid ?? ''),
-            salesAmount: String(e.salesAmount ?? ''),
-            notes: e.notes || '',
-          })))
-        }
+      } else if (editDate && !cancelled) {
+        // A day opened from the list or the arrows: an empty form, its entries listed beside it.
+        setFormDate(editDate)
+        setOriginalIds([])
+        setEntries([blankEntry()])
       }
 
-      if (!cancelled) {
-        const allPayments = await db.customerPayments.where('orgId').equals(orgId).toArray()
-        const uniqueDates = [...new Set(allPayments.map(e => e.entryDate).filter(Boolean))].sort()
-        setAllDates(uniqueDates)
-        setLoading(false)
-      }
+      if (!cancelled) setLoading(false)
     }
     load()
     return () => { cancelled = true }
   }, [editId, editDate, orgId])
 
-  // When date changes in create mode, auto-load existing entries for that date
-  const handleDateChange = async (newDate) => {
+  const clearForm = () => { setOriginalIds([]); setEntries([blankEntry()]) }
+
+  // Another day: an empty form, and that day's entries in the list.
+  const handleDateChange = (newDate) => {
     setFormDate(newDate)
-    if (editId || editDate || !orgId || !newDate) return
-    const all = await db.customerPayments.where('orgId').equals(orgId).toArray()
-    const dateEntries = all.filter(e => e.entryDate === newDate).sort(byCreatedAt)
-    if (dateEntries.length > 0) {
-      setOriginalIds(dateEntries.map(e => e.id))
-      setEntries(dateEntries.map(e => ({
-        _key: e.id, id: e.id,
-        customerId: e.customerId || '',
-        amountPaid: String(e.amountPaid ?? ''),
-        salesAmount: String(e.salesAmount ?? ''),
-        notes: e.notes || '',
-      })))
-    } else {
-      setOriginalIds([])
-      setEntries([blankEntry()])
-    }
+    clearForm()
+  }
+
+  const dayEntries = useLiveQuery(
+    () => (orgId && formDate
+      ? db.customerPayments.where('orgId').equals(orgId).filter((e) => e.entryDate === formDate).toArray().then((r) => r.sort(byCreatedAt))
+      : []),
+    [orgId, formDate], []
+  )
+  const savedDates = useLiveQuery(
+    () => (orgId ? db.customerPayments.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate).filter(Boolean))].sort()) : []),
+    [orgId], []
+  )
+
+  const editEntry = (item) => {
+    const entry = dayEntries.find((e) => e.id === item.id)
+    if (!entry) return
+    setOriginalIds([entry.id])
+    setEntries([toForm(entry)])
+    setError('')
+  }
+
+  const deleteEntry = async (item) => {
+    await customerPaymentsRepo.remove(item.id, orgId)
+    if (originalIds.includes(item.id)) clearForm()
   }
 
   const updateEntry = (idx, field, value) => {
     setEntries(prev => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e))
   }
 
-  const addEntry = () => setEntries(prev => [...prev, blankEntry()])
-
-  const removeEntry = (idx) => {
-    if (entries.length === 1) return
-    setEntries(prev => prev.filter((_, i) => i !== idx))
-  }
-
-  const isEditing = !!(editId || editDate || originalIds.length > 0)
+  const isEditing = originalIds.length > 0
 
   const submittingRef = useRef(false)
   const handleSubmit = async (e) => {
@@ -147,7 +127,7 @@ export default function CustomerPaymentsFormPage() {
     if (submittingRef.current) return
     submittingRef.current = true
     for (let i = 0; i < entries.length; i++) {
-      if (!entries[i].customerId) { setError(`Entry ${i + 1}: Customer is required`); submittingRef.current = false; return }
+      if (!entries[i].customerId) { setError('Customer is required'); submittingRef.current = false; return }
     }
     setSaving(true)
     setError('')
@@ -180,8 +160,8 @@ export default function CustomerPaymentsFormPage() {
           const existing = await customerPaymentsRepo.getById(entry.id)
           await customerPaymentsRepo.update({ ...existing, ...record })
         } else {
-          // Distinct, increasing createdAt by position so a multi-entry save keeps its
-          // order when the day is reopened (the loader sorts by createdAt).
+          // Distinct, increasing createdAt by position so the day's entries keep their order
+          // when it is reopened (the list sorts by createdAt).
           record.createdAt = orderedCreatedAt(nowMs, i)
           await customerPaymentsRepo.create(record)
         }
@@ -189,7 +169,10 @@ export default function CustomerPaymentsFormPage() {
 
       setSaving(false)
       setSaved(true)
-      promptPush(() => router.push(`/dashboard/entries/customer-payments/list?${qs}`))
+      promptPush()
+      // Ready for the next entry: the one saved is in the day's list.
+      clearForm()
+      setTimeout(() => { setSaved(false); submittingRef.current = false }, 1200)
     } catch (err) {
       setError('Failed to save')
       setSaving(false)
@@ -201,18 +184,25 @@ export default function CustomerPaymentsFormPage() {
 
   if (locked) return <NotConfigured orgId={orgId} />
 
-  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const { prev: prevDate, next: nextDate } = adjacentDates(savedDates || [], formDate)
   const dayHref = (d) => d && `/dashboard/entries/customer-payments?${qs}&edit_date=${d}`
+  const customerName = (id) => customers.find((c) => c.id === id)?.name || 'No account'
+  const listItems = (dayEntries || []).map((e) => ({
+    id: e.id,
+    primary: `${customerName(e.customerId)}`,
+    secondary: `Paid ₦${Number(e.amountPaid || 0).toLocaleString()} · Sales ₦${Number(e.salesAmount || 0).toLocaleString()}`,
+  }))
 
   return (
-    <EntryScreen>
+    <EntryScreen wide>
+      <EntryWithDayList list={<DayEntries items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>
       <form onSubmit={handleSubmit}>
         <DayBar label="Transaction date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
         {!subLoading && !isSubscribed && <SubscribeNotice />}
 
         {entries.map((entry, idx) => (
-          <EntryCard key={entry._key} title={`Entry ${idx + 1}`} onRemove={entries.length > 1 ? () => removeEntry(idx) : null}>
+          <EntryCard key={entry._key} title={isEditing ? 'Editing entry' : 'New entry'}>
             <Field label="Account">
               <SearchableSelect
                 value={entry.customerId}
@@ -236,7 +226,11 @@ export default function CustomerPaymentsFormPage() {
           </EntryCard>
         ))}
 
-        <AddEntryButton onClick={addEntry} />
+        {isEditing && (
+          <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
+            Cancel editing
+          </button>
+        )}
 
         <SaveBar
           listHref={`/dashboard/entries/customer-payments/list?${qs}`}
@@ -248,6 +242,7 @@ export default function CustomerPaymentsFormPage() {
           onErrorDone={() => setError('')}
         />
       </form>
+      </EntryWithDayList>
     </EntryScreen>
   )
 }
