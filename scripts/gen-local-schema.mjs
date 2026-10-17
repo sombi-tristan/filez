@@ -70,6 +70,13 @@ for (const m of sql.matchAll(/alter table (?:only )?(?:if exists )?([\w."]+)\s+(
     if (setDef && tables[t]?.columns[setDef[1]]) tables[t].columns[setDef[1]].default = parseDefault(setDef[2])
     const drop = part.match(/^\s*drop column (?:if exists )?"?(\w+)"?/i)
     if (drop && tables[t]) delete tables[t].columns[drop[1]]
+    // A renamed column keeps its type and default under the new name (019: banks' balance).
+    const rename = part.match(/^\s*rename column "?(\w+)"? to "?(\w+)"?\s*$/i)
+    if (rename && tables[t]?.columns[rename[1].toLowerCase()]) {
+      const [from, to] = [rename[1].toLowerCase(), rename[2].toLowerCase()]
+      tables[t].columns[to] = tables[t].columns[from]
+      delete tables[t].columns[from]
+    }
   }
 }
 

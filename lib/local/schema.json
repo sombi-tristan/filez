@@ -231,7 +231,7 @@
       "created_at",
       "lodgement_type",
       "terminal_id",
-      "balance",
+      "opening_balance",
       "opening_date"
     ],
     "defaults": {
@@ -243,7 +243,7 @@
         "fn": "now"
       },
       "lodgement_type": "bank_deposit",
-      "balance": 0,
+      "opening_balance": 0,
       "opening_date": {
         "fn": "today"
       }
