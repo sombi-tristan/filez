@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/entryHelpers'
 import { authenticateDevice, signLicence, anyServiceRunning } from '@/lib/desktop'
 import { SYNC_TABLES } from '@/lib/desktopTables'
+import { groupNameOf } from '@/lib/desktopGroup'
 
 const PAGE = 1000
 
@@ -42,7 +43,9 @@ export async function GET(request) {
     const results = await Promise.all(tables.map((t) => allRows(supabase, t, orgId)))
     const rows = Object.fromEntries(tables.map((t, i) => [t, results[i]]))
 
-    return NextResponse.json({ station: { id: orgId, name: linked.station.name }, rows, serverTime: new Date().toISOString(), licence })
+    // The group's name, for the workbooks it picks (lib/exportGroup.js): groups do not sync.
+    const group = await groupNameOf(supabase, orgId)
+    return NextResponse.json({ station: { id: orgId, name: linked.station.name, group }, rows, serverTime: new Date().toISOString(), licence })
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
