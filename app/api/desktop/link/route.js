@@ -38,8 +38,9 @@ export async function POST(request) {
     })
     const { data: signedIn, error: signInError } = await auth.auth.signInWithPassword({ email: String(email).trim(), password: String(password) })
     if (signInError || !signedIn?.user) return NextResponse.json({ error: 'Wrong email or password' }, { status: 401 })
-    // The session was only needed to prove the password; nothing is kept.
-    auth.auth.signOut().catch(() => {})
+    // The session was only needed to prove the password; nothing is kept. Only it ends: the
+    // default signs the account out everywhere, the owner's phone with it.
+    auth.auth.signOut({ scope: 'local' }).catch(() => {})
 
     const supabase = getServiceClient()
     const { data: owner } = await supabase.from('users').select('id, name, email').eq('id', signedIn.user.id).maybeSingle()

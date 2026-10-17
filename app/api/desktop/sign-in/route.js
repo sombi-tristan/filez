@@ -27,8 +27,9 @@ export async function POST(request) {
     })
     const { data: signedIn, error } = await auth.auth.signInWithPassword({ email: String(email).trim().toLowerCase(), password: String(password) })
     if (error || !signedIn?.user) return NextResponse.json({ error: 'Wrong email or password' }, { status: 401 })
-    // The session was only needed to prove the password; nothing is kept.
-    auth.auth.signOut().catch(() => {})
+    // The session was only needed to prove the password; nothing is kept. Only it ends: the
+    // default signs the account out everywhere, the owner's phone with it.
+    auth.auth.signOut({ scope: 'local' }).catch(() => {})
 
     const account = await accountFor(getServiceClient(), signedIn.user.id)
     if (account.error) return NextResponse.json({ error: account.error }, { status: 403 })

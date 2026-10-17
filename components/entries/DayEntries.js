@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { IonIcon } from '@ionic/react'
-import { createOutline, trashOutline } from 'ionicons/icons'
+import { trashOutline } from 'ionicons/icons'
 import Modal from '@/components/Modal'
 import { BTN_DANGER, BTN_FRAMED } from '@/components/ui'
 
@@ -57,8 +57,8 @@ export function DayEntries({ title = 'Entries this day', items = [], editingId, 
                 {item.secondary ? <span className="block truncate text-xs text-content-muted">{item.secondary}</span> : null}
                 {item.id === editingId ? <span className="block text-xs font-semibold text-accent">Editing</span> : null}
               </span>
-              <button type="button" onClick={() => onEdit?.(item)} aria-label={`Edit entry ${i + 1}`} className="h-10 w-10 flex items-center justify-center text-content-muted hover:bg-subtle hover:text-content">
-                <IonIcon icon={createOutline} aria-hidden="true" />
+              <button type="button" onClick={() => onEdit?.(item)} aria-label={`Edit entry ${i + 1}`} className={`h-10 px-3 text-sm font-medium ${BTN_FRAMED}`}>
+                Edit
               </button>
               <button type="button" onClick={() => setDoomed(item)} aria-label={`Delete entry ${i + 1}`} className="h-10 w-10 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-500/10">
                 <IonIcon icon={trashOutline} aria-hidden="true" />
