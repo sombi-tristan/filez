@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/entryHelpers'
 import { authenticateDevice, signLicence, serviceDates } from '@/lib/desktop'
 import { SYNC_TABLES, PUSH_BATCH } from '@/lib/desktopTables'
+import { conflictMessage } from '@/lib/desktopConflicts'
 
 /**
  * A desktop computer's Push: POST { changes: [{ table, op, id, row }] } with
@@ -71,7 +72,7 @@ export async function POST(request) {
       // Receipt images stay on the computer: a data: URL is far too large to move this way.
       if (typeof row.receipt_image_url === 'string' && row.receipt_image_url.startsWith('data:')) row.receipt_image_url = null
       const { error } = await supabase.from(table).upsert(row)
-      answer(!error, error ? (error.code === '23505' ? 'Already recorded for that day' : error.message) : null)
+      answer(!error, error ? (error.code === '23505' ? conflictMessage(table, row) : error.message) : null)
     }
 
     const licence = await signLicence({ orgId, deviceId: linked.device.id, stationName: linked.station.name })
