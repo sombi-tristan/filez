@@ -9,7 +9,7 @@ import {
   bookOutline, cardOutline, cubeOutline, documentTextOutline, gridOutline,
   homeOutline, logOutOutline, pulseOutline, receiptOutline, settingsOutline, statsChartOutline,
   trendingUpOutline, carOutline, walletOutline, waterOutline, peopleOutline, clipboardOutline,
-  analyticsOutline, businessOutline,
+  analyticsOutline,
 } from 'ionicons/icons'
 import {
   Sidebar, SidebarBrand, SidebarSwitcher, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter,
@@ -190,11 +190,11 @@ export default function StationSidebar({ stationId }) {
         currentId={String(stationId)}
         options={stations.map((s) => ({ id: String(s.id), title: s.name }))}
         onPick={(o) => { if (String(o.id) !== String(stationId)) { menuController.close('main'); router.root(`/dashboard/stations/${o.id}`) } }}
+        // Desktop build: every station on this computer, and adding one (screens/dashboard/page.js).
+        action={{ label: 'Your stations', onPick: () => { menuController.close('main'); router.root('/dashboard?all=1') } }}
       />
 
       <SidebarNavRow href={home} label="Station home" icon={homeOutline} active={pathname === home} onClick={go(home)} />
-      {/* Desktop build: every station on this computer, and adding one (screens/dashboard/page.js). */}
-      <SidebarNavRow href="/dashboard?all=1" label="Your stations" icon={businessOutline} active={false} onClick={go('/dashboard?all=1')} />
 
       {/* Each group is an accordion, one open at a time. */}
       <SidebarSections value={openGroup} onChange={setOpenGroup}>

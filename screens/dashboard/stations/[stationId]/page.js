@@ -16,7 +16,9 @@ import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
 import { store } from '@/lib/local/store'
 import { push as webPush, pull as webPull } from '@/lib/local/webSync'
-import { setCurrentStationId } from '@/lib/local/link'
+import { setCurrentStationId, allLinks } from '@/lib/local/link'
+import { paidNow } from '@/lib/local/licence'
+import { pendingCount as countPending } from '@/lib/local/outbox'
 import { supabase } from '@/lib/supabaseClient'
 import StationWallet from '@/components/StationWallet'
 import { ThemeControl } from '@/design'
@@ -81,8 +83,10 @@ export default function StationPage() {
   const [clearConfirm, setClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
 
-  // Changes on this computer the web station does not have yet (lib/local/outbox.js).
-  const pendingCount = useLiveQuery(() => store.outbox.count(), [], 0)
+  // This station's changes the web station does not have yet (lib/local/outbox.js). Only its
+  // own: other stations' waiting changes are theirs to push, and counting them here made Push
+  // look refused.
+  const pendingCount = useLiveQuery(() => countPending(stationId, { legacyStationId: allLinks()[0]?.stationId }), [stationId], 0)
 
   // Desktop build: Push and Pull reach the station on the web (lib/local/webSync.js). Both need
   // the internet; everything else on this screen works without it.
@@ -485,6 +489,8 @@ export default function StationPage() {
           refreshing={refreshing}
           onPush={handleSync}
           onPull={handleRefresh}
+          // Discarded changes go back to the web's version: pull now when it can.
+          onDiscarded={() => { if (paidNow(stationId) && navigator.onLine) handleRefresh() }}
         />
 
 <div className="mb-4" />

@@ -4,14 +4,15 @@ import { useEffect, useState } from 'react'
 import { HardDrive, Loader2, ArrowUpFromLine, ArrowDownToLine, CloudUpload } from 'lucide-react'
 import { getLink } from '@/lib/local/link'
 import { useLicence, PaidNote, UnlockActions } from '@/components/desktop/LicenceGate'
+import PendingChanges from '@/components/desktop/PendingChanges'
 
 /**
  * Top-of-hub card: the one accent surface on the page, solid brand blue with white text.
  *
  * Desktop build: the records live on this computer, and Push and Pull move them between it and
  * the station on the web (lib/local/webSync.js). The hero figure is how many changes this
- * computer has that the web does not have yet. There is no Clear queue here: clearing would
- * throw away changes the web has never seen.
+ * computer has that the web does not have yet. Review lists them, to discard the ones that
+ * should not go to the web (components/desktop/PendingChanges.js).
  *
  * Push and Pull need the computer linked and a subscription running (LicenceGate `paid`):
  * without them the buttons are off and a note under the card says how to unlock them. With
@@ -25,7 +26,8 @@ function when(iso) {
   return d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function StationWallet({ station, pendingCount = 0, syncing, refreshing, onPush, onPull }) {
+export default function StationWallet({ station, pendingCount = 0, syncing, refreshing, onPush, onPull, onDiscarded }) {
+  const [reviewing, setReviewing] = useState(false)
   // The link carries the last push, pull and sync error, which the automatic sync updates.
   const [link, setLink] = useState(getLink)
   useEffect(() => {
@@ -70,6 +72,9 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
             : 'Push and Pull need the internet. Everything else works offline.'}
         </p>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {!upToDate && (
+            <button onClick={() => setReviewing(true)} disabled={syncing} className={btn}>Review</button>
+          )}
           <button onClick={onPush} disabled={!paid || syncing || upToDate} className={btn}>
             {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpFromLine className="w-4 h-4" />}
             Push
@@ -82,6 +87,7 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
         </div>
       </div>
     </div>
+    <PendingChanges open={reviewing} onClose={() => setReviewing(false)} stationId={station.id} onDiscarded={onDiscarded} />
     {!paid && <div className="mb-4"><PaidNote what="Push and Pull" verb="need" /></div>}
     {paid && link?.revoked && (
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3 border-2 border-line rounded-house bg-subtle">

@@ -84,14 +84,16 @@ export function SidebarBrand({ mark, name }) {
 
 /**
  * Which business (or station, or shop) is open, and the way to another. With one option, or
- * none, it only says where you are.
+ * none, and no action, it only says where you are.
  *
  *   options   [{ id, title, subtitle }]
  *   onPick    called with the option that was tapped
+ *   action    { label, onPick }: one more row at the end of the list, set apart (every business,
+ *             or adding one); with it the switcher opens even with a single option
  */
-export function SidebarSwitcher({ title, subtitle, avatar = null, options = [], currentId, onPick }) {
+export function SidebarSwitcher({ title, subtitle, avatar = null, options = [], currentId, onPick, action = null }) {
   const [open, setOpen] = useState(false)
-  const switchable = options.length > 1
+  const switchable = options.length > 1 || Boolean(action)
   const face = avatar || <span className="house-side-initial">{String(title || '?').trim().charAt(0).toUpperCase()}</span>
   const words = (
     <>
@@ -128,6 +130,21 @@ export function SidebarSwitcher({ title, subtitle, avatar = null, options = [], 
               </button>
             </li>
           ))}
+          {action ? (
+            <li className="house-side-option-action">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  action.onPick?.()
+                }}
+              >
+                <span className="house-side-words">
+                  <b>{action.label}</b>
+                </span>
+              </button>
+            </li>
+          ) : null}
         </ul>
       </BottomSheet>
     </>

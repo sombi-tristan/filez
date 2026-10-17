@@ -3,16 +3,16 @@
 import { useEffect, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { store } from '@/lib/local/store'
-import { allLinks, updateLink } from '@/lib/local/link'
+import { getCurrentStationId, getLink, updateLink } from '@/lib/local/link'
 import { pendingCount } from '@/lib/local/outbox'
 import { checkLicence, paidNow } from '@/lib/local/licence'
 import { pull, push, refreshLicence } from '@/lib/local/webSync'
 
 /**
- * Desktop build: keeps every linked station on this computer and its web station in step
- * without anyone pressing Push or Pull, so entries the staff make on their phones reach the
- * computer's reports by themselves. A computer holds several stations; each linked one with a
- * subscription running syncs, whichever is open.
+ * Desktop build: keeps the station being worked in and its web station in step without anyone
+ * pressing Push or Pull, so entries the staff make on their phones reach the computer's reports
+ * by themselves. A computer holds several stations; only the one open now syncs, when it is
+ * linked and has a subscription running. The others sync when they are opened.
  *
  *   - Pull when the app opens, every PULL_EVERY while it runs, and when the internet comes back.
  *   - Push PUSH_AFTER the last change made here (more changes restart the wait).
@@ -30,16 +30,14 @@ function note(stationId, result) {
 
 const failed = (e) => ({ ok: false, error: e.message })
 
-/** The linked stations with a subscription running, their licences checked (and renewed online). */
+/** The station open now, when it is linked with a subscription running (its licence checked, and renewed online). */
 async function syncingStations() {
-  const ids = []
-  for (const { stationId, revoked } of allLinks()) {
-    if (revoked) continue
-    if (navigator.onLine) await refreshLicence(stationId).catch(() => {})
-    await checkLicence(Date.now(), stationId)
-    if (paidNow(stationId)) ids.push(stationId)
-  }
-  return ids
+  const stationId = getCurrentStationId()
+  const link = getLink(stationId)
+  if (!link || link.revoked) return []
+  if (navigator.onLine) await refreshLicence(stationId).catch(() => {})
+  await checkLicence(Date.now(), stationId)
+  return paidNow(stationId) ? [stationId] : []
 }
 
 export default function AutoSync() {

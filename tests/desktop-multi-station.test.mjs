@@ -73,5 +73,15 @@ console.log('\nUnlinking one')
 link.setLink(null, 'wuse')
 check('leaves the other linked', link.getLink('kubwa')?.stationId === 'kubwa' && link.getLink('wuse') === null)
 
+console.log('\nSync follows the station open now')
+// The station page counts only its own waiting changes (all stations' never went down, so
+// Push looked refused), and the automatic sync works only on the station being worked in.
+{
+  const page = readFileSync(resolve(root, 'screens', 'dashboard', 'stations', '[stationId]', 'page.js'), 'utf8')
+  check('the station page counts its own waiting changes', page.includes('countPending(stationId') && !page.includes('store.outbox.count()'))
+  const auto = readFileSync(resolve(root, 'components', 'desktop', 'AutoSync.js'), 'utf8')
+  check('automatic sync takes the station open now', auto.includes('getCurrentStationId()') && !auto.includes('allLinks()'))
+}
+
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)
