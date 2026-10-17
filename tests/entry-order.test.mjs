@@ -87,12 +87,16 @@ for (const page of PAGES) {
   // check for a duplicate close-of-business entry, and that one is a `.find()` whose result
   // order cannot matter. The invariant is about lists that become the on-screen entries, so
   // the window has to reach `setEntries` for a site to qualify.
+  //
+  // The screens now hold one entry in the form and list the day's saved entries beside it
+  // (components/entries/DayEntries.js): the gather that feeds the screen is that day list,
+  // read with useLiveQuery (`dayEntries`, `dayRecords` for product receipts).
   const lines = code.split('\n')
   const gathers = []
   lines.forEach((line, idx) => {
-    if (!/const dateEntries\s*=/.test(line)) return
+    if (!/const (dateEntries|dayEntries|dayRecords)\s*=/.test(line)) return
     const window = lines.slice(idx, idx + 14).join('\n')
-    if (window.includes('setEntries(')) gathers.push(lines.slice(idx, idx + 5).join('\n'))
+    if (window.includes('setEntries(') || window.includes('useLiveQuery(')) gathers.push(lines.slice(idx, idx + 5).join('\n'))
   })
   const unsorted = gathers.filter((chunk) => !chunk.includes('.sort(byCreatedAt)'))
   check(
