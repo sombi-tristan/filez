@@ -64,6 +64,9 @@ await store.organizations.put({ id: 'kubwa', name: 'Kubwa', owner_id: 'me' })
 await store.station_pumps.put({ id: 'p1', org_id: 'kubwa', fuel_type: 'PMS', pump_number: 1 })
 await store.daily_sales_entries.put({ id: 'fixed-sale', org_id: 'kubwa', entry_date: '2026-10-05' })
 
+// A restore queued the deletion of a row that no longer exists anywhere.
+await store.outbox.put({ key: 'daily_sales_entries:gone-row', table: 'daily_sales_entries', id: 'gone-row', op: 'delete', at: 1, org: 'kubwa' })
+
 console.log('A correction waiting to replace the web copy')
 sync.markReplaceWeb('kubwa')
 check('is noted on the station', getLink('kubwa').replacePending === true)
@@ -73,6 +76,8 @@ check('a pull replaces the web copy instead of taking its rows', asked[0] === '/
 check('so the web’s old row does not come back', !(await store.daily_sales_entries.get('old-web-sale')))
 check('every row here went up', pushedRows.some((c) => c.id === 'fixed-sale') && pushedRows.some((c) => c.id === 'p1') && pushedRows.some((c) => c.id === 'kubwa'))
 check('and the note is cleared', pulled.ok && !getLink('kubwa').replacePending)
+check('nothing is left waiting: the web now matches this station', (await store.outbox.count()) === 0)
+check('a queued deletion of a row gone everywhere is not sent', !pushedRows.some((c) => c.id === 'gone-row'))
 
 console.log('\nAfterwards')
 asked.length = 0
