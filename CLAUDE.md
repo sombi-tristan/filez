@@ -54,14 +54,18 @@ on main), with its own link, licence and device token, or stay offline only:
   Any running service (`paid` from useLicence, `paidNow()`) opens backup, longer reports,
   exporting a report (exportAllowed), and Push and Pull; show PaidNote where a paid feature would
   be. The in-app server's requireService follows the licence.
-- A backup (lib/local/routes/local/backup) is the station open now. A restore makes it a
-  station here: added beside the others, or replacing only that same station
-  (lib/local/restorePlan.js); never merged into a different one, so its setup and opening
-  balances come in once, exactly as in the file. Stations made offline on different computers
-  share the fixed local id: a backup of a different one is added under a new id. Backup and
-  restore need a subscription running on a station here. The Link form can also create a new
-  web station for a station's records (app/api/desktop/link createName, lib/newStation.js on
-  main); it has no subscription, so the records wait for its first push.
+- A backup (lib/local/routes/local/backup) is the station open now. A restore goes into the
+  station open now, whichever station the backup came from (lib/local/restoreInto.js): a
+  warning first lists what differs, then Overwrite everything (the station becomes exactly the
+  backup) or Pad with new values (it keeps what it has and gains the setup it lacks, matched by
+  fuel and number, bank name and type, customer or product name, and the backup's entries for
+  days it has none of that kind). Rows put get new ids and the backup's entries are pointed at
+  the station's own pumps, tanks, banks, customers and products, so nothing doubles and no other
+  station is touched; every change is recorded for a push. Add a station → From a backup file
+  makes a new station and overwrites it. Backup and restore need a subscription running on a
+  station here. The Link form can also create a new web station for a station's records
+  (app/api/desktop/link createName, lib/newStation.js on main); it has no subscription, so the
+  records wait for its first push.
 - No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
   (the end of app/globals.css re-sets the house colour variables on it).
 - users and org_invites never sync: the web account and its invites are the web's, kept here
