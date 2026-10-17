@@ -7,7 +7,7 @@ import {
   Loader2, Fuel, Settings, LogOut,
   FileSpreadsheet, ClipboardList, Droplets, Users,
   ChevronRight, ChevronDown, BarChart3, Plus, Pencil, Trash2, AlertTriangle,
-  FileText, BookOpen, ShieldX, Lock, Truck, Wallet, TrendingUp, Boxes, LineChart, Activity
+  FileText, BookOpen, ShieldX, Truck, Wallet, TrendingUp, Boxes, LineChart, Activity
 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Modal from '@/components/Modal'
@@ -48,12 +48,7 @@ export default function StationPage() {
 
   // Staff invite state
   const [invites, setInvites] = useState([])
-  const [inviteEmail, setInviteEmail] = useState('') // staff username
-  const [staffName, setStaffName] = useState('')
-  const [staffPin, setStaffPin] = useState('')
-  const [resetPinFor, setResetPinFor] = useState(null) // { email, name }
-  const [resetPin, setResetPin] = useState('')
-  const [resetError, setResetError] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('') // their StationMGR web account's email
   const [inviteError, setInviteError] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviting, setInviting] = useState(false)
@@ -212,38 +207,23 @@ export default function StationPage() {
 
   const addInvite = async (e) => {
     e.preventDefault()
-    if (!inviteEmail.trim() || !staffName.trim()) return
+    if (!inviteEmail.trim()) return
     setInviting(true)
     setInviteError('')
     const res = await fetch('/api/invites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ org_id: stationId, name: staffName, username: inviteEmail, pin: staffPin }),
+      body: JSON.stringify({ org_id: stationId, email: inviteEmail }),
     })
     if (res.ok) {
       setShowInviteModal(false)
       setInviteEmail('')
-      setStaffName('')
-      setStaffPin('')
       loadInvites()
     } else {
       const err = await res.json().catch(() => ({}))
       setInviteError(err.error || 'Failed to add staff')
     }
     setInviting(false)
-  }
-
-  const submitResetPin = async (e) => {
-    e.preventDefault()
-    if (!resetPinFor) return
-    setResetError('')
-    const res = await fetch('/api/local/change-pin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: resetPinFor.email, new_pin: resetPin }),
-    })
-    if (res.ok) { setResetPinFor(null); setResetPin('') }
-    else setResetError((await res.json().catch(() => ({}))).error || 'Could not reset PIN')
   }
 
   const confirmRemoveInvite = async () => {
@@ -447,12 +427,6 @@ export default function StationPage() {
                           ))}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => { setResetPinFor({ email: inv.email, name: inv.name }); setResetPin(''); setResetError('') }}
-                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium ${BTN_FRAMED}`}
-                          >
-                            <Lock className="w-4 h-4" /> Reset PIN
-                          </button>
                           <button
                             onClick={() => setDeleteModal({ id: inv.id, email: inv.name || inv.email })}
                             className={`flex items-center gap-2 px-3 py-2 text-sm font-medium ${BTN_DANGER}`}
@@ -666,22 +640,13 @@ export default function StationPage() {
       >
         <form onSubmit={addInvite} className="space-y-4">
           <p className="text-sm text-content-muted">
-            They will sign in on this computer by choosing their name and entering this PIN. Choose what they can open after adding them.
+            They sign in on this computer with their StationMGR web account: this email and their own password. Someone without
+            an account creates one at sign-in. Choose what they can open after adding them.
           </p>
           <div>
-            <label className="block text-sm font-medium text-content-strong mb-1">Full name</label>
-            <input type="text" maxLength={80} value={staffName}
-              onChange={(e) => { setStaffName(e.target.value); setInviteError('') }} className={INPUT} autoFocus />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-content-strong mb-1">Username</label>
-            <input type="text" placeholder="e.g. cashier1" maxLength={32} value={inviteEmail}
-              onChange={(e) => { setInviteEmail(e.target.value.toLowerCase().replace(/\s/g, '')); setInviteError('') }} className={INPUT} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-content-strong mb-1">PIN (4-8 digits)</label>
-            <input type="password" inputMode="numeric" maxLength={8} value={staffPin}
-              onChange={(e) => { setStaffPin(e.target.value.replace(/\D/g, '')); setInviteError('') }} className={INPUT} />
+            <label className="block text-sm font-medium text-content-strong mb-1">Their email</label>
+            <input type="email" maxLength={120} value={inviteEmail} autoFocus
+              onChange={(e) => { setInviteEmail(e.target.value.trim()); setInviteError('') }} className={INPUT} />
           </div>
           {inviteError && <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>}
           <div className="flex gap-2">
@@ -694,24 +659,13 @@ export default function StationPage() {
             </button>
             <button
               type="submit"
-              disabled={inviting || !inviteEmail.trim() || !staffName.trim() || staffPin.length < 4}
+              disabled={inviting || !inviteEmail.trim()}
               className={`flex-1 py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${BTN_PRIMARY}`}
             >
               {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Add
             </button>
           </div>
-        </form>
-      </Modal>
-
-      {/* Reset Staff PIN Modal */}
-      <Modal open={!!resetPinFor} onClose={() => setResetPinFor(null)} title="Reset PIN">
-        <form onSubmit={submitResetPin} className="space-y-4">
-          <p className="text-sm text-content-muted">New PIN for <strong>{resetPinFor?.name || resetPinFor?.email}</strong>.</p>
-          <input type="password" inputMode="numeric" maxLength={8} value={resetPin} autoFocus
-            onChange={(e) => { setResetPin(e.target.value.replace(/\D/g, '')); setResetError('') }} className={INPUT} placeholder="4-8 digits" />
-          {resetError && <p className="text-sm text-red-600 dark:text-red-400">{resetError}</p>}
-          <button type="submit" disabled={resetPin.length < 4} className={`w-full py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}>Save PIN</button>
         </form>
       </Modal>
 
