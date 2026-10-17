@@ -16,6 +16,7 @@ import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
 import { store } from '@/lib/local/store'
 import { push as webPush, pull as webPull } from '@/lib/local/webSync'
+import { setCurrentStationId } from '@/lib/local/link'
 import { supabase } from '@/lib/supabaseClient'
 import StationWallet from '@/components/StationWallet'
 import { ThemeControl } from '@/design'
@@ -163,6 +164,8 @@ export default function StationPage() {
       }
 
       const me = userRes.ok ? (await userRes.json()).user : null
+      // The station open now: the licence, a backup and the screens follow it (lib/local/link.js).
+      setCurrentStationId(s.id)
       setUser(me)
       setStation(s)
 

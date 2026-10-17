@@ -1,9 +1,9 @@
 {
   "name": "stationmgr",
   "productName": "StationMGR",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "private": true,
-  "description": "StationMGR \u2014 fuel station records, offline on your computer",
+  "description": "StationMGR — fuel station records, offline on your computer",
   "author": "Premeval Studios",
   "main": "electron/main.js",
   "scripts": {
@@ -68,6 +68,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "exceljs": "^4.4.0",
+    "fake-indexeddb": "^6.2.6",
     "imask": "^7.6.1",
     "ionicons": "^8.1.0",
     "jose": "^6.2.0",

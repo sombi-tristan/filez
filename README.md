@@ -26,10 +26,14 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
 
 - **First launch (no internet needed):** the owner names the station and chooses the username
   and PIN they sign in with on this computer. The free features open at once.
-- **Linking (needs the internet once):** with a StationMGR web account, the owner links the
-  computer with their web email and password and picks the station, either on the first launch
-  (*Link instead*) or later from any locked feature. A computer set up offline moves its records
-  into the web station; if both have records, the owner chooses which to keep.
+- **Several stations:** one computer holds several stations. After signing in you pick one
+  (*Your stations*, also in the sidebar). The owner adds a station there: a new one offline, one
+  brought down from the web, or one from a backup file. Other stations are never touched.
+- **Linking (needs the internet once per station):** with a StationMGR web account, the owner
+  links a station with their web email and password and picks the web station (or creates a new
+  one), either on the first launch (*Link instead*) or later from any locked feature. Each
+  station links on its own, with its own subscription. A station set up offline moves its
+  records into the web station; if both have records, the owner chooses which to keep.
 - **Staff:** the owner adds staff on the station page (name, username, PIN) and picks which
   screens each can open. Staff sign in by choosing their name and entering their PIN. Staff and
   PINs stay on this computer.
@@ -47,10 +51,10 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
   entries need their own service (Imprest needs Fuel operations, Lube and the Lube Report need
   Lube management, Accounts and the Account Ledger need Customer payments). Setting the
   computer's clock back closes the paid features until the web is reached again.
-- **Backups** (needs a subscription): the owner's station page has *Back up data* (saves one
-  `.json` file) and *Restore backup*. A backup always replaces what is on this computer,
-  setup and opening balances included. A backup of another station than the linked one unlinks
-  this computer, and sign-in offers to create that station on the web (or link it).
+- **Backups** (needs a subscription): the owner's station page has *Back up data* (saves that
+  station as one `.json` file) and *Restore backup*. Restoring adds the backup's station to this
+  computer, or replaces only that same station, with its setup and opening balances exactly as
+  in the file.
 - Closing the app signs everyone out.
 
 ## How it works

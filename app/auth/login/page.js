@@ -4,7 +4,7 @@ import '@/lib/local/installFetch'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Loader2, Lock, User, AtSign, Store } from 'lucide-react'
-import { LABEL, BTN_FRAMED } from '@/components/ui'
+import { LABEL } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '../authStyles'
 import LinkForm from '@/components/desktop/LinkForm'
 
@@ -34,13 +34,6 @@ export default function LoginPage() {
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
 
-  // a linked computer holding another station's records (lib/local/restorePlan.js heldStation)
-  const [rescue, setRescue] = useState(false)
-  const [notice, setNotice] = useState('')
-  // the station on this computer to create (or link) on the web: after restoring another
-  // station's backup (?restored=), or chosen at the rescue
-  const [linkFor, setLinkFor] = useState(null)
-
   const loadStatus = () =>
     fetch('/api/local/status')
       .then((r) => r.json())
@@ -51,18 +44,11 @@ export default function LoginPage() {
       })
       .catch(() => setError('Could not open the local database.'))
 
-  useEffect(() => {
-    loadStatus()
-    const restored = new URLSearchParams(window.location.search).get('restored')
-    if (restored !== null) setLinkFor(restored)
-  }, [])
+  useEffect(() => { loadStatus() }, [])
 
-  const goIn = (s) => {
-    // A full load: the station is an Ionic app of its own (components/shell/IonicShell.js).
-    window.location.replace(s?.onboardingComplete === false
-      ? `/dashboard/setup/${s.stationId}`
-      : `/dashboard/stations/${s.stationId}`)
-  }
+  // Into the stations this person may open (screens/dashboard/page.js), which opens the one
+  // station at once when there is only one. A full load: it is an Ionic app of its own.
+  const goIn = () => window.location.replace('/dashboard')
 
   const signIn = async (e) => {
     e.preventDefault()
@@ -75,31 +61,7 @@ export default function LoginPage() {
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(body.error || 'Sign in failed'); setPin(''); return }
-    // The linked station is not on this computer: going in would only come back here.
-    if (status.heldStation) { setRescue(true); setPin(''); return }
     goIn(status)
-  }
-
-  const choose = async (keep, { thenCreate = false } = {}) => {
-    const held = status.heldStation.name || 'the other station'
-    if (keep === 'web' && !window.confirm(`This removes ${held}'s records from this computer. Keep a backup of them first if you need them. Continue?`)) return
-    setBusy(true); setError('')
-    const res = await fetch('/api/local/rescue', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keep }),
-    })
-    const body = await res.json().catch(() => ({}))
-    setBusy(false)
-    if (!res.ok) { setError(body.error || 'That did not work'); return }
-    setRescue(false)
-    if (keep === 'web' && !body.pulled) {
-      setNotice(`Nothing came down from the web yet${body.error ? ` (${body.error})` : ''}. Choose your PIN, then Pull from the station page once its subscription is running.`)
-    }
-    const next = await fetch('/api/local/status').then((r) => r.json())
-    setStatus(next)
-    if (keep === 'held' && thenCreate) setLinkFor(status.heldStation.name || '')
-    else if (keep === 'held') goIn(next)
   }
 
   const setup = async (e) => {
@@ -150,50 +112,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {notice && <p className="text-sm text-content-muted mb-4" role="status">{notice}</p>}
-
-      {linkFor !== null ? (
-        <div className="space-y-4">
-          <p className="text-sm text-content">
-            <strong>{linkFor || 'This station'}</strong> is on this computer, with its setup and opening balances, and works
-            offline now. Create it as a new station on the web, or link it if it is there already, so it can sync once a
-            subscription is running.
-          </p>
-          <LinkForm createFor={linkFor} canBackUp={false} onLinked={() => { setLinkFor(null); window.history.replaceState(null, '', '/auth/login'); loadStatus() }} />
-          <button type="button" onClick={() => { setLinkFor(null); window.history.replaceState(null, '', '/auth/login') }} className="w-full py-2 text-sm text-content-muted">
-            Not now: work offline
-          </button>
-        </div>
-      ) : rescue ? (
-        <div className="space-y-4">
-          <p className="text-sm text-content">
-            This computer holds the records of <strong>{status.heldStation.name || 'another station'}</strong>, but it is
-            linked to <strong>{status.stationName || 'a different station'}</strong>. Choose which to keep.
-          </p>
-          <button type="button" onClick={() => choose('web')} disabled={busy} className={submitCls}>
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Get {status.stationName || 'the linked station'} back from the web
-          </button>
-          <p className="text-xs text-content-faint">
-            Removes {status.heldStation.name || 'these'} records from this computer and brings the linked station&apos;s down
-            from the web (its subscription must be running). Then you choose your PIN again.
-          </p>
-          <button type="button" onClick={() => choose('held')} disabled={busy} className={`w-full py-2.5 font-medium disabled:opacity-50 ${BTN_FRAMED}`}>
-            Keep {status.heldStation.name || 'these records'} and unlink
-          </button>
-          <p className="text-xs text-content-faint">
-            Keeps these records. This computer stops being linked to {status.stationName || 'the other station'}; you can
-            link it to {status.heldStation.name || 'its own station'} later.
-          </p>
-          <button type="button" onClick={() => choose('held', { thenCreate: true })} disabled={busy} className={`w-full py-2.5 font-medium disabled:opacity-50 ${BTN_FRAMED}`}>
-            Create {status.heldStation.name || 'these records'} as a new station on the web
-          </button>
-          <p className="text-xs text-content-faint">
-            Keeps these records, unlinks from {status.stationName || 'the other station'}, and makes a new web station for them
-            with their setup and opening balances.
-          </p>
-          {errorBox}
-        </div>
-      ) : status.setupDone ? (
+      {status.setupDone ? (
         <form onSubmit={signIn} className="space-y-4">
           <div>
             <label className={LABEL} htmlFor="who">Who is signing in?</label>

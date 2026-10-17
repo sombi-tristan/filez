@@ -9,7 +9,7 @@ import {
   bookOutline, cardOutline, cubeOutline, documentTextOutline, gridOutline,
   homeOutline, logOutOutline, pulseOutline, receiptOutline, settingsOutline, statsChartOutline,
   trendingUpOutline, carOutline, walletOutline, waterOutline, peopleOutline, clipboardOutline,
-  analyticsOutline,
+  analyticsOutline, businessOutline,
 } from 'ionicons/icons'
 import {
   Sidebar, SidebarBrand, SidebarSwitcher, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter,
@@ -193,6 +193,8 @@ export default function StationSidebar({ stationId }) {
       />
 
       <SidebarNavRow href={home} label="Station home" icon={homeOutline} active={pathname === home} onClick={go(home)} />
+      {/* Desktop build: every station on this computer, and adding one (screens/dashboard/page.js). */}
+      <SidebarNavRow href="/dashboard?all=1" label="Your stations" icon={businessOutline} active={false} onClick={go('/dashboard?all=1')} />
 
       {/* Each group is an accordion, one open at a time. */}
       <SidebarSections value={openGroup} onChange={setOpenGroup}>

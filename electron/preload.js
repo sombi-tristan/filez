@@ -5,6 +5,6 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('stationmgr', {
   link: (details) => ipcRenderer.invoke('web:link', details),
   request: (details) => ipcRenderer.invoke('web:request', details),
-  unlink: () => ipcRenderer.invoke('web:unlink'),
+  unlink: (stationId) => ipcRenderer.invoke('web:unlink', stationId),
   openWeb: (pagePath) => ipcRenderer.invoke('web:open', pagePath),
 })
