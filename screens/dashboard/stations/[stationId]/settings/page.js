@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import StationSwitch from '@/components/desktop/StationSwitch'
+import WebCopy from '@/components/desktop/WebCopy'
 import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
 
 const FUEL_TYPES = ['PMS', 'AGO', 'DPK']
@@ -256,6 +257,8 @@ export default function StationSettingsPage() {
 
       {/* Desktop build: the other stations on this computer (the sidebar only names this one). */}
       <StationSwitch stationId={stationId} />
+      {/* Desktop build: this computer replaces the web copy of the station (corrections). */}
+      <WebCopy stationId={stationId} stationName={stationName} />
 
       {/* Location */}
       <Accordion icon={MapPin} title="Location" defaultOpen>
