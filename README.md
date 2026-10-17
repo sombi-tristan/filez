@@ -3,8 +3,8 @@
 This branch (`desktop/offline`) is StationMGR as a Windows app. It works offline: every record is
 kept on the computer it is installed on. It is tied to the station's account on the StationMGR
 web platform, which is where the station's subscription is bought. The web version has every
-feature; the desktop is the same station screens with PIN sign-in, for the computer at the
-station.
+feature; the desktop is the same station screens, signed in with the same web account, for the
+computer at the station.
 
 ## Getting the installer
 
@@ -24,20 +24,20 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
 
 ## Using it
 
-- **First launch (no internet needed):** the owner names the station and chooses the username
-  and PIN they sign in with on this computer. The free features open at once.
+- **Signing in:** with your StationMGR web account (the website's email and password); a new
+  person creates one at sign-in. The first sign-in on a computer needs the internet; after that it
+  works offline. Then *Add a station* on *Your stations*.
 - **Several stations:** one computer holds several stations. After signing in you pick one
   (*Your stations*, also in the sidebar). The owner adds a station there: a new one offline, one
   brought down from the web, or one from a backup file. Other stations are never touched.
 - **Linking (needs the internet once per station):** with a StationMGR web account, the owner
   links a station with their web email and password and picks the web station (or creates a new
-  one), either on the first launch (*Link instead*) or later from any locked feature. Each
+  one), from *Add a station* or later from any locked feature. Each
   station links on its own, with its own subscription. A station set up offline moves its
   records into the web station; if both have records, the owner chooses which to keep.
-- **Staff:** the owner adds staff on the station page (name, username, PIN) and picks which
-  screens each can open. Staff sign in by choosing their name and entering their PIN. Staff and
-  PINs stay on this computer.
-- **Free:** daily sales, lodgements, product receipt, station setup, staff and PINs, and reports
+- **Staff:** the owner adds staff on the station page by the email of their web account and picks
+  which screens each can open. Staff sign in with their own web account.
+- **Free:** daily sales, lodgements, product receipt, station setup, staff, and reports
   over any 5 days in a row (Dip Calculator included). Exporting a report needs a subscription.
 - **Push and Pull** (station page, needs the internet and a subscription). With a subscription
   the app also does both on its own while online: it pulls when it opens and every 10 minutes,

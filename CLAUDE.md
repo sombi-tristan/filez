@@ -8,7 +8,16 @@ reached through the fetch shim in lib/local/installFetch.js). The sync engine be
 runs, but its target is that local store. See README.md. Do not push this branch under a
 claude/ prefix: the auto-merge workflow would merge it into main.
 
-A computer holds several stations side by side (lib/local/link.js): sign in once with a PIN, then
+People sign in with their StationMGR web account, the same email and password as the website,
+no PINs (lib/local/accounts.js; app/api/desktop/sign-in and sign-up on main). The first sign-in on
+a computer needs the internet; the computer keeps the person (users.web_account) and a bcrypt
+check of the password (pin_hash) so later sign-ins work offline, and a password the web refuses
+is refused here too. Staff are invited by email (an accepted org_invites row) and sign in with
+their own web account. Who may add stations: anyone who is not only someone's staff
+(canAddStations); a station whose owner is not a web account here (an old PIN account) is offered
+to be taken over (stationsWithNoOwnerHere).
+
+A computer holds several stations side by side (lib/local/link.js): sign in, then
 pick a station (screens/dashboard/page.js; the owner sees the stations they own, staff the ones
 they were added to by invite; "Your stations" in the sidebar). The station open now
 (getCurrentStationId) is the one the screens, the licence checks, a backup and the Link form
@@ -23,8 +32,11 @@ on main), with its own link, licence and device token, or stay offline only:
   rebuilds the screens' copy only when it changed something. Push and pull take turns.
 - Staff mostly work on their phones (the web, installed as an app); the computer is where the
   owner reviews. components/desktop/AutoSync.js pulls on opening, every 10 minutes and when back
-  online, and pushes a minute after the last change, for every linked station with a
-  subscription. The outbox notes each change's station (org), and a push sends one station's.
+  online, and pushes a minute after the last change, for the station open now when it is linked
+  with a subscription; the others sync when they are opened. The outbox notes each change's
+  station (org), a push sends one station's, and the station page counts only its own. Review on
+  the station card lists them, to discard the ones that should not go
+  (components/desktop/PendingChanges.js): they go back to the web's version at the next pull.
   The station page's buttons still do it at once.
 - An owner can revoke a computer on the web (Linked computers). Its next push, pull or licence
   check gets 401: the link is marked `revoked` and the screens offer Link again, which keeps the
@@ -52,7 +64,8 @@ on main), with its own link, licence and device token, or stay offline only:
   main); it has no subscription, so the records wait for its first push.
 - No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
   (the end of app/globals.css re-sets the house colour variables on it).
-- Staff and their PINs stay on the computer: users and org_invites never sync.
+- users and org_invites never sync: the web account and its invites are the web's, kept here
+  by signing in.
 
 Important
 

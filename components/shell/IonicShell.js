@@ -21,7 +21,7 @@ import AutoSync from '@/components/desktop/AutoSync'
  *
  * Mounted by app/dashboard/[[...path]], exported as one page that Electron answers every
  * /dashboard address with (electron/resolve.js). components/AppShell.js has already made sure
- * someone is signed in with a PIN; LicenceGate makes sure the computer is linked and the
+ * someone is signed in with their web account; LicenceGate makes sure the computer is linked and the
  * station's subscription runs.
  */
 

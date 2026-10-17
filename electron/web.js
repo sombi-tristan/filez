@@ -120,6 +120,13 @@ function registerWebBridge() {
     return res
   })
 
+  // Signing in or up with the web account: only those two addresses, and no device token.
+  ipcMain.handle('web:account', async (event, { path: apiPath, body } = {}) => {
+    if (!fromApp(event)) return { ok: false, status: 403, body: {} }
+    if (apiPath !== '/api/desktop/sign-in' && apiPath !== '/api/desktop/sign-up') return { ok: false, status: 400, body: { error: 'Not an account request' } }
+    return call('POST', apiPath, body)
+  })
+
   ipcMain.handle('web:request', async (event, { method = 'GET', path: apiPath, body, stationId } = {}) => {
     if (!fromApp(event)) return { ok: false, status: 403, body: {} }
     const token = readToken(stationId)

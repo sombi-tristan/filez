@@ -1,7 +1,7 @@
 {
   "name": "stationmgr",
   "productName": "StationMGR",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "description": "StationMGR — fuel station records, offline on your computer",
   "author": "Premeval Studios",
