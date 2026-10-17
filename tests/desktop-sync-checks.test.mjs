@@ -11,6 +11,9 @@
  *   - replacing the web copy refuses, before clearing anything, while the station has doubles,
  *     and names them
  *   - a pull never adds a second pump or tank beside one waiting to go up
+ *   - a row the web refuses after the web copy was replaced waits as an ordinary change: once
+ *     it is discarded it stays gone, and the next pull does not clear the web again (it did, and
+ *     marked every row to push again, so "234 changes to push" came back after each clear)
  *
  * Runs the real webSync on fake-indexeddb with a stand-in web.
  *
@@ -34,13 +37,16 @@ const licence = await new SignJWT({ svc: { 'fuel-operations': soon } }).setProte
 
 const asked = []
 let webRows = {}
+const refuseIds = new Set()
+const pushedRows = []
 globalThis.window = {
   dispatchEvent() {}, addEventListener() {}, removeEventListener() {},
   stationmgr: {
     async request({ path, body }) {
       asked.push(path)
+      if (path === '/api/desktop/push') pushedRows.push(...body.changes.filter((c) => c.row).map((c) => c.row))
       if (path === '/api/desktop/wipe') return { ok: true, status: 200, body: { ok: true, licence } }
-      if (path === '/api/desktop/push') return { ok: true, status: 200, body: { results: body.changes.map((c) => ({ table: c.table, id: c.id, ok: true })), licence } }
+      if (path === '/api/desktop/push') return { ok: true, status: 200, body: { results: body.changes.map((c) => (refuseIds.has(c.id) ? { table: c.table, id: c.id, ok: false, error: 'Pump PMS 9 is already on the web' } : { table: c.table, id: c.id, ok: true })), licence } }
       if (path === '/api/desktop/pull') return { ok: true, status: 200, body: { licence, station: { name: 'Kubwa', group: 'RAINOIL' }, rows: webRows } }
       if (path === '/api/desktop/licence') return { ok: true, status: 200, body: { licence } }
       return { ok: false, status: 404, body: {} }
@@ -50,9 +56,9 @@ globalThis.window = {
 
 const { findDoubles } = await import('../lib/local/setupKeys.js')
 const { store } = await import('../lib/local/store.js')
-const { setLink, setCurrentStationId } = await import('../lib/local/link.js')
+const { setLink, setCurrentStationId, getLink } = await import('../lib/local/link.js')
 const { saveLicence, checkLicence } = await import('../lib/local/licence.js')
-const { recordChanges } = await import('../lib/local/outbox.js')
+const { recordChanges, pendingChanges, discardChanges } = await import('../lib/local/outbox.js')
 const sync = await import('../lib/local/webSync.js')
 
 let failures = 0
@@ -103,6 +109,29 @@ check('does not add a second AGO 1', ago.length === 1 && ago[0].id === 'mine')
 
 console.log('\nThe station’s group')
 check('a pull keeps its name on the station, for the Rainoil workbooks', (await store.organizations.get('kubwa'))?.station_group === 'RAINOIL')
+
+console.log('\nA row the web refuses after the web copy was replaced')
+await store.station_pumps.put({ id: 'refused', org_id: 'kubwa', fuel_type: 'PMS', pump_number: 9 })
+refuseIds.add('refused')
+const replaced = await sync.replaceWeb('kubwa')
+check('the replace reports it, with the reason', replaced.refused?.length === 1 && /PMS 9/.test(replaced.refused[0].error))
+check('it waits to push, alone', (await pendingChanges('kubwa')).length === 1)
+check('the web copy counts as replaced', !getLink('kubwa').replacePending)
+await discardChanges((await pendingChanges('kubwa')).map((c) => c.key))
+asked.length = 0
+await sync.pull({ stationId: 'kubwa' })
+check('after it is discarded, a pull does not clear the web again', !asked.includes('/api/desktop/wipe'))
+check('nor mark every row to push again', (await pendingChanges('kubwa')).length === 0)
+
+console.log('\nA row holding a column the web does not have')
+// Banks saved before the schema knew of migration 019 hold `balance: 0` beside opening_balance.
+await store.station_banks.put({ id: 'gtb', org_id: 'kubwa', bank_name: 'GTB', lodgement_type: 'pos', opening_balance: 500, balance: 0 })
+await recordChanges('station_banks', [{ id: 'gtb', org_id: 'kubwa' }], 'upsert')
+pushedRows.length = 0
+const sent = await sync.push('kubwa')
+const bank = pushedRows.find((row) => row.id === 'gtb')
+check('is pushed without it', sent.ok && bank && !('balance' in bank))
+check('and keeps the columns the web has', bank?.opening_balance === 500 && bank?.bank_name === 'GTB')
 
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)

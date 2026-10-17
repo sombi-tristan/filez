@@ -286,9 +286,11 @@ function DailySalesReportContent() {
       ) : currentDayReport && (
         <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 ${REPORT_CARD}`}>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 pb-4 min-w-[700px]">
+          {/* The stock column wraps beneath the pumps table when the two do not fit side by side, so a
+              computer never scrolls sideways (a phone may still scroll the pumps table). */}
+          <div className="flex flex-wrap gap-6 pb-4">
             {/* ===== LEFT: DAILY SALES OPERATION ===== */}
-            <div className="min-w-0">
+            <div className="flex-[3_1_44rem] min-w-0">
               <div>
                 <table className="w-full border-collapse text-sm">
                   <thead>
@@ -320,7 +322,7 @@ function DailySalesReportContent() {
             </div>
 
             {/* ===== RIGHT: STOCK & SUMMARY ===== */}
-            <div className="min-w-0">
+            <div className="flex-[2_1_34rem] min-w-0">
               {/* Tank stock table */}
               <div>
                 <table className="w-full border-collapse text-sm mb-4">
