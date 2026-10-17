@@ -56,7 +56,8 @@ The installer is unsigned, so Windows SmartScreen will warn on first run: choose
   backup came from. A warning first lists what differs, then you choose **Overwrite everything**
   (the station becomes exactly the backup) or **Pad with new values** (it keeps what it has and
   gains only what is missing). Nothing is doubled.
-- Closing the app signs everyone out.
+- You stay signed in after closing the app, until you press **Sign out**. Someone else at the
+  computer signs out first, then signs in with their own web account.
 
 ## How it works
 
