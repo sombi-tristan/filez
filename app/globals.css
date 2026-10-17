@@ -189,12 +189,12 @@ ion-menu .house-side {
 }
 
 /* Desktop build: collapsed to icons, the framed sidebar keeps room for its icons inside the
-   border (design/house.css narrows the column to 72px; the frame's margin needs more). */
+   border (design/house.css narrows the column to 72px), at 192px: twice the 96px it was. */
 @media (min-width: 1024px) {
   html[data-house-side='collapsed'] ion-split-pane {
-    --side-width: 96px;
-    --side-min-width: 96px;
-    --side-max-width: 96px;
+    --side-width: 192px;
+    --side-min-width: 192px;
+    --side-max-width: 192px;
   }
 }
 
