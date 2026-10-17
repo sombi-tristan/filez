@@ -12,8 +12,8 @@ import { createOwnedStation } from '@/lib/newStation'
  *
  * POST { email, password, deviceName, stationId? }
  *   - the owner's web sign-in, checked here against Supabase Auth; never stored
- *   - without stationId: the stations they own. One station is linked at once; several come
- *     back as a list to choose from, and the computer asks again with stationId
+ *   - without stationId: the stations they own, as a list to choose from (even one: the owner
+ *     always picks), and the computer asks again with stationId
  *   - with stationId: { token, licence, station, owner, hasRecords }. The token is shown once.
  *     hasRecords says whether the station has records here already, so a computer with its own
  *     can ask which to keep without pulling (a pull needs a subscription).
@@ -61,7 +61,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'This account owns no station yet. Create one for this computer instead.', canCreate: true }, { status: 403 })
     }
 
-    const chosen = created || (stationId ? stations.find((s) => s.id === stationId) : stations.length === 1 ? stations[0] : null)
+    // Always the owner's choice: even a single station is listed, never linked on its own.
+    const chosen = created || (stationId ? stations.find((s) => s.id === stationId) : null)
     if (!chosen) {
       if (stationId) return NextResponse.json({ error: 'You do not own that station' }, { status: 403 })
       return NextResponse.json({ stations: stations.map(({ id, name, location }) => ({ id, name, location })) })
