@@ -41,7 +41,7 @@ globalThis.window = {
       asked.push(path)
       if (path === '/api/desktop/wipe') return { ok: true, status: 200, body: { ok: true, licence } }
       if (path === '/api/desktop/push') return { ok: true, status: 200, body: { results: body.changes.map((c) => ({ table: c.table, id: c.id, ok: true })), licence } }
-      if (path === '/api/desktop/pull') return { ok: true, status: 200, body: { licence, station: { name: 'Kubwa' }, rows: webRows } }
+      if (path === '/api/desktop/pull') return { ok: true, status: 200, body: { licence, station: { name: 'Kubwa', group: 'RAINOIL' }, rows: webRows } }
       if (path === '/api/desktop/licence') return { ok: true, status: 200, body: { licence } }
       return { ok: false, status: 404, body: {} }
     },
@@ -100,6 +100,9 @@ webRows = { organizations: [{ id: 'kubwa', name: 'Kubwa' }], station_pumps: [
 await sync.pull({ stationId: 'kubwa' })
 const ago = await store.station_pumps.filter((p) => p.fuel_type === 'AGO' && Number(p.pump_number) === 1).toArray()
 check('does not add a second AGO 1', ago.length === 1 && ago[0].id === 'mine')
+
+console.log('\nThe station’s group')
+check('a pull keeps its name on the station, for the Rainoil workbooks', (await store.organizations.get('kubwa'))?.station_group === 'RAINOIL')
 
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)
