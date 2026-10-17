@@ -1,205 +1,82 @@
 'use client'
 
 import '@/lib/local/installFetch'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
-import { Loader2, Lock, User, AtSign, Store } from 'lucide-react'
+import { Loader2, Lock, Mail, User } from 'lucide-react'
 import { LABEL } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '../authStyles'
-import LinkForm from '@/components/desktop/LinkForm'
+import { signIn, signUp } from '@/lib/local/accounts'
 
 /**
- * Desktop sign-in.
- *
- *   first run  → the owner names the station and chooses the username and PIN they sign in with
- *                here: no internet, no account, and the free features open at once. Or, with a
- *                StationMGR web account, they link this computer to their station first
- *                (LinkForm), which brings its records down, and then choose their PIN.
- *   afterwards → pick your name, enter your PIN
+ * Desktop sign-in, with the StationMGR web account: the same email and password as the website,
+ * no PINs (lib/local/accounts.js). The first sign-in on a computer needs the internet; after
+ * that it works offline. A new person creates their account here (online), then adds their
+ * stations from Your stations.
  */
 export default function LoginPage() {
-  const [status, setStatus] = useState(null)
-  const [error, setError] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-  // sign-in
-  const [userId, setUserId] = useState('')
-  const [pin, setPin] = useState('')
-
-  // first run
-  const [linking, setLinking] = useState(false)
-  const [stationName, setStationName] = useState('')
-  const [ownerName, setOwnerName] = useState('')
-  const [username, setUsername] = useState('')
-  const [newPin, setNewPin] = useState('')
-  const [confirmPin, setConfirmPin] = useState('')
-
-  const loadStatus = () =>
-    fetch('/api/local/status')
-      .then((r) => r.json())
-      .then((s) => {
-        setStatus(s)
-        if (s.users?.length === 1) setUserId(s.users[0].id)
-        if (s.link?.ownerName) setOwnerName((n) => n || s.link.ownerName)
-      })
-      .catch(() => setError('Could not open the local database.'))
-
-  useEffect(() => { loadStatus() }, [])
-
-  // Into the stations this person may open (screens/dashboard/page.js), which opens the one
-  // station at once when there is only one. A full load: it is an Ionic app of its own.
+  // Into the stations this person may open (screens/dashboard/page.js). A full load: it is an
+  // Ionic app of its own.
   const goIn = () => window.location.replace('/dashboard')
 
-  const signIn = async (e) => {
-    e.preventDefault()
-    setBusy(true); setError('')
-    const res = await fetch('/api/local/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, pin }),
-    })
-    const body = await res.json().catch(() => ({}))
-    setBusy(false)
-    if (!res.ok) { setError(body.error || 'Sign in failed'); setPin(''); return }
-    goIn(status)
-  }
-
-  const setup = async (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     setError('')
-    if (newPin !== confirmPin) { setError('The two PINs do not match'); return }
+    if (creating && password !== confirm) { setError('The two passwords do not match'); return }
     setBusy(true)
-    const res = await fetch('/api/local/setup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stationName, ownerName, username, pin: newPin }),
-    })
-    const body = await res.json().catch(() => ({}))
+    const result = creating ? await signUp({ name, email, password }) : await signIn({ email, password })
     setBusy(false)
-    if (!res.ok) { setError(body.error || 'Setup failed'); return }
-    // A full load: the station is an Ionic app of its own (components/shell/IonicShell.js).
-    window.location.replace(body.onboardingComplete ? `/dashboard/stations/${body.stationId}` : `/dashboard/setup/${body.stationId}`)
+    if (!result.ok) { setError(result.error); setPassword(''); setConfirm(''); return }
+    goIn()
   }
 
-  if (!status) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-content-muted">
-        {error || <Loader2 className="w-5 h-5 animate-spin" />}
+  const switchTo = (toCreate) => { setCreating(toCreate); setError(''); setPassword(''); setConfirm('') }
+  const field = (id, label, Icon, props) => (
+    <div>
+      <label className={LABEL} htmlFor={id}>{label}</label>
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
+        <input id={id} className={AUTH_INPUT} required {...props} />
       </div>
-    )
-  }
-
-  const submitCls = `w-full py-2.5 font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${AUTH_SUBMIT}`
-  const errorBox = error && (
-    <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+    </div>
   )
 
   return (
     <div className="max-w-sm mx-auto px-4 py-16">
       <div className="text-center mb-8">
         <Image src="/icon-192.png" alt="StationMGR" width={48} height={48} className="mx-auto mb-3 rounded-lg" />
-        <h1 className="text-2xl font-bold text-content">
-          {status.setupDone ? (status.stationName || 'StationMGR') : status.linked ? status.stationName : linking ? 'Link to your station' : 'Set up StationMGR'}
-        </h1>
+        <h1 className="text-2xl font-bold text-content">{creating ? 'Create an account' : 'Sign in to StationMGR'}</h1>
         <p className="text-sm text-content-muted mt-1">
-          {status.setupDone
-            ? 'Choose your name and enter your PIN'
-            : status.linked
-              ? 'Linked. Now choose how you sign in on this computer.'
-              : linking
-                ? 'Sign in with your StationMGR web account, once. After that it works offline.'
-                : 'Name your station and choose how you sign in. No internet needed.'}
+          {creating ? 'One account for the website and this computer.' : 'With your StationMGR web account.'}
         </p>
       </div>
 
-      {status.setupDone ? (
-        <form onSubmit={signIn} className="space-y-4">
-          <div>
-            <label className={LABEL} htmlFor="who">Who is signing in?</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-              <select id="who" value={userId} onChange={(e) => { setUserId(e.target.value); setError('') }} className={AUTH_INPUT} required>
-                <option value="" disabled>Select your name</option>
-                {status.users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}{u.isOwner ? ' (owner)' : ''}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className={LABEL} htmlFor="pin">PIN</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-              <input id="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus
-                value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError('') }}
-                maxLength={8} className={AUTH_INPUT} placeholder="••••" required />
-            </div>
-          </div>
-          {errorBox}
-          <button type="submit" disabled={busy || !userId || pin.length < 4} className={submitCls}>
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Sign in
-          </button>
-          <p className="text-xs text-content-faint text-center">Forgot your PIN? The owner can reset it from the station page.</p>
-        </form>
-      ) : !status.linked && linking ? (
-        <div className="space-y-4">
-          <LinkForm onLinked={() => loadStatus()} />
-          <button type="button" onClick={() => { setLinking(false); setError('') }} className="w-full py-2 text-sm text-content-muted">
-            Back: set up without an account
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={setup} className="space-y-4">
-          {!status.linked && (
-            <div>
-              <label className={LABEL} htmlFor="station">Station name</label>
-              <div className="relative">
-                <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-                <input id="station" value={stationName} onChange={(e) => setStationName(e.target.value)} maxLength={80} className={AUTH_INPUT} required autoFocus />
-              </div>
-            </div>
-          )}
-          <div>
-            <label className={LABEL} htmlFor="owner">Your name</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-              <input id="owner" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className={AUTH_INPUT} required />
-            </div>
-          </div>
-          <div>
-            <label className={LABEL} htmlFor="username">Username</label>
-            <div className="relative">
-              <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-              <input id="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} maxLength={32} className={AUTH_INPUT} placeholder="e.g. manager" required />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={LABEL} htmlFor="newpin">PIN</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-                <input id="newpin" type="password" inputMode="numeric" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))} maxLength={8} className={AUTH_INPUT} placeholder="4-8 digits" required />
-              </div>
-            </div>
-            <div>
-              <label className={LABEL} htmlFor="confirmpin">Repeat PIN</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-faint" />
-                <input id="confirmpin" type="password" inputMode="numeric" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} maxLength={8} className={AUTH_INPUT} required />
-              </div>
-            </div>
-          </div>
-          {errorBox}
-          <button type="submit" disabled={busy || newPin.length < 4} className={submitCls}>
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Save and sign in
-          </button>
-          {!status.linked && (
-            <button type="button" onClick={() => { setLinking(true); setError('') }} className="w-full py-2 text-sm text-content-muted">
-              Already have a StationMGR web account? <span className="font-semibold text-content">Link instead</span>
-            </button>
-          )}
-        </form>
-      )}
+      <form onSubmit={submit} className="space-y-4">
+        {creating && field('name', 'Your name', User, { value: name, onChange: (e) => setName(e.target.value), maxLength: 80, autoFocus: true })}
+        {field('email', 'Email', Mail, { type: 'email', autoComplete: 'username', value: email, onChange: (e) => { setEmail(e.target.value); setError('') }, autoFocus: !creating })}
+        {field('password', 'Password', Lock, { type: 'password', autoComplete: creating ? 'new-password' : 'current-password', value: password, onChange: (e) => { setPassword(e.target.value); setError('') } })}
+        {creating && field('confirm', 'Repeat password', Lock, { type: 'password', autoComplete: 'new-password', value: confirm, onChange: (e) => setConfirm(e.target.value) })}
+        {error && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
+        <button type="submit" disabled={busy} className={`w-full py-2.5 font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${AUTH_SUBMIT}`}>
+          {busy && <Loader2 className="w-4 h-4 animate-spin" />} {creating ? 'Create account' : 'Sign in'}
+        </button>
+      </form>
+
+      <button type="button" onClick={() => switchTo(!creating)} className="w-full mt-4 py-2 text-sm text-content-muted">
+        {creating ? <>Already have an account? <span className="font-semibold text-content">Sign in</span></> : <>New here? <span className="font-semibold text-content">Create an account</span></>}
+      </button>
+      <p className="text-xs text-content-faint text-center mt-2">
+        The first sign-in on this computer needs the internet. After that it works offline.
+        {!creating && ' Forgot your password? Reset it on stationmgr.site.'}
+      </p>
     </div>
   )
 }
