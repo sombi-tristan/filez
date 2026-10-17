@@ -8,7 +8,7 @@
  *
  * Run: node tests/local-schema.test.mjs
  */
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 import { execFileSync } from 'child_process'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -32,6 +32,8 @@ check('banks no longer have balance', !banks.columns.includes('balance') && !('b
 console.log('\nThe file matches the migrations')
 execFileSync(process.execPath, ['scripts/gen-local-schema.mjs'], { cwd: root, stdio: 'ignore' })
 const after = readFileSync(path, 'utf8')
+// Put the file back as it was, line endings and all, so a test run leaves the tree clean.
+writeFileSync(path, before)
 check('regenerating changes nothing', after.replace(/\r\n/g, '\n') === before.replace(/\r\n/g, '\n'))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
