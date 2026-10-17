@@ -17,6 +17,7 @@ import { initialSync } from '@/lib/initialSync'
 import { store } from '@/lib/local/store'
 import { push as webPush, pull as webPull } from '@/lib/local/webSync'
 import { setCurrentStationId, allLinks } from '@/lib/local/link'
+import { paidNow } from '@/lib/local/licence'
 import { pendingCount as countPending } from '@/lib/local/outbox'
 import { supabase } from '@/lib/supabaseClient'
 import StationWallet from '@/components/StationWallet'
@@ -488,6 +489,8 @@ export default function StationPage() {
           refreshing={refreshing}
           onPush={handleSync}
           onPull={handleRefresh}
+          // Discarded changes go back to the web's version: pull now when it can.
+          onDiscarded={() => { if (paidNow(stationId) && navigator.onLine) handleRefresh() }}
         />
 
 <div className="mb-4" />
