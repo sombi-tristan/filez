@@ -31,8 +31,9 @@ export { adjacentDates }
  * The page around an entry form. The bottom padding below lg keeps the last field clear of
  * the pinned action bar.
  */
-export function EntryScreen({ children }) {
-  return <div className="max-w-3xl mx-auto px-4 sm:px-8 pt-3 pb-36 lg:pb-10">{children}</div>
+export function EntryScreen({ children, wide = false }) {
+  // wide: the form with the day's entries beside it on a computer (components/entries/DayEntries.js).
+  return <div className={`${wide ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-8 pt-3 pb-36 lg:pb-10`}>{children}</div>
 }
 
 /**
