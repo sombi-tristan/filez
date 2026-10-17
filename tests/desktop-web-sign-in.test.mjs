@@ -96,5 +96,17 @@ session.clearSession()
 online = false
 check('and is the one checked offline after that', (await accounts.signIn({ email: 'destiny@example.com', password: 'new-one' })).ok)
 
+console.log('\nWho may do what')
+await store.users.put({ id: 'staff1', email: 'cashier@example.com', name: 'Cashier', web_account: true })
+await store.org_invites.put({ id: 'i9', org_id: 'kubwa', email: 'cashier@example.com', status: 'accepted' })
+await store.users.put({ id: 'fresh', email: 'new@example.com', name: 'New', web_account: true })
+check('an owner may add stations', await accounts.canAddStations('u1'))
+check('a new account with no stations may too', await accounts.canAddStations('fresh'))
+check('staff may not', !(await accounts.canAddStations('staff1')))
+await store.organizations.put({ id: 'old', name: 'Old place', owner_id: 'old-pin' })
+const unowned = (await accounts.stationsWithNoOwnerHere()).map((s) => s.id)
+check('a station owned by an old PIN account has no owner here', unowned.includes('old'))
+check('one owned by a web account here has', !unowned.includes('kubwa'))
+
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)
