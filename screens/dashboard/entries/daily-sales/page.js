@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useRouter } from '@/lib/nav'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useSearchParams } from '@/lib/nav'
 import { Loader2, Trash2, AlertTriangle, User, X, Check } from 'lucide-react'
 import { db } from '@/lib/db'
 import { dailySalesRepo } from '@/lib/repositories/dailySales'
@@ -12,9 +13,10 @@ import { isDefaultAccount } from '@/lib/defaultAccounts'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, BTN_DANGER, BTN_FRAMED } from '@/components/ui'
 import {
-  EntryScreen, DayBar, EntryCard, EntryTabs, Field, FieldGroup, FieldRow, NumberInput, AddEntryButton,
+  EntryScreen, DayBar, EntryCard, Field, FieldGroup, FieldRow, NumberInput,
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
+import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
 function blankEntry(nozzles, tanks) {
   return {
@@ -77,7 +79,6 @@ function entryFromRecord(entry, nozzles, tanks) {
 
 export default function DailySalesFormPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { promptPush } = useSavePush()
   const orgId = searchParams.get('org_id') || ''
   const editId = searchParams.get('edit') || null
@@ -97,9 +98,6 @@ export default function DailySalesFormPage() {
   const [entries, setEntries] = useState([])
   const [activeTab, setActiveTab] = useState(0)
   const [originalIds, setOriginalIds] = useState([])
-  // The date this form was LOADED from. Deletion targets this, never formDate, because the
-  // date field is editable and a half-typed change would otherwise clear the wrong day.
-  const [loadedDate, setLoadedDate] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deletingDay, setDeletingDay] = useState(false)
   const [deleteError, setDeleteError] = useState('')
@@ -144,35 +142,15 @@ export default function DailySalesFormPage() {
         if (entry && !cancelled) {
           const date = entry.entryDate || entry.entry_date || ''
           setFormDate(date)
-          setLoadedDate(date)
           setOriginalIds([entry.id])
           const built = [entryFromRecord(entry, noz, tnk)]
           setEntries(built)
         }
-      } else if (editDate) {
-        const all = await db.dailySales.where('orgId').equals(orgId).toArray()
-        const dateEntries = all
-          .filter(e => (e.entryDate || e.entry_date) === editDate)
-          .sort(byCreatedAt)
-        if (dateEntries.length > 0 && !cancelled) {
-          setFormDate(editDate)
-          setLoadedDate(editDate)
-          setOriginalIds(dateEntries.map(e => e.id))
-          const built = dateEntries.map(e => entryFromRecord(e, noz, tnk))
-          setEntries(built)
-        }
-      } else {
-        // Create mode: auto-load existing entries for today's date
-        const today = new Date().toISOString().split('T')[0]
-        const all = await db.dailySales.where('orgId').equals(orgId).toArray()
-        const dateEntries = all
-          .filter(e => (e.entryDate || e.entry_date) === today)
-          .sort(byCreatedAt)
-        if (dateEntries.length > 0 && !cancelled) {
-          setOriginalIds(dateEntries.map(e => e.id))
-          const built = dateEntries.map(e => entryFromRecord(e, noz, tnk))
-          setEntries(built)
-        }
+      } else if (editDate && !cancelled) {
+        // A day opened from the list or the arrows: an empty form, its entries listed beside it.
+        setFormDate(editDate)
+        setOriginalIds([])
+        setEntries([blankEntry(noz, tnk)])
       }
 
       if (!cancelled) {
@@ -227,24 +205,47 @@ export default function DailySalesFormPage() {
     load()
   }, [orgId, formDate])
 
-  // When date changes in create mode, auto-load existing entries for that date
-  const handleDateChange = async (newDate) => {
-    setFormDate(newDate)
-    if (editId || editDate || !orgId || !newDate) return
-    const all = await db.dailySales.where('orgId').equals(orgId).toArray()
-    const dateEntries = all
-      .filter(e => (e.entryDate || e.entry_date) === newDate)
-      .sort(byCreatedAt)
-    if (dateEntries.length > 0) {
-      setOriginalIds(dateEntries.map(e => e.id))
-      setEntries(dateEntries.map(e => entryFromRecord(e, nozzles, tanks)))
-    } else {
-      setOriginalIds([])
-      setEntries([blankEntry(nozzles, tanks)])
-    }
+  // One entry in the form at a time; the day's saved entries are listed beside it.
+  const clearForm = () => {
+    setOriginalIds([])
+    setEntries([blankEntry(nozzles, tanks)])
+    setActiveTab(0)
+    autoPrompted.current = new Set()
   }
 
-  const isEditing = !!(editId || editDate || originalIds.length > 0)
+  // Another day: an empty form, and that day's entries in the list.
+  const handleDateChange = (newDate) => {
+    setFormDate(newDate)
+    clearForm()
+  }
+
+  const dayEntries = useLiveQuery(
+    () => (orgId && formDate
+      ? db.dailySales.where('orgId').equals(orgId).filter((e) => (e.entryDate || e.entry_date) === formDate).toArray().then((r) => r.sort(byCreatedAt))
+      : []),
+    [orgId, formDate], []
+  )
+  const savedDates = useLiveQuery(
+    () => (orgId ? db.dailySales.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate || e.entry_date).filter(Boolean))].sort()) : []),
+    [orgId], null
+  )
+
+  const editEntry = (item) => {
+    const entry = (dayEntries || []).find((e) => e.id === item.id)
+    if (!entry) return
+    setOriginalIds([entry.id])
+    setEntries([entryFromRecord(entry, nozzles, tanks)])
+    setActiveTab(0)
+    autoPrompted.current = new Set()
+    setError('')
+  }
+
+  const deleteEntry = async (item) => {
+    await dailySalesRepo.remove(item.id, orgId)
+    if (originalIds.includes(item.id)) clearForm()
+  }
+
+  const isEditing = originalIds.length > 0
   // Only the station's default accounts (Police, Generator, Pour Back After Pump Repairs
   // and so on). A credit customer is not what consumption or pour back is booked to, and
   // listing every customer made the picker a search box for a list of about twenty.
@@ -296,17 +297,6 @@ export default function DailySalesFormPage() {
     }))
   }
 
-  const addEntry = () => {
-    setEntries(prev => [...prev, blankEntry(nozzles, tanks)])
-    setActiveTab(entries.length)
-  }
-
-  const removeEntry = (idx) => {
-    if (entries.length === 1) return
-    setEntries(prev => prev.filter((_, i) => i !== idx))
-    setActiveTab(Math.min(activeTab, entries.length - 2))
-  }
-
   const submittingRef = useRef(false)
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -316,7 +306,7 @@ export default function DailySalesFormPage() {
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i]
       if (!entry.prices.PMS && !entry.prices.AGO && !entry.prices.DPK) {
-        setError(`Entry ${i + 1}: At least one fuel price is required`); setActiveTab(i); submittingRef.current = false; return
+        setError('At least one fuel price is required'); setActiveTab(i); submittingRef.current = false; return
       }
     }
 
@@ -403,7 +393,10 @@ export default function DailySalesFormPage() {
 
       setSaving(false)
       setSaved(true)
-      promptPush(() => router.push(`/dashboard/entries/daily-sales/list?${qs}`))
+      promptPush()
+      // Ready for the next entry: the one saved is in the day's list.
+      clearForm()
+      setTimeout(() => { setSaved(false); submittingRef.current = false }, 1200)
     } catch (err) {
       setError('Failed to save')
       setSaving(false)
@@ -411,13 +404,16 @@ export default function DailySalesFormPage() {
     }
   }
 
+  // Every entry of the day in the date bar (the day the list shows).
   const deleteWholeDay = async () => {
-    if (!loadedDate) return
+    if (!formDate) return
     setDeletingDay(true)
     setDeleteError('')
     try {
-      await dailySalesRepo.removeByDate(orgId, loadedDate)
-      router.push(`/dashboard/entries/daily-sales/list?${qs}`)
+      await dailySalesRepo.removeByDate(orgId, formDate)
+      clearForm()
+      setConfirmDelete(false)
+      setDeletingDay(false)
     } catch (err) {
       // Shown rather than swallowed: a half-cleared day is worth knowing about immediately.
       setDeleteError(`Could not delete: ${err?.message || err}`)
@@ -431,8 +427,17 @@ export default function DailySalesFormPage() {
 
   const current = entries[activeTab]
 
-  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const { prev: prevDate, next: nextDate } = adjacentDates(savedDates || allDates, formDate)
   const dayHref = (d) => d && `/dashboard/entries/daily-sales?${qs}&edit_date=${d}`
+  const dayCount = (dayEntries || []).length
+  const listItems = (dayEntries || []).map((e) => {
+    const p = e.prices || {}
+    return {
+      id: e.id,
+      primary: (e.closeOfBusiness || e.close_of_business) ? 'Final entry (close of business)' : 'Entry',
+      secondary: ['PMS', 'AGO', 'DPK'].filter((f) => Number(p[f]) > 0).map((f) => `${f} ₦${Number(p[f]).toLocaleString()}`).join(' · ') || 'No prices',
+    }
+  })
 
   // The litres field beside an account button: the button only once there are litres to book.
   const litresWithAccount = (idx, r, type) => {
@@ -465,7 +470,8 @@ export default function DailySalesFormPage() {
   }
 
   return (
-    <EntryScreen>
+    <EntryScreen wide>
+      <EntryWithDayList list={<DayEntries items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>
       <form onSubmit={handleSubmit} onFocus={(e) => { if (e.target.tagName === 'INPUT' && (e.target.type === 'number' || e.target.type === 'text')) e.target.select() }} onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
           e.preventDefault()
@@ -479,13 +485,8 @@ export default function DailySalesFormPage() {
       }}>
         <DayBar label="Date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        <EntryTabs count={entries.length} active={activeTab} onChange={setActiveTab} />
-
         {current && (
-          <EntryCard
-            title={entries.length > 1 ? `Entry ${activeTab + 1} of ${entries.length}` : 'Daily sales'}
-            onRemove={entries.length > 1 ? () => removeEntry(activeTab) : null}
-          >
+          <EntryCard title={isEditing ? 'Editing entry' : 'New entry'}>
             <FieldGroup title="Fuel prices (₦/litre)">
               <FieldRow cols={3} keep>
                 {['PMS', 'AGO', 'DPK'].map((fuel) => (
@@ -574,7 +575,11 @@ export default function DailySalesFormPage() {
           </EntryCard>
         )}
 
-        <AddEntryButton onClick={addEntry} />
+        {isEditing && (
+          <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
+            Cancel editing
+          </button>
+        )}
 
         <SaveBar
           listHref={`/dashboard/entries/daily-sales/list?${qs}`}
@@ -587,8 +592,8 @@ export default function DailySalesFormPage() {
       </form>
 
       {/* Danger zone — outside the <form> so the button can never submit it. Only offered
-          when a saved day is open: there is nothing to delete on a fresh entry. */}
-      {isEditing && loadedDate && (
+          when the day in the date bar has saved entries. */}
+      {dayCount > 0 && (
         <div className="mt-10 border border-red-200 dark:border-red-900/50 bg-red-50/50">
           <div className="px-4 py-3 border-b border-red-200 dark:border-red-900/50">
             <h3 className="text-sm font-semibold text-red-800 dark:text-red-200 flex items-center gap-2">
@@ -597,8 +602,8 @@ export default function DailySalesFormPage() {
           </div>
           <div className="px-4 py-3">
             <p className="text-sm text-content-strong mb-4">
-              Permanently deletes the {originalIds.length} {originalIds.length === 1 ? 'entry' : 'entries'} for{' '}
-              <span className="font-semibold text-content">{fmtDate(loadedDate)}</span> so the day can be entered again from
+              Permanently deletes the {dayCount} {dayCount === 1 ? 'entry' : 'entries'} for{' '}
+              <span className="font-semibold text-content">{fmtDate(formDate)}</span> so the day can be entered again from
               scratch. This cannot be undone and every report covering the date will change. Lodgements, receipts and lube are untouched.
             </p>
             {deleteError && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{deleteError}</p>}
@@ -612,16 +617,17 @@ export default function DailySalesFormPage() {
           </div>
         </div>
       )}
+      </EntryWithDayList>
 
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4" onClick={() => (deletingDay ? null : setConfirmDelete(false))}>
           <div className="bg-surface w-full sm:max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="px-4 py-3 border-b border-line">
-              <h3 className="text-sm font-semibold text-content">Delete {fmtDate(loadedDate)}?</h3>
+              <h3 className="text-sm font-semibold text-content">Delete {fmtDate(formDate)}?</h3>
             </div>
             <div className="p-4">
               <p className="text-sm text-content-muted mb-4">
-                {originalIds.length} {originalIds.length === 1 ? 'entry' : 'entries'} will be permanently deleted. This cannot be undone.
+                {dayCount} {dayCount === 1 ? 'entry' : 'entries'} will be permanently deleted. This cannot be undone.
               </p>
               {deleteError && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{deleteError}</p>}
               <div className="flex gap-2">

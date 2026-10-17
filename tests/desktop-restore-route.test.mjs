@@ -30,8 +30,8 @@ if (!file) {
 const backupText = readFileSync(resolve(outside, file), 'utf8')
 const backup = JSON.parse(backupText)
 
-const memory = new Map()
-const storage = () => ({ getItem: (k) => (memory.has(k) ? memory.get(k) : null), setItem: (k, v) => memory.set(k, String(v)), removeItem: (k) => memory.delete(k) })
+// localStorage and sessionStorage are kept apart, as in a browser.
+const storage = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) } }
 globalThis.localStorage = storage()
 globalThis.sessionStorage = storage()
 globalThis.window = { dispatchEvent() {}, addEventListener() {}, removeEventListener() {} }

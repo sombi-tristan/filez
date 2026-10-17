@@ -15,7 +15,7 @@ import { db } from '@/lib/db'
 import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
 import { store } from '@/lib/local/store'
-import { push as webPush, pull as webPull, replaceWeb } from '@/lib/local/webSync'
+import { push as webPush, pull as webPull } from '@/lib/local/webSync'
 import { setCurrentStationId, allLinks } from '@/lib/local/link'
 import { paidNow } from '@/lib/local/licence'
 import { pendingCount as countPending } from '@/lib/local/outbox'
@@ -98,22 +98,6 @@ export default function StationPage() {
       result.refused.slice(0, 10).forEach((r) => lines.push(`• ${r.error}`))
     }
     setSyncModal({ title: 'Push', lines })
-    setSyncing(false)
-  }
-
-  // "Make the web match this computer" (lib/local/webSync.js replaceWeb).
-  const handleReplace = async () => {
-    if (syncing) return
-    setSyncing(true)
-    const result = await replaceWeb().catch((e) => ({ ok: false, error: e.message }))
-    const lines = []
-    if (!result.ok) lines.push(result.error || 'Could not replace the web copy', '', 'Nothing here changed. It tries again at the next sync.')
-    else lines.push(`The web copy now matches this computer: ${result.pushed} record${result.pushed === 1 ? '' : 's'} sent.`)
-    if (result.refused?.length) {
-      lines.push('', `${result.refused.length} not accepted, still waiting here:`)
-      result.refused.slice(0, 10).forEach((r) => lines.push(`• ${r.error}`))
-    }
-    setSyncModal({ title: 'Web copy', lines })
     setSyncing(false)
   }
 
@@ -479,7 +463,6 @@ export default function StationPage() {
           refreshing={refreshing}
           onPush={handleSync}
           onPull={handleRefresh}
-          onReplace={handleReplace}
           // Discarded changes go back to the web's version: pull now when it can.
           onDiscarded={() => { if (paidNow(stationId) && navigator.onLine) handleRefresh() }}
         />

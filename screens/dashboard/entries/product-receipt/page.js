@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useRouter } from '@/lib/nav'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useSearchParams } from '@/lib/nav'
 import { db } from '@/lib/db'
 import { productReceiptsRepo } from '@/lib/repositories/productReceipts'
 import DateInput from '@/components/DateInput'
@@ -10,9 +11,10 @@ import { useSavePush } from '@/components/SavePushProvider'
 import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_DATE } from '@/components/ui'
 import {
-  EntryScreen, DayBar, EntryCard, EntryTabs, Field, FieldGroup, FieldRow, NumberInput, AddEntryButton,
+  EntryScreen, DayBar, EntryCard, Field, FieldGroup, FieldRow, NumberInput,
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
+import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
 function blankEntry(tanks) {
   return {
@@ -102,7 +104,6 @@ function groupRecordsIntoEntries(records, tanks) {
 
 export default function ProductReceiptFormPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { promptPush } = useSavePush()
   const orgId = searchParams.get('org_id') || ''
   const editId = searchParams.get('edit') || null
@@ -143,23 +144,11 @@ export default function ProductReceiptFormPage() {
           setOriginalIds([entry.id])
           setEntries(groupRecordsIntoEntries([entry], tnk))
         }
-      } else if (editDate) {
-        const all = await db.productReceipts.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === editDate).sort(byCreatedAt)
-        if (dateEntries.length > 0 && !cancelled) {
-          setFormDate(editDate)
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(groupRecordsIntoEntries(dateEntries, tnk))
-        }
-      } else {
-        // Create mode: auto-load existing entries for today's date
-        const today = new Date().toISOString().split('T')[0]
-        const all = await db.productReceipts.where('orgId').equals(orgId).toArray()
-        const dateEntries = all.filter(e => e.entryDate === today).sort(byCreatedAt)
-        if (dateEntries.length > 0 && !cancelled) {
-          setOriginalIds(dateEntries.map(e => e.id))
-          setEntries(groupRecordsIntoEntries(dateEntries, tnk))
-        }
+      } else if (editDate && !cancelled) {
+        // A day opened from the list or the arrows: an empty form, its receipts listed beside it.
+        setFormDate(editDate)
+        setOriginalIds([])
+        setEntries([blankEntry(tnk)])
       }
 
       if (!cancelled) {
@@ -174,36 +163,48 @@ export default function ProductReceiptFormPage() {
     return () => { cancelled = true }
   }, [editId, editDate, orgId])
 
-  const isEditing = !!(editId || editDate || originalIds.length > 0)
+  // One receipt in the form at a time (its records, one per tank, in originalIds); the day's
+  // saved receipts are listed beside it.
+  const isEditing = originalIds.length > 0
+  const clearForm = () => { setOriginalIds([]); setEntries([blankEntry(tanks)]); setActiveTab(0) }
 
-  // When date changes in create mode, auto-load existing entries for that date
-  const handleDateChange = async (newDate) => {
+  // Another day: an empty form, and that day's receipts in the list.
+  const handleDateChange = (newDate) => {
     setFormDate(newDate)
-    if (editId || editDate || !orgId || !newDate) return
-    const all = await db.productReceipts.where('orgId').equals(orgId).toArray()
-    const dateEntries = all.filter(e => e.entryDate === newDate).sort(byCreatedAt)
-    if (dateEntries.length > 0) {
-      setOriginalIds(dateEntries.map(e => e.id))
-      setEntries(groupRecordsIntoEntries(dateEntries, tanks))
-    } else {
-      setOriginalIds([])
-      setEntries([blankEntry(tanks)])
-    }
+    clearForm()
+  }
+
+  const dayRecords = useLiveQuery(
+    () => (orgId && formDate
+      ? db.productReceipts.where('orgId').equals(orgId).filter((e) => e.entryDate === formDate).toArray().then((r) => r.sort(byCreatedAt))
+      : []),
+    [orgId, formDate], []
+  )
+  const savedDates = useLiveQuery(
+    () => (orgId ? db.productReceipts.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate).filter(Boolean))].sort()) : []),
+    [orgId], null
+  )
+  const dayReceipts = groupRecordsIntoEntries(dayRecords || [], tanks)
+
+  const editEntry = (item) => {
+    const receipt = dayReceipts.find((r) => r._key === item.id)
+    if (!receipt) return
+    setOriginalIds(receipt.ids)
+    setEntries([receipt])
+    setActiveTab(0)
+    setError('')
+  }
+
+  // A receipt is one record per tank: all of them go.
+  const deleteEntry = async (item) => {
+    const receipt = dayReceipts.find((r) => r._key === item.id)
+    if (!receipt) return
+    for (const id of receipt.ids) await productReceiptsRepo.remove(id, orgId)
+    if (receipt.ids.some((id) => originalIds.includes(id))) clearForm()
   }
 
   const updateEntry = (idx, field, value) => {
     setEntries(prev => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e))
-  }
-
-  const addEntry = () => {
-    setEntries(prev => [...prev, blankEntry(tanks)])
-    setActiveTab(entries.length)
-  }
-
-  const removeEntry = (idx) => {
-    if (entries.length === 1) return
-    setEntries(prev => prev.filter((_, i) => i !== idx))
-    setActiveTab(Math.min(activeTab, entries.length - 2))
   }
 
   const submittingRef = useRef(false)
@@ -284,7 +285,10 @@ export default function ProductReceiptFormPage() {
 
       setSaving(false)
       setSaved(true)
-      promptPush(() => router.push(`/dashboard/entries/product-receipt/list?${qs}`))
+      promptPush()
+      // Ready for the next receipt: the one saved is in the day's list.
+      clearForm()
+      setTimeout(() => { setSaved(false); submittingRef.current = false }, 1200)
     } catch (err) {
       setError('Failed to save')
       setSaving(false)
@@ -298,7 +302,13 @@ export default function ProductReceiptFormPage() {
 
   const current = entries[activeTab]
 
-  const { prev: prevDate, next: nextDate } = adjacentDates(allDates, formDate)
+  const { prev: prevDate, next: nextDate } = adjacentDates(savedDates || allDates, formDate)
+  const tankLabel = (id) => { const t = tanks.find((x) => x.id === id); return t ? `${t.fuel_type} tank ${t.tank_number}` : 'Tank' }
+  const listItems = dayReceipts.map((r) => ({
+    id: r._key,
+    primary: [r.truckNumber, r.waybillNumber && `Waybill ${r.waybillNumber}`].filter(Boolean).join(' · ') || 'Receipt',
+    secondary: Object.entries(r.tankVolumes).filter(([, v]) => Number(v) > 0).map(([id, v]) => `${tankLabel(id)} ${Number(v).toLocaleString()} L`).join(', '),
+  }))
   const dayHref = (d) => d && `/dashboard/entries/product-receipt?${qs}&edit_date=${d}`
 
   // Per compartment readings, three across: short numbers fit side by side on a phone.
@@ -315,17 +325,13 @@ export default function ProductReceiptFormPage() {
   ]
 
   return (
-    <EntryScreen>
+    <EntryScreen wide>
+      <EntryWithDayList list={<DayEntries title="Receipts this day" items={listItems} editingId={dayReceipts.find((r) => r.ids.some((id) => originalIds.includes(id)))?._key} onEdit={editEntry} onDelete={deleteEntry} />}>
       <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { e.preventDefault(); const fields = Array.from(e.currentTarget.querySelectorAll('input, select, textarea')); const idx = fields.indexOf(e.target); if (idx >= 0 && idx < fields.length - 1) fields[idx + 1].focus() } }}>
         <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
-        <EntryTabs count={entries.length} active={activeTab} onChange={setActiveTab} />
-
         {current && (
-          <EntryCard
-            title={entries.length > 1 ? `Entry ${activeTab + 1} of ${entries.length}` : 'Receipt'}
-            onRemove={entries.length > 1 ? () => removeEntry(activeTab) : null}
-          >
+          <EntryCard title={isEditing ? 'Editing receipt' : 'New receipt'}>
             <FieldGroup title="Delivery">
               <FieldRow cols={2}>
                 <Field label="Loaded date">
@@ -395,7 +401,11 @@ export default function ProductReceiptFormPage() {
           </EntryCard>
         )}
 
-        <AddEntryButton onClick={addEntry} label="Add another receipt" />
+        {isEditing && (
+          <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
+            Cancel editing
+          </button>
+        )}
 
         <SaveBar
           listHref={`/dashboard/entries/product-receipt/list?${qs}`}
@@ -406,6 +416,7 @@ export default function ProductReceiptFormPage() {
           onErrorDone={() => setError('')}
         />
       </form>
+      </EntryWithDayList>
     </EntryScreen>
   )
 }
