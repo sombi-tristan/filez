@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, Mail, Lock, Store, AlertTriangle } from 'lucide-react'
 import { LABEL } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '@/app/auth/authStyles'
@@ -8,12 +8,14 @@ import { link, finishLink } from '@/lib/local/webSync'
 import { hasWebBridge } from '@/lib/local/web'
 import { getCurrentStationId } from '@/lib/local/link'
 import { getSessionUserId } from '@/lib/local/session'
+import { store } from '@/lib/local/store'
 
 /**
  * Links this computer to its station on the web: the one step that needs the internet.
  *
  *   1. The station owner signs in with their StationMGR web email and password.
- *   2. If they own several stations, they choose one.
+ *   2. They choose one of their web stations from the list (always, even one), or a new one.
+ *      A station already on this computer is shown but cannot be picked again.
  *   3. If this computer already has records and the web station does too, they choose: back up
  *      this computer's records and use the station's, or cancel. Records are never merged
  *      blindly, which would put two sets of pumps and tanks into one station.
@@ -33,6 +35,11 @@ const NEW = '__new__'
 
 export default function LinkForm({ onLinked, canBackUp = false, createFor = '', localStationId = getCurrentStationId() }) {
   const [email, setEmail] = useState('')
+  // The web account signed in here: its email is filled in, only the password is asked.
+  useEffect(() => {
+    const me = getSessionUserId()
+    if (me) store.users.get(me).then((u) => { if (u?.email) setEmail((e) => e || u.email) })
+  }, [])
   const [password, setPassword] = useState('')
   const [stations, setStations] = useState(null)
   const [stationId, setStationId] = useState('')
@@ -61,7 +68,15 @@ export default function LinkForm({ onLinked, canBackUp = false, createFor = '', 
       ? { email, password, createName: newName, ...here }
       : { email, password, stationId: stationId || undefined, ...here }).catch((err) => ({ ok: false, error: err.message }))
     setBusy('')
-    if (result.stations) { setStations(result.stations); setStationId(result.stations[0]?.id || ''); return }
+    if (result.stations) {
+      const here = new Set((await store.organizations.toArray()).map((o) => o.id))
+      const listed = result.stations.map((s) => ({ ...s, here: here.has(s.id) }))
+      setStations(listed)
+      const first = listed.find((s) => !s.here)
+      if (first) setStationId(first.id)
+      else setNewName(createFor)
+      return
+    }
     if (result.conflict) { setConflict(result.pending); return }
     if (result.canCreate) { setNewName(createFor); setError('This account owns no station yet. Name the new one to create for this computer.'); return }
     if (!result.ok) { setError(result.error || 'Could not link this computer'); return }
@@ -145,7 +160,11 @@ export default function LinkForm({ onLinked, canBackUp = false, createFor = '', 
             <select id="link-station" value={newName !== null ? NEW : stationId}
               onChange={(e) => { if (e.target.value === NEW) setNewName(createFor); else { setNewName(null); setStationId(e.target.value) } }}
               className={AUTH_INPUT} required>
-              {stations.map((s) => <option key={s.id} value={s.id}>{s.name}{s.location ? ` · ${s.location}` : ''}</option>)}
+              {stations.map((s) => (
+                <option key={s.id} value={s.id} disabled={s.here}>
+                  {s.name}{s.location ? ` · ${s.location}` : ''}{s.here ? ' (already on this computer)' : ''}
+                </option>
+              ))}
               <option value={NEW}>+ Create a new station on the web</option>
             </select>
           </div>
