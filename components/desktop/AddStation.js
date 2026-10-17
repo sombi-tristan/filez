@@ -17,7 +17,7 @@ import { checkLicence, paidNow } from '@/lib/local/licence'
  *             balances) and can be linked to the web later
  *   web       one of the owner's web stations, brought down with its records (LinkForm with no
  *             station here to link: it becomes a new station on this computer)
- *   backup    a backup file becomes a station here (components/desktop/RestoreBackup.js); like
+ *   backup    a new station filled from a backup file (components/desktop/RestoreBackup.js); like
  *             backing up, it needs a subscription running
  *
  *   onAdded(station)  called with the new station (or null) once it is here
@@ -87,7 +87,7 @@ export default function AddStation({ onAdded, onCancel }) {
         <LinkForm localStationId={null} onLinked={(result) => onAdded?.(result?.station ? { ...result.station, onboarding_complete: true } : null)} />
       )}
 
-      {way === 'backup' && (paid ? <RestoreBackup label="Choose the backup file" /> : <PaidNote what="Restoring a backup" />)}
+      {way === 'backup' && (paid ? <RestoreBackup label="Choose the backup file" intoNew /> : <PaidNote what="Restoring a backup" />)}
 
       <button type="button" onClick={() => (way ? setWay(null) : onCancel?.())} className={`px-4 py-2 text-sm ${BTN_FRAMED}`}>
         {way ? 'Back' : 'Cancel'}

@@ -9,6 +9,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
+import StationSwitch from '@/components/desktop/StationSwitch'
 import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
 
 const FUEL_TYPES = ['PMS', 'AGO', 'DPK']
@@ -252,6 +253,9 @@ export default function StationSettingsPage() {
 
   return (
     <div className="max-w-lg px-4 sm:px-8 py-8">
+
+      {/* Desktop build: the other stations on this computer (the sidebar only names this one). */}
+      <StationSwitch stationId={stationId} />
 
       {/* Location */}
       <Accordion icon={MapPin} title="Location" defaultOpen>

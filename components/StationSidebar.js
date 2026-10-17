@@ -188,10 +188,8 @@ export default function StationSidebar({ stationId }) {
         title={current?.name || 'Station'}
         subtitle={isOwner ? 'Owner' : 'Staff member'}
         currentId={String(stationId)}
-        options={stations.map((s) => ({ id: String(s.id), title: s.name }))}
-        onPick={(o) => { if (String(o.id) !== String(stationId)) { menuController.close('main'); router.root(`/dashboard/stations/${o.id}`) } }}
-        // Desktop build: every station on this computer, and adding one (screens/dashboard/page.js).
-        action={{ label: 'Your stations', onPick: () => { menuController.close('main'); router.root('/dashboard?all=1') } }}
+        // Desktop build: only names the station open; switching is on its Settings page
+        // (components/desktop/StationSwitch.js).
       />
 
       <SidebarNavRow href={home} label="Station home" icon={homeOutline} active={pathname === home} onClick={go(home)} />
