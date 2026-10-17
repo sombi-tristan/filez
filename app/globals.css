@@ -188,6 +188,24 @@ ion-menu .house-side {
   border-radius: var(--corner);
 }
 
+/* Desktop build: collapsed to icons, the framed sidebar keeps room for its icons inside the
+   border (design/house.css narrows the column to 72px; the frame's margin needs more). */
+@media (min-width: 1024px) {
+  html[data-house-side='collapsed'] ion-split-pane {
+    --side-width: 96px;
+    --side-min-width: 96px;
+    --side-max-width: 96px;
+  }
+}
+
+/* Desktop build: entry and report screens (components/shell/Screen.js) read one size up: each
+   of Tailwind's small text sizes takes the next. */
+.screen-larger .text-xs { font-size: 0.875rem; line-height: 1.25rem; }
+.screen-larger .text-sm { font-size: 1rem; line-height: 1.5rem; }
+.screen-larger .text-base { font-size: 1.125rem; line-height: 1.75rem; }
+.screen-larger .text-[10px] { font-size: 12px; }
+.screen-larger .text-[11px] { font-size: 13px; }
+
 /* A report's Generate button (components/reports/DateRange.js) is a square box with the house
    corner, beside the date boxes, not the round icon button. */
 ion-button.house-btn-icon.report-generate {

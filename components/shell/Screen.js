@@ -75,6 +75,8 @@ export default function Screen({ screen }) {
               at the bottom of a short screen and under the last line of a long one. */}
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
+              {/* Entries and reports read one size up (app/globals.css .screen-larger). */}
+              <div className={screen.report || screen.path.startsWith('/dashboard/entries') ? 'screen-larger' : undefined}>
               {screen.ranged && !locked && <FreeReportBanner />}
               {locked ? (
                 <ServiceLocked service={screen.service} />
@@ -83,6 +85,7 @@ export default function Screen({ screen }) {
                   <Page key={held.key} />
                 </Suspense>
               )}
+              </div>
             </div>
             {(!screen.report || locked) && <Footer />}
           </div>
