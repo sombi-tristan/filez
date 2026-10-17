@@ -10,6 +10,7 @@ import { buildDailyReport } from '@/lib/buildDailyReport'
 import { exportDailyReportExcel } from '@/lib/exportDailyReportExcel'
 import DateRange from '@/components/reports/DateRange'
 import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { tabOffsetFor } from '@/lib/dayTabs'
 import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, CARD_HOVER, CARD, REPORT_CARD } from '@/components/ui'
@@ -196,8 +197,7 @@ function DailySalesReportContent() {
   useEffect(() => {
     if (!report?.dateReports) return
     const idx = report.dateReports.findIndex(r => r.date === viewDate)
-    if (idx < tabOffset) setTabOffset(idx)
-    else if (idx >= tabOffset + TAB_COUNT) setTabOffset(idx - TAB_COUNT + 1)
+    setTabOffset(tabOffsetFor({ index: idx, offset: tabOffset, count: TAB_COUNT }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewDate, report])
 

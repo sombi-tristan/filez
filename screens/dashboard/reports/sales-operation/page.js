@@ -9,6 +9,7 @@ import { buildSalesOperationReport } from '@/lib/buildSalesOperationReport'
 import { exportSalesOperationExcel } from '@/lib/exportSalesOperationExcel'
 import DateRange from '@/components/reports/DateRange'
 import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { tabOffsetFor } from '@/lib/dayTabs'
 import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
 
@@ -126,8 +127,7 @@ function SalesOperationContent() {
   useEffect(() => {
     if (!report?.sheets) return
     const idx = report.sheets.findIndex(s => s.sheetName === activeSheetName)
-    if (idx < tabOffset) setTabOffset(idx)
-    else if (idx >= tabOffset + TAB_COUNT) setTabOffset(idx - TAB_COUNT + 1)
+    setTabOffset(tabOffsetFor({ index: idx, offset: tabOffset, count: TAB_COUNT }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSheetName, report])
 
