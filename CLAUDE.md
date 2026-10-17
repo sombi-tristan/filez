@@ -66,8 +66,8 @@ on main), with its own link, licence and device token, or stay offline only:
   station here. The Link form can also create a new web station for a station's records
   (app/api/desktop/link createName, lib/newStation.js on main); it has no subscription, so the
   records wait for its first push.
-- No native menu bar (electron/main.js). The station sidebar is blue with white words and icons
-  (the end of app/globals.css re-sets the house colour variables on it).
+- No native menu bar (electron/main.js). The station sidebar is the house white column with a border all
+  round (the end of app/globals.css).
 - users and org_invites never sync: the web account and its invites are the web's, kept here
   by signing in.
 
