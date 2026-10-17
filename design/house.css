@@ -1919,6 +1919,17 @@ button.house-side-switch {
   background: rgba(var(--ink-rgb), 0.04);
 }
 
+/* SidebarSwitcher's action: the last row, set apart by a line, in the accent. */
+.house-side-option-action {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.house-side-option-action b {
+  color: var(--accent);
+}
+
 .house-side-options ion-icon {
   color: var(--accent);
   font-size: 20px;
