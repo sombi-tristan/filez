@@ -12,6 +12,16 @@
  * Change a value in the design system, not here, unless it is one of the scale steps the
  * house does not define.
  */
+
+/* StationMGR's solid look: filled elements with a 1px line and 8px corners, in place of the
+   house's 2px edge and 4px corner. :root:root because app/layout.js loads design/house.css after
+   this file, and its own :root would otherwise win. Rounded to match: tailwind.config.js
+   (rounded-house, border-card). */
+:root:root {
+  --corner: 8px;
+  --edge: 1px;
+}
+
 :root {
   color-scheme: light;
 
@@ -178,12 +188,6 @@ html.ionic-app body {
   }
 }
 
-/* A report's Generate button (components/reports/DateRange.js) is a square box with the house
-   corner, beside the date boxes, not the round icon button. */
-ion-button.house-btn-icon.report-generate {
-  --border-radius: var(--corner);
-}
-
 /* The top bar's icon buttons (Home, notifications: components/shell/Screen.js) are just the
    icons, with no circle round them. */
 ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon {
@@ -195,3 +199,40 @@ ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon {
 ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon::part(native) {
   border: 0;
 }
+
+/* Entry and report screens (components/shell/Screen.js .screen-ink), as in the desktop build:
+   every word is bold, and what was already bold or semibold reads in Premeval's orange
+   (design/house.css --accent, #f57d00), unless it, or a row or cell around it, has a colour of
+   its own: red, green and blue (the blue report subheads, the primary buttons) and white on a
+   blue header keep theirs. Labels are blue and never orange: a <label>, and the blue-grey label
+   text (text-content-muted, -faint: field names, small headings, hints). Bold figures such as
+   totals stay orange. The day's entries list beside an entry form
+   (components/entries/DayEntries.js, .entries-list) is blue throughout, bold or not. */
+.screen-ink,
+.screen-ink * {
+  font-weight: 700;
+}
+
+.screen-ink { --bold-ink: #f57d00; }
+.entries-list { color: rgb(var(--primary-700)); --bold-ink: rgb(var(--primary-700)); }
+[data-theme='dark'] .entries-list { color: rgb(var(--primary-200)); --bold-ink: rgb(var(--primary-200)); }
+
+.screen-ink :is(label, .text-content-muted, .text-content-faint) { color: rgb(var(--primary-700)); }
+[data-theme='dark'] .screen-ink :is(label, .text-content-muted, .text-content-faint) { color: rgb(var(--primary-200)); }
+
+.screen-ink :is(.font-bold, .font-semibold, .font-extrabold, th, b, strong, h1, h2, h3, h4):not(
+  [class*='text-red'], [class*='text-green'], [class*='text-emerald'], [class*='text-blue'], [class*='text-sky'],
+  [class*='text-primary'], [class*='text-accent'], [class*='text-white'], [class*='text-amber'], [class*='text-orange'],
+  [class*='text-red'] *, [class*='text-green'] *, [class*='text-emerald'] *, [class*='text-blue'] *, [class*='text-sky'] *,
+  [class*='text-primary'] *, [class*='text-accent'] *, [class*='text-white'] *, [class*='text-amber'] *, [class*='text-orange'] *,
+  label, label *, [class*='text-content-muted'], [class*='text-content-faint']
+) {
+  color: var(--bold-ink);
+}
+
+/* Dark mode: blue text one step brighter, everywhere a dark shade is given (labels and the entries
+   list above, the light-blue buttons, report subheads, links). Only text: fills and borders keep
+   their shades. Outranks Tailwind's own dark: utilities, which carry a single class. */
+[data-theme='dark'] .dark\:text-primary-400 { color: rgb(var(--primary-300)); }
+[data-theme='dark'] .dark\:text-primary-300 { color: rgb(var(--primary-200)); }
+[data-theme='dark'] .dark\:text-primary-200 { color: rgb(var(--primary-100)); }

@@ -69,7 +69,7 @@ export default function LinkedComputersPage() {
           ) : (
             <ul className="flex flex-col gap-2 mb-8">
               {active.map((c) => (
-                <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-3 border-2 border-line rounded-house">
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-3 border border-line rounded-house">
                   <div className="min-w-0">
                     <p className="font-semibold text-content truncate">{c.name || 'Computer'}</p>
                     <p className="text-sm text-content-muted">
@@ -87,7 +87,7 @@ export default function LinkedComputersPage() {
               <SectionHeader>Revoked</SectionHeader>
               <ul className="flex flex-col gap-2">
                 {revoked.map((c) => (
-                  <li key={c.id} className="p-3 border-2 border-line rounded-house opacity-70">
+                  <li key={c.id} className="p-3 border border-line rounded-house opacity-70">
                     <p className="font-semibold text-content truncate">{c.name || 'Computer'}</p>
                     <p className="text-sm text-content-muted">{c.station_name} · revoked {when(c.revoked_at)}</p>
                   </li>

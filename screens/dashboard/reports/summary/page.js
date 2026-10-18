@@ -210,7 +210,7 @@ function SummaryContent() {
       {/* Content */}
       {!generated ? (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+          <p className="text-content-faint text-sm">Select a date range and click Load.</p>
         </div>
       ) : !report ? (
         <div className="flex justify-center py-20">

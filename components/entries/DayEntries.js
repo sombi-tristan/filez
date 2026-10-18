@@ -9,13 +9,15 @@ import { BTN_DANGER, BTN_FRAMED } from '@/components/ui'
 /**
  * An entry screen with one form and the day's entries: the form, then the list beneath it on a
  * phone, and the list in a column on the right on a computer (lg). Kept off EntryParts.js, which
- * carries the date picker.
+ * carries the date picker. On a computer the list's top lines up with the date bar's box, which
+ * sits 8px down inside the bar's band (DayBar's py-2), and sticks on that same line: a sticky top
+ * any lower pushes the list down even before the screen scrolls.
  */
 export function EntryWithDayList({ list, children }) {
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6 lg:items-start">
       <div className="min-w-0">{children}</div>
-      <aside className="mt-6 lg:mt-0 lg:sticky lg:top-20">{list}</aside>
+      <aside className="mt-6 lg:mt-2 lg:sticky lg:top-2">{list}</aside>
     </div>
   )
 }
@@ -40,15 +42,16 @@ export function DayEntries({ title = 'Entries this day', items = [], editingId, 
   }
 
   return (
-    <section className="border-card border-line rounded-house">
-      <h2 className="flex items-center justify-between min-h-[44px] px-3 bg-subtle border-b-2 border-line text-[15px] font-semibold text-content rounded-t-[2px]">
+    // entries-list: its text is blue throughout (app/globals.css).
+    <section className="entries-list bg-subtle border-card border-line rounded-house">
+      <h2 className="flex items-center justify-between min-h-[44px] px-3 bg-subtle border-b border-line text-[15px] font-semibold text-content rounded-t-[7px]">
         {title}
         <span className="text-content-muted font-medium">{items.length}</span>
       </h2>
       {items.length === 0 ? (
         <p className="px-3 py-4 text-sm text-content-muted">Nothing saved for this day yet.</p>
       ) : (
-        <ul className="divide-y-2 divide-line">
+        <ul className="divide-y divide-line">
           {items.map((item, i) => (
             <li key={item.id} className={`flex items-center gap-2 px-3 py-2 ${item.id === editingId ? 'bg-primary-500/10' : ''}`}>
               <span className="w-6 shrink-0 text-sm text-content-faint">{i + 1}</span>

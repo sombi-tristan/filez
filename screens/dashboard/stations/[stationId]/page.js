@@ -9,6 +9,7 @@ import {
   ChevronRight, ChevronDown, BarChart3, Plus, Pencil, Trash2, AlertTriangle,
   FileText, BookOpen, ShieldX, Lock, Truck, Wallet, TrendingUp, Boxes, LineChart, Activity
 } from 'lucide-react'
+import { homeReports } from '@/lib/recentReports'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Modal from '@/components/Modal'
 import { differenceInDays } from 'date-fns'
@@ -23,7 +24,7 @@ import {
   Button, SectionHeader, RowGroup, Row, IconChip,
 } from '@/components/ui'
 import {
-  ENTRY_LINKS, REPORT_SECTIONS, REPORT_COLUMNS, ALL_PAGE_KEYS, canAccessPage,
+  ENTRY_LINKS, REPORT_SECTIONS, ALL_PAGE_KEYS, canAccessPage,
   ENTRY_PERMISSION_OPTIONS as ENTRY_PAGE_OPTIONS,
   REPORT_PERMISSION_OPTIONS as REPORT_PAGE_OPTIONS,
 } from '@/lib/stationNav'
@@ -62,9 +63,6 @@ export default function StationPage() {
   const [subscription, setSubscription] = useState(null)
 
   // Manage station accordion
-  const [showManage, setShowManage] = useState(false)
-  const [editName, setEditName] = useState('')
-  const [saving, setSaving] = useState(false)
   const [leaving, setLeaving] = useState(false)
 
   // Sync state
@@ -167,8 +165,8 @@ export default function StationPage() {
 
       // Ownership comes from the row, not from which array it arrived in. The by-id form
       // returns the station under `stations` whoever is asking, so the old `!!owned` would
-      // have made every admin an owner and handed them Staff, Manage Station, rename and
-      // delete on a station that is not theirs.
+      // have made every admin an owner and handed them Staff and the owner's other controls
+      // on a station that is not theirs.
       const owned = !!me?.id && s.owner_id === me.id
       setIsOwner(owned)
       // Access was granted, so the viewer is the owner, an accepted member, or an admin.
@@ -259,31 +257,6 @@ export default function StationPage() {
     })
   }
 
-  const updateStation = async (e) => {
-    e.preventDefault()
-    if (!editName.trim()) return
-    setSaving(true)
-    const res = await fetch('/api/organizations', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: stationId, name: editName }),
-    })
-    if (res.ok) {
-      setStation((prev) => ({ ...prev, name: editName.trim() }))
-    }
-    setSaving(false)
-  }
-
-  const deleteStation = async () => {
-    if (!confirm(`Delete "${station.name}"? All staff, data, and subscriptions for this station will be permanently removed.`)) return
-    await fetch('/api/organizations', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: stationId }),
-    })
-    router.push('/dashboard')
-  }
-
   const leaveStation = async () => {
     if (!confirm('Leave this station? You will lose access to its entries and data.')) return
     setLeaving(true)
@@ -315,17 +288,13 @@ export default function StationPage() {
 
   const entryLinks = ENTRY_LINKS(stationId)
   const reportSections = REPORT_SECTIONS(stationId)
+  const reportLinks = reportSections.flatMap((s) => s.items)
 
-  /**
-   * Staff, as a box in the second report column rather than a full-width band below the grid.
-   * That column holds one short group, so it had a tall empty run beside Sales and Stock; this
-   * fills it, and a bordered box makes Staff read as a peer of the RowGroups around it rather
-   * than a loose stack of controls.
-   */
+  /** Staff (owner only): a full-width panel of its own under Reports, like the Entries one. */
   const staffSection = isOwner ? (
-    <section className="mt-6 lg:mt-0 lg:mb-6">
-      <SectionHeader>Staff</SectionHeader>
-      <div className={`p-3 ${CARD}`}>
+    <section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">
+      <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Staff</h2>
+      <div>
           <button
             onClick={() => { setShowInviteModal(true); setInviteEmail(''); setInviteError('') }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium mb-4 ${BTN_PRIMARY}`}
@@ -338,7 +307,7 @@ export default function StationPage() {
               RowGroup does beside this. The negative margins let the run meet the box's edges,
               with a rule above it separating the list from the Invite button. */}
           {invites.length > 0 && (
-            <div className="-mx-3 -mb-3 border-t-2 border-primary-500/40 dark:border-primary-400/40 divide-y divide-line">
+            <div className="-mx-3 -mb-3 border-t border-primary-500/40 dark:border-primary-400/40 divide-y divide-line">
               {invites.map((inv) => {
                 const isExpanded = expandedStaff === inv.id
                 const pages = inv.visible_pages || []
@@ -561,25 +530,23 @@ export default function StationPage() {
           )
         })()}
 
-        {/* Entries keep their original tile: a rectangular card sized by its content, icon
-            above the label and its one-line description, two up on a phone and three from sm.
-            Not the square Tile/HeroTile the store-portal launcher uses. Only the colours moved
-            to the shared system. A destination the member cannot open stays on the board,
-            dimmed, and explains itself on tap rather than disappearing. */}
+        {/* Entries as widgets in a full-width white panel with its heading inside: pale tiles with
+            no line, 112px tall, filling the row in equal columns (at least 9rem each, wrapping on
+            a phone), a soft blue round icon on top, the name and a short description under it. A
+            destination the member cannot open stays on the board, dimmed, and explains itself on
+            tap rather than disappearing. */}
         {entryLinks.length > 0 && (
-          <section>
-            <SectionHeader>Entries</SectionHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <section className="w-full bg-surface border-card border-line rounded-house p-3">
+            <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Entries</h2>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
               {entryLinks.map((link) => {
                 const allowed = canAccess(link.pageKey)
-                const cls = `flex flex-col gap-2 p-4 ${CARD} ${allowed ? CARD_HOVER : 'opacity-50'}`
+                const cls = `w-full h-28 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors ${allowed ? 'hover:bg-primary-500/10' : 'opacity-50'}`
                 const inner = (
                   <>
                     <IconChip icon={link.icon} className="w-10 h-10" iconClass="w-5 h-5" />
-                    <div>
-                      <p className="text-sm font-medium text-content">{link.label}</p>
-                      <p className="text-xs text-content-muted leading-snug">{link.desc}</p>
-                    </div>
+                    <p className="text-sm font-medium text-content leading-tight">{link.label}</p>
+                    <p className="text-xs text-content-muted leading-snug line-clamp-2">{link.desc}</p>
                   </>
                 )
                 return allowed ? (
@@ -589,7 +556,7 @@ export default function StationPage() {
                     key={link.href}
                     type="button"
                     onClick={() => setAccessDeniedModal(true)}
-                    className={`${cls} text-left w-full`}
+                    className={`${cls} w-full`}
                   >
                     {inner}
                   </button>
@@ -599,151 +566,48 @@ export default function StationPage() {
           </section>
         )}
 
-        {/* Reports, grouped by domain: compact rows rather than a wall of tiles, which is
-            store-portal's rule for secondary destinations, and one RowGroup per group, which
-            is how its reports hub lays the same catalog out. The grouping lives in
-            lib/stationNav.js so the hub and the sidebar read one list.
-
-            From lg the groups run in two columns, so a wide screen is not one narrow ribbon of
-            rows down the middle. Which group sits in which column is declared in
-            lib/stationNav.js, not left to the layout: Sales and Stock read as a pair and share
-            a column. CSS columns balanced by height instead and split them wherever the rows
-            happened to fall, which is why this is an explicit grid.
-
-            items-start so a short column does not stretch to match a tall one. Below lg the
-            columns stack and the groups render in their declared order. */}
-        <div className="mt-6 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:items-start">
-          {REPORT_COLUMNS.map((col) => (
-            <div key={col}>
-              {reportSections.filter((s) => s.column === col).map((section) => (
-                <section key={section.title} className="mt-6 lg:mt-0 lg:mb-6">
-                  <SectionHeader>{section.title}</SectionHeader>
-                  <RowGroup>
-                    {section.items.map((link) => (
-                      <Row
-                        key={link.href}
-                        href={link.href}
-                        label={link.label}
-                        desc={link.desc}
-                        icon={link.icon}
-                        allowed={canAccess(link.pageKey)}
-                        onBlocked={() => setAccessDeniedModal(true)}
-                      />
-                    ))}
-                  </RowGroup>
-                </section>
-              ))}
-              {col === 2 && staffSection}
-            </div>
-          ))}
-        </div>
-
-      {/* Manage Station (owner only) */}
-      {isOwner && (
-        <section className="mb-8">
-          <button
-            onClick={() => { setShowManage(!showManage); if (!showManage) setEditName(station.name) }}
-            className="w-full flex items-center justify-between py-3 text-sm font-semibold text-content-muted uppercase tracking-wide hover:text-content-strong"
-          >
-            Manage Station
-            <ChevronDown className={`w-4 h-4 transition-transform ${showManage ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showManage && (
-            <div className={`p-4 space-y-4 ${CARD}`}>
-              {!station.onboarding_complete ? (
-                <Link
-                  href={`/dashboard/setup/${stationId}`}
-                  className="flex items-center gap-3 border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-950/40 p-3 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
-                >
-                  <Settings className="w-5 h-5 text-orange-600 dark:text-orange-300 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Set up this station</p>
-                    <p className="text-sm text-orange-600 dark:text-orange-300">Configure nozzles, tanks, and lodgements</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-orange-400 dark:text-orange-500" />
-                </Link>
-              ) : (
-                <Link
-                  href={`/dashboard/stations/${stationId}/settings`}
-                  className={`flex items-center gap-3 p-3 ${CARD} ${CARD_HOVER}`}
-                >
-                  <Settings className="w-5 h-5 text-content-muted flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-content">Station Settings</p>
-                    <p className="text-sm text-content-muted">Nozzles, tanks, lodgements, products, customers</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-content-faint" />
-                </Link>
-              )}
-
-              <div className="border-t border-line pt-4" />
-
-              <form onSubmit={updateStation} className="space-y-3">
-                <div>
-                  <label className="block text-sm text-content-muted mb-1">Station Name</label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    maxLength={100}
-                    className={INPUT}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving || !editName.trim()}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
-                  Rename
-                </button>
-              </form>
-
-              <div className="border-t border-line pt-4">
-                <p className="text-sm text-content-muted mb-2">Permanently delete this station and all its data.</p>
-                <button
-                  onClick={deleteStation}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_DANGER}`}
-                >
-                  <Trash2 className="w-4 h-4" /> Delete Station
-                </button>
-              </div>
-            </div>
-          )}
+        {/* Reports: the ones this person opened most recently here first (lib/recentReports.js),
+            only ones they may open. The website keeps four reports, so all of them show and
+            there is no "View all". Full width, like the Staff panel under it. */}
+        <section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">
+          <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Reports</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {homeReports(reportLinks, stationId, canAccess).map((link) => (
+              <Widget key={link.href} href={link.href} icon={link.icon} label={link.label} desc={link.desc} />
+            ))}
+          </div>
         </section>
-      )}
 
-      {/* Leave / sign out, then the appearance footer — the same tail store-portal's
-          dashboard carries. */}
-      <section className="mt-8 flex items-center gap-2 flex-wrap">
-        {/* Not for a platform admin: leaving goes through the membership route, so on a
-            station they were never invited to it would do nothing at all. The same reasoning
-            already keeps Delete off other people's stations on the admin screen. A button
-            that appears to work and does not is worse than no button. */}
-        {!isPlatformAdmin && (
-        <button
-          onClick={leaveStation}
-          disabled={leaving}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
-        >
-          {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-          Leave Station
-        </button>
-        )}
-        <button
-          onClick={handleSignOut}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
-        >
-          <LogOut className="w-4 h-4" />
-          Sign out
-        </button>
-      </section>
+        {staffSection}
 
-      <div className="mt-8 pt-6 flex items-center justify-between gap-3 flex-wrap">
-        <span className="text-xs font-semibold text-content-muted uppercase tracking-wide">Appearance</span>
-        <ThemeControl />
-      </div>
+      {/* The very bottom: Appearance, Leave Station and Sign out on one plain footer row. */}
+      <footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold text-content-muted uppercase tracking-wide">Appearance</span>
+          <ThemeControl />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Not for a platform admin: leaving goes through the membership route, so on a
+              station they were never invited to it would do nothing at all. */}
+          {!isPlatformAdmin && (
+            <button
+              onClick={leaveStation}
+              disabled={leaving}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
+            >
+              {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+              Leave Station
+            </button>
+          )}
+          <button
+            onClick={handleSignOut}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
+          >
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </button>
+        </div>
+      </footer>
       </div>
 
       {/* Invite Staff Modal */}
@@ -913,5 +777,19 @@ export default function StationPage() {
         </div>
       </Modal>
     </div>
+  )
+}
+
+/**
+ * A report widget on the station home: half the panel wide (two a row), pale, a soft blue round
+ * icon, the name and a short description under it, like the Entries widgets above it.
+ */
+function Widget({ href, icon, label, desc }) {
+  return (
+    <Link href={href} className="w-full h-28 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors hover:bg-primary-500/10">
+      <IconChip icon={icon} className="w-10 h-10" iconClass="w-5 h-5" />
+      <p className="text-sm font-medium text-content leading-tight">{label}</p>
+      <p className="text-xs text-content-muted leading-snug line-clamp-2">{desc}</p>
+    </Link>
   )
 }

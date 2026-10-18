@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { Clock, RefreshCw, ArrowUpFromLine, ArrowDownToLine, Loader2 } from 'lucide-react'
 
 /**
- * Top-of-hub card, in the slot and skin store-portal's BusinessWallet occupies: the one accent
- * surface on the page — solid brand blue, white text, a thin white divider above a bottom strip
- * that carries the sync controls.
+ * Top-of-hub card: the one accent surface on the page, solid brand blue with white text. The
+ * station's initial on a round badge beside its name, Push and Pull as round white buttons on
+ * the right, the pending count as the main line, and a lighter band at the bottom with the
+ * consolidation countdown as a chip (and Clear queue, when entries are waiting). The same design
+ * as the desktop build's.
  *
  * store's hero figure is money (lodgement balance). A station hub has no money figure of its
  * own, so the hero here is the number that actually governs the working day: how many entries
@@ -18,7 +20,8 @@ import { Clock, RefreshCw, ArrowUpFromLine, ArrowDownToLine, Loader2 } from 'luc
  * would resolve to the page background and vanish. rounded-full is intended — the square-corner
  * rule exempts pills.
  */
-const COUNT_PIP = 'bg-white/25 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center' // design-exception
+// The count on the round Push button: a dark blue dot on its corner.
+const COUNT_PIP = 'absolute -top-1 -right-1 bg-primary-800 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center' // design-exception
 
 function nextConsolidation() {
   const now = new Date()
@@ -52,56 +55,55 @@ export default function StationWallet({
   }, [])
 
   const allSynced = pendingCount === 0
-  // On a filled surface every control is white-on-blue; the app's blue outline would disappear.
-  const btn = 'flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold border-2 border-white/40 text-white hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+  // On the blue: Push and Pull are round white buttons; the band's chips are white-on-blue.
+  const roundBtn = 'relative flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-full bg-white text-primary-600 hover:bg-primary-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+  const chip = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-house bg-white/20 text-white'
 
   return (
-    <div className="relative bg-primary-600 text-white border-card border-primary-500/40 dark:border-primary-400/40 mb-4">
-      <div className="relative p-3">
-        <h1 className="text-sm font-semibold text-white truncate mb-1">{station.name}</h1>
-        {(station.location || station.station_group) && (
-          <p className="text-xs text-white/80 truncate mb-1">
-            {[station.location, station.station_group].filter(Boolean).join(' · ')}
-          </p>
-        )}
+    <div className="relative bg-primary-600 text-white rounded-house mb-4">
+      <div className="flex items-start gap-3 p-3">
+        <span className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white/20 text-white text-base font-bold" aria-hidden="true">
+          {(station.name?.[0] || 'S').toUpperCase()}
+        </span>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm font-semibold text-white truncate">{station.name}</h1>
+          {(station.location || station.station_group) && (
+            <p className="text-xs text-white/80 truncate">
+              {[station.location, station.station_group].filter(Boolean).join(' · ')}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onPush} disabled={syncing || allSynced} className={roundBtn} aria-label="Push" title="Push">
+            {syncing ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUpFromLine className="w-5 h-5" />}
+            {pendingCount > 0 && <span className={COUNT_PIP}>{pendingCount > 9 ? '9+' : pendingCount}</span>}
+          </button>
+          <button onClick={onPull} disabled={refreshing} className={roundBtn} aria-label="Pull" title="Pull">
+            {refreshing ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowDownToLine className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="px-3 pb-3">
         <div className="flex items-center gap-1.5 text-xs text-white uppercase tracking-wide mb-0.5">
           <RefreshCw className="w-3.5 h-3.5" /> {allSynced ? 'Sync status' : 'Waiting to push'}
         </div>
         <p className="text-2xl sm:text-3xl font-bold text-white">
           {allSynced ? 'All synced' : `${pendingCount} pending`}
         </p>
-        {countdown && (
-          <p className="flex items-center gap-1.5 text-sm text-white/90 mt-1">
-            <Clock className="w-4 h-4" /> Next consolidation in{' '}
-            <span className="font-mono font-semibold text-white">{countdown}</span>
-          </p>
-        )}
       </div>
 
-      {/* Same split as store-portal's SyncStatus strip: the quiet control on the left, the two
-          sync buttons together on the right. No "N pending" text beside Clear, unlike store's
-          version, because this card already carries that count as its hero figure just above.
-          justify-between keeps the buttons at the right edge even when Clear is absent. */}
-      <div className="relative border-t border-white/30 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
+      {/* The lighter band: when the day is next consolidated, and clearing what waits. */}
+      {(countdown || pendingCount > 0) && (
+        <div className="mx-2 mb-2 px-3 py-2 bg-white/15 rounded-house flex flex-wrap items-center gap-2">
+          {countdown && (
+            <span className={chip}><Clock className="w-3.5 h-3.5" />Next consolidation in <span className="font-mono">{countdown}</span></span>
+          )}
           {pendingCount > 0 && (
-            <button onClick={onClear} className="text-xs font-semibold text-white/80 hover:text-white underline">
-              Clear queue
-            </button>
+            <button onClick={onClear} className={`${chip} hover:bg-white/30`}>Clear queue</button>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={onPush} disabled={syncing || allSynced} className={btn}>
-            {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpFromLine className="w-4 h-4" />}
-            Push
-            {pendingCount > 0 && <span className={COUNT_PIP}>{pendingCount > 9 ? '9+' : pendingCount}</span>}
-          </button>
-          <button onClick={onPull} disabled={refreshing} className={btn}>
-            {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDownToLine className="w-4 h-4" />}
-            Pull
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

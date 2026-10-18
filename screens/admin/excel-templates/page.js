@@ -17,7 +17,7 @@ import { fmtDate as formatDate } from '@/lib/formatDate'
 import { INPUT, CARD_LINE } from '@/components/ui'
 
 // The design system has no solid fills; weight comes from how hard the outline is drawn.
-const SOLID_ACTION = 'border-2 border-primary-600 dark:border-primary-400 bg-primary-500/20 text-primary-800 dark:text-primary-100 transition-all hover:bg-primary-500/30'
+const SOLID_ACTION = 'border border-primary-600 dark:border-primary-400 bg-primary-500/20 text-primary-800 dark:text-primary-100 transition-all hover:bg-primary-500/30'
 
 export default function ExcelTemplatesPage() {
   const [templates, setTemplates] = useState([])
