@@ -31,7 +31,11 @@ check('no longer desktop only', soRoute && !soRoute.includes('desktopOnly: true'
 const page = read('screens/dashboard/reports/sales-operation/page.js')
 console.log('\nAudit-style screen')
 check('no longer turns other stations away', !page.includes('This report is for Rainoil stations.'))
-check('section tabs: Sales, Stock, Lodgements & Cash, Lube', ["{ key: 'sales', label: 'Sales' }", "{ key: 'stock', label: 'Stock' }", "{ key: 'cash', label: 'Lodgements & Cash' }", "{ key: 'lube', label: 'Lube' }"].every((s) => page.includes(s)) && page.includes('role="tablist"'))
+check('no section tabs', !page.includes('const SECTIONS') && !page.includes('role="tablist"') && !page.includes('setSection'))
+{
+  const order = ['<SalesSection sheet={activeSheet} />', '<StockSection sheet={activeSheet} />', '<CashSection sheet={activeSheet} />', '<LubeSection sheet={activeSheet} />'].map((s) => page.indexOf(s))
+  check('the whole day on one page, its parts stacked in the form\'s order', order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])))
+}
 check('plain report tables in the report frame, not the replica sheet', page.includes('${REPORT_CARD}') && page.includes('REPORT_HEAD') && !page.includes('SalesOperationGrid') && !page.includes('sheet-light'))
 check('no budget, achievement or competitor prices on screen', !/Budget|Achievement|Competitor/.test(page))
 check('overage and truck shortage come from the builder', page.includes('sheet.overage') && page.includes('s.truckShortage'))
@@ -39,6 +43,10 @@ check('the light sheet\'s styles are gone', !read('app/globals.css').includes('.
 
 console.log('\nExport')
 check('Rainoil stations their replica, others a plain workbook', /isRainoilGroup\(stationGroup\)\s*\?\s*exportSalesOperationExcel\s*:\s*exportSalesOperationGenericExcel/.test(page))
+{
+  const excel = read('lib/exportSalesOperationExcel.js')
+  check('no thick border round the replica sheet: the edge is thin, like the grid', !excel.includes("style: 'thick'") && !/\bthick\(/.test(excel))
+}
 
 console.log('\nAt most 32 days, like the audit report')
 check('Load greys out over 32 days', /disabled=\{!startDate \|\| !endDate \|\| startDate > endDate \|\| rangeDays\(startDate, endDate\) > MAX_DAYS\}/.test(page) && page.includes('const MAX_DAYS = 32'))

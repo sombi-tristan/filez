@@ -6,11 +6,11 @@ import Link from '@/lib/nav'
 import {
   Loader2, Fuel, Plus, Trash2, ArrowRight, Landmark,
   CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock,
-  ChevronDown, Monitor, ChevronRight
+  ChevronDown, Monitor, ChevronRight, Building2
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
-import ManageStation from '@/components/station/ManageStation'
+import ManageStation, { useStationOwner } from '@/components/station/ManageStation'
 
 const FUEL_TYPES = ['PMS', 'AGO', 'DPK']
 const LODGEMENT_TYPES = [
@@ -28,16 +28,17 @@ function Pane({ children }) {
 
 /**
  * Station Settings as tabs: one tab per Pane, drawn from its own title, icon and count, and only
- * the chosen Pane shown. A Pane left out (Tank to Nozzle Mapping before there are nozzles and
- * tanks) has no tab.
+ * the chosen Pane shown. The tabs share the full width in equal columns and wrap to a second row
+ * on a narrow screen rather than scroll. A Pane left out (Tank to Nozzle Mapping before there are
+ * nozzles and tanks) or marked hidden has no tab.
  */
 function Tabs({ children }) {
-  const panes = Children.toArray(children).filter((c) => isValidElement(c) && c.type === Pane)
+  const panes = Children.toArray(children).filter((c) => isValidElement(c) && c.type === Pane && !c.props.hidden)
   const [active, setActive] = useState(panes[0]?.props.title)
   const current = panes.find((p) => p.props.title === active) || panes[0]
   return (
     <>
-      <div role="tablist" className="mb-3 flex gap-1 overflow-x-auto border-b border-line">
+      <div role="tablist" className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] border-b border-line">
         {panes.map((p) => {
           const { title, icon: Icon, count } = p.props
           const on = p === current
@@ -48,7 +49,7 @@ function Tabs({ children }) {
               role="tab"
               aria-selected={on}
               onClick={() => setActive(title)}
-              className={`flex items-center gap-1.5 px-3 py-2 -mb-px whitespace-nowrap text-sm font-semibold border-b-2 transition-colors ${on ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content'}`}
+              className={`flex flex-col items-center justify-center gap-1 px-2 py-2 -mb-px text-center text-sm leading-tight font-semibold border-b-2 transition-colors ${on ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content'}`}
             >
               <Icon className="w-4 h-4" />
               {title}
@@ -66,6 +67,7 @@ export default function StationSettingsPage() {
   const router = useRouter()
   const params = useParams()
   const stationId = params.stationId
+  const isOwner = useStationOwner(stationId)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -268,12 +270,15 @@ export default function StationSettingsPage() {
   }
 
   return (
-    <div className="max-w-lg px-4 sm:px-8 py-8">
-      {/* Set up an unfinished station, rename it or delete it (owner only, always open). */}
-      <ManageStation stationId={stationId} />
+    <div className="w-full px-4 sm:px-8 py-8">
+      <Tabs>
+      {/* The station itself: set it up, rename it or delete it. The owner's alone: staff get no tab. */}
+      <Pane icon={Building2} title="Station" hidden={!isOwner}>
+        {/* Set up an unfinished station, rename it or delete it (owner only, always open). */}
+        <ManageStation stationId={stationId} />
+      </Pane>
 
       {/* Location */}
-      <Tabs>
       <Pane icon={MapPin} title="Location">
         <input
           type="text"
