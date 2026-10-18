@@ -37,7 +37,7 @@ export default function DesktopDownload({ signedIn = false }) {
             <span className="text-sm text-content-faint">Windows 10 or 11, 64-bit</span>
           </div>
 
-          <div className="border-t-2 border-line pt-8 grid gap-6">
+          <div className="border-t border-line pt-8 grid gap-6">
             <div className="flex gap-3">
               <Monitor className="w-5 h-5 text-accent mt-0.5 shrink-0" />
               <div>

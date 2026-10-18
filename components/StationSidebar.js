@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import RestoreBackup from '@/components/RestoreBackup'
 import { usePathname, useRouter } from '@/lib/nav'
 import { IonIcon } from '@ionic/react'
 import { menuController } from '@ionic/core/components'
@@ -94,6 +95,7 @@ export default function StationSidebar({ stationId }) {
   const router = useRouter()
 
   const [isOwner, setIsOwner] = useState(false)
+  const restoreRef = useRef(null)
   const [visiblePages, setVisiblePages] = useState(null)
   const [signingOut, setSigningOut] = useState(false)
   const [user, setUser] = useState(null)
@@ -190,7 +192,10 @@ export default function StationSidebar({ stationId }) {
         currentId={String(stationId)}
         options={stations.map((s) => ({ id: String(s.id), title: s.name }))}
         onPick={(o) => { if (String(o.id) !== String(stationId)) { menuController.close('main'); router.root(`/dashboard/stations/${o.id}`) } }}
+        // The owner's last row: a StationMGR Desktop backup file into this station.
+        action={isOwner ? { label: 'Restore from backup', onPick: () => { restoreRef.current?.pick(); menuController.close('main') } } : null}
       />
+      {isOwner && <RestoreBackup ref={restoreRef} stationId={stationId} />}
 
       <SidebarNavRow href={home} label="Station home" icon={homeOutline} active={pathname === home} onClick={go(home)} />
 

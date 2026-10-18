@@ -53,7 +53,7 @@ export function EntryListScreen({ newHref, newDisabled = false, top = null, chil
       <div className="hidden lg:flex justify-end mb-4"><div className="w-48">{button}</div></div>
       {children}
       <div
-        className="entry-actionbar lg:hidden fixed inset-x-0 bottom-0 z-30 px-4 pt-3 bg-canvas border-t-2 border-line"
+        className="entry-actionbar lg:hidden fixed inset-x-0 bottom-0 z-30 px-4 pt-3 bg-canvas border-t border-line"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         {button}
@@ -102,7 +102,7 @@ export function DayRow({ href, date, count, noun = 'entry', nounPlural, amount, 
 
 /** The rows in one bordered block. */
 export function DayRows({ children }) {
-  return <div className={`border-card ${ENTRY_LINE} rounded-house divide-y-2 divide-line overflow-hidden`}>{children}</div>
+  return <div className={`border-card ${ENTRY_LINE} rounded-house divide-y divide-line overflow-hidden`}>{children}</div>
 }
 
 /** The house pager over 1-based pages, as the lists count them. */

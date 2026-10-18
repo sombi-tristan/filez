@@ -10,8 +10,12 @@ import { useEffect, useRef, useState } from 'react'
  *
  * Mount it once, at the root of the app. It draws nothing while a selection is held or no text
  * field has the focus.
+ *
+ * Not in a number or date field: those never report selectionStart, so there is nowhere to draw
+ * the bar. They keep the browser's own caret, in the accent (house.css). Keep this list and the
+ * one in house.css the same.
  */
-const TEXT_TYPES = new Set(['text', 'search', 'email', 'password', 'tel', 'url', 'number'])
+const TEXT_TYPES = new Set(['text', 'search', 'email', 'password', 'tel', 'url'])
 
 export function isTextField(el) {
   if (!el || !el.tagName) return false

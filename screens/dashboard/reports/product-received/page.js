@@ -273,7 +273,7 @@ function ProductReceivedReportContent() {
       <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 pb-4 ${REPORT_CARD}`}>
         {!generated ? (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+            <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
         ) : !deliveries ? (
           <div className="flex justify-center py-20">

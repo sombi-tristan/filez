@@ -31,7 +31,7 @@ export default function LubeListPage() {
       top={(
         <>
           {!subLoading && !subscribed && <SubscribeNotice />}
-          <div className="mb-4 border-b-2 border-line">
+          <div className="mb-4 border-b border-line">
             <Tabs
               label="Lube entries"
               items={[{ id: 'sales', label: 'Lube sales' }, { id: 'stock', label: 'Lube stock' }]}

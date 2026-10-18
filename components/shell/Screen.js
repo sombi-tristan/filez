@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useContext, useState } from 'react'
+import { Suspense, useContext, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import {
   IonBackButton, IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar,
@@ -12,6 +12,7 @@ import { AreaContext, ScreenLocationContext } from '@/lib/nav'
 import useStationUnread from '@/lib/useStationUnread'
 import AdminViewingBanner from '@/components/AdminViewingBanner'
 import Footer from '@/components/Footer'
+import { recordReportPath } from '@/lib/recentReports'
 
 /**
  * One screen of the Ionic app: an IonPage with the house top bar and the screen's content in
@@ -53,6 +54,11 @@ export default function Screen({ screen }) {
 
   const stationId = params.stationId || new URLSearchParams(held.search).get('org_id') || ''
   const { unread } = useStationUnread(area === '/dashboard' ? stationId : null)
+
+  // A report notes itself on each visit, for the station home's recently opened reports.
+  useEffect(() => {
+    if (screen.report && stationId) recordReportPath(stationId, screen.path)
+  }, [held.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const home = stationId ? `/dashboard/stations/${stationId}` : area
   const atHome = held.pathname === home
@@ -97,9 +103,13 @@ export default function Screen({ screen }) {
               at the bottom of a short screen and under the last line of a long one. */}
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
-              <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
-                {screen.desktopOnly ? <DesktopOnly /> : <Page key={held.key} />}
-              </Suspense>
+              {/* Entries and reports: every word bold, labels blue, bold figures orange
+                  (app/globals.css .screen-ink), as in the desktop build. */}
+              <div className={screen.report || screen.path.startsWith('/dashboard/entries') ? 'screen-ink' : undefined}>
+                <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
+                  {screen.desktopOnly ? <DesktopOnly /> : <Page key={held.key} />}
+                </Suspense>
+              </div>
             </div>
             {(!screen.report || screen.desktopOnly) && <Footer app />}
           </div>

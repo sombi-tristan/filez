@@ -423,7 +423,7 @@ function AccountLedgerContent() {
             <span className="text-[15px] text-content-muted">{sortedAll.length}</span>
           </div>
 
-          <div className={`border-card ${CARD_LINE} rounded-house divide-y-2 divide-line overflow-hidden`}>
+          <div className={`border-card ${CARD_LINE} rounded-house divide-y divide-line overflow-hidden`}>
             {pagedData.map(acct => (
               <div key={acct.id} className="flex items-stretch">
                 <button
@@ -560,7 +560,7 @@ function LedgerView({ title, subtitle = null, data, startDate, endDate, withAcco
         {data.rows.length === 0 ? (
           <p className="py-6 text-center text-[15px] text-content-muted">No transactions in this period.</p>
         ) : (
-          <ol className={`mt-4 border-card ${CARD_LINE} rounded-house divide-y-2 divide-line`}>
+          <ol className={`mt-4 border-card ${CARD_LINE} rounded-house divide-y divide-line`}>
             {rows.map((row, i) => (
               <li key={`${row.id}-${i}`} className="flex items-start gap-3 px-3 py-2.5">
                 <div className="flex-1 min-w-0">
@@ -795,7 +795,7 @@ function StationValueSection({ data, startDate, endDate }) {
           )}
 
           {(totalPages <= 1 || page === totalPages - 1) && (
-            <tr className="bg-green-50 dark:bg-green-950/40 font-bold border-t-2 border-green-300">
+            <tr className="bg-green-50 dark:bg-green-950/40 font-bold border-t border-green-300">
               <td className={`${cellR} whitespace-nowrap`}>{fmtDate(endDate)}</td>
               <td className={cell}></td>
               <td className={cell}>Closing Balance</td>

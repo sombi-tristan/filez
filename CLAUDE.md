@@ -39,7 +39,8 @@ Where it runs (lib/platform.js)
 
 - On a computer (1024px and wider), StationMGR is the Windows desktop app (desktop/* branches). The web shows a computer the download page (components/DesktopDownload.js): the landing page by CSS, the dashboard by ComputerGate in components/shell/IonicShell.js. Kept on a computer: sign-in, /dashboard/subscribe (buying and renewing), /dashboard/computers (the linked desktop computers, and revoking one: app/api/desktop/devices), the admin area, and platform admins everywhere.
 - The download button points at the latest GitHub release's StationMGR-Setup.exe, published by the desktop build (NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL overrides it).
-- Phones and tablets keep the entries and four reports: Summary, Analytics, Inventory Log, Account Ledger (WEB_REPORT_KEYS). The rest are `desktopOnly` in screens/routes.js: gone from the hub and sidebar (REPORT_LINKS), and a link to one says it is in the desktop app. Phones install the site as a PWA (components/InstallPWABanner.js).
+- Phones and tablets keep the entries and five reports: Summary, Analytics, Inventory Log, Account Ledger, Sales Operation (WEB_REPORT_KEYS). The rest are `desktopOnly` in screens/routes.js: gone from the hub and sidebar (REPORT_LINKS), and a link to one says it is in the desktop app. Phones install the site as a PWA (components/InstallPWABanner.js).
+- Restore from backup, the owner's last row of the station switcher in the sidebar (components/StationSidebar.js, components/RestoreBackup.js, app/api/stations/[stationId]/restore, lib/webRestore.js): a StationMGR Desktop backup file into the web station, Overwrite everything or Pad with new values, after a warning that says what differs (lib/restoreInto.js and lib/setupKeys.js, copies of the desktop build's lib/local ones: keep them the same). Only the owner, only with a subscription running, and never while a desktop computer is linked to the station (409): the computer is its source of truth, so the owner restores there or revokes it first.
 
 ---
 
@@ -53,7 +54,7 @@ The dashboard and the admin area each run as one Ionic app with Ionic's own rout
 - Inside the Ionic apps, import useRouter / usePathname / useSearchParams / useParams / Link from "@/lib/nav", never from next/navigation or next/link. lib/nav moves within the stack for addresses inside the area and does a full page load for anything else, so middleware.js still checks sign-in and the admin role on the way into each area.
 - The sidebars are the content of the IonMenu inside an IonSplitPane: a column on a computer, a drawer on a phone. Their groups are accordions (the house SidebarSections), one open at a time, opening the group that holds the screen shown.
 - Screens slide sideways (components/shell/slideTransition.js): an opened screen comes in from the right; Back slides it out to the right and the one underneath comes back from the left.
-- A report's date range and its Generate button are components/reports/DateRange.js: the two dates and a round icon button that stay on one line.
+- A report's date range and its Load button are components/reports/DateRange.js: the two dates and a Load text button, the size of the report's other buttons, on one line.
 - Every screen's footer sits at the bottom of the screen when the content is short (Screen.js). A bar pinned to the bottom of a phone carries the class entry-actionbar, which keeps the footer clear of it.
 
 ---

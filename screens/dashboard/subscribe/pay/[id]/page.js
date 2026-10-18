@@ -274,7 +274,7 @@ export default function PaymentPage() {
 
           <div>
             <label className="block text-sm font-medium text-content-strong mb-1">Proof of payment</label>
-            <label className="flex items-center justify-center gap-2 w-full py-8 border-2 border-dashed border-line cursor-pointer hover:border-blue-400 transition-colors">
+            <label className="flex items-center justify-center gap-2 w-full py-8 border border-dashed border-line rounded-house cursor-pointer hover:border-blue-400 transition-colors">
               <Upload className="w-5 h-5 text-content-faint" />
               <span className="text-sm text-content-muted">
                 {file ? file.name : 'Click to upload (image or PDF)'}

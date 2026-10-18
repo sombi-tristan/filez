@@ -90,7 +90,7 @@ export default function SavePushProvider({ children }) {
               <button
                 onClick={handlePushNow}
                 disabled={status === 'pushing'}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-primary-600 dark:border-primary-400 bg-primary-500/20 text-primary-800 dark:text-primary-100 transition-all hover:bg-primary-500/30 disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-primary-600 dark:border-primary-400 bg-primary-500/20 text-primary-800 dark:text-primary-100 transition-all hover:bg-primary-500/30 disabled:opacity-50"
               >
                 {status === 'pushing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
                 Push now
