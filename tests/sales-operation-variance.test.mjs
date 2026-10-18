@@ -1,7 +1,7 @@
 /**
  * Pins three asks on the reports:
  *
- *   Sales Operation: the budget rows' Variance is calculated, actual overage minus expected
+ *   Sales Operation (the Rainoil workbook): the budget rows' Variance is calculated, actual overage minus expected
  *   overage from the stock (the stock reconciliation rows above it), not sales minus a budget
  *   fixed in the code. The lube section lists only products with something in them.
  *   Product Received: no Dip Calculator button at the top (each receipt keeps its own icon).
@@ -24,9 +24,9 @@ const page = read('screens/dashboard/reports/sales-operation/page.js')
 const excel = read('lib/exportSalesOperationExcel.js')
 
 console.log('Budget variance')
-check('on screen: actual overage less expected overage, from the stock', /const budgetRow = \(ft\) => \{[\s\S]*?const variance = stockVariance\(ft\)/.test(page) && /const stockVariance = \(ft\) =>/.test(page) && !/const variance = total - budget/.test(page))
-check('the stock rows use the same figure', /const reconRow = \(ft\) => \{[\s\S]*?stockVariance\(ft\)/.test(page) || /const reconRow = \(ft\) => \{[\s\S]*?overage\(ft\)/.test(page))
-check('in Excel: the stock row\'s Variance cell, not sales less a budget', excel.includes('setFormula(ws, row, 4, `D${RECON_ROWS[ft]}`') && !excel.includes('`J${fuelRow}-B${row}`'))
+// The screen no longer shows a budget (the audit-style screen drops it); the Rainoil workbook does.
+check('on screen: no budget rows any more', !/budgetRow|Budget/.test(page))
+check('in Excel: the stock row\'s Variance cell, not sales less a budget',excel.includes('setFormula(ws, row, 4, `D${RECON_ROWS[ft]}`') && !excel.includes('`J${fuelRow}-B${row}`'))
 
 console.log('\nLube: only products with something in them')
 {
@@ -52,6 +52,12 @@ console.log('\nProduct Received')
 const received = read('screens/dashboard/reports/product-received/page.js')
 check('no Dip Calculator button at the top', !/>\s*Dip Calculator\s*</.test(received) && !received.includes('href={`/dashboard/reports/dip-calculator?org_id=${orgId}`}'))
 check('each receipt keeps its own calculator icon', received.includes('title="Dip Calculator"'))
+
+console.log('\nSales Operation export: header rows tall enough for their wrapped text')
+for (const r of [4, 15, 20]) {
+  check(`row ${r}`, new RegExp(`ws\\.getRow\\(${r}\\)\\.height = HEADER_ROW_HEIGHT`).test(excel))
+}
+check('two lines of header text fit', /const HEADER_ROW_HEIGHT = (3[0-9]|[4-9][0-9])\b/.test(excel))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
 process.exit(failures === 0 ? 0 : 1)

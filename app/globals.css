@@ -270,28 +270,3 @@ ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon::part(na
 [data-theme='dark'] .dark\:text-primary-400 { color: rgb(var(--primary-300)); }
 [data-theme='dark'] .dark\:text-primary-300 { color: rgb(var(--primary-200)); }
 [data-theme='dark'] .dark\:text-primary-200 { color: rgb(var(--primary-100)); }
-
-/* The Sales Operation sheet (screens/dashboard/reports/sales-operation) is Rainoil's paper form:
-   always light, whatever the theme. The light neutrals again, on the sheet only (the box round
-   it follows the theme), so every token inside resolves light; its bold text stays black (no
-   orange, no blue labels), as on the form. */
-.sheet-light {
-  color-scheme: light;
-  --canvas: 255 255 255;
-  --surface: 255 255 255;
-  --subtle: 247 249 249;
-  --line-ch: 207 217 222;
-  --line-strong: 83 100 113;
-  --content: 15 20 25;
-  --content-strong: 39 52 62;
-  --content-muted: 83 100 113;
-  --content-faint: 130 145 156;
-  --bold-ink: rgb(15 20 25);
-  background-color: #fff;
-  color: rgb(15 20 25);
-}
-
-.screen-larger .sheet-light :is(label, .text-content-muted, .text-content-faint),
-[data-theme='dark'] .screen-larger .sheet-light :is(label, .text-content-muted, .text-content-faint) {
-  color: rgb(var(--content-muted));
-}

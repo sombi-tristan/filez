@@ -405,6 +405,9 @@ function DailySalesReportContent() {
               </>
             )
             return (
+              <>
+              {/* A divider sets the totals apart from the rest of the report above. */}
+              <hr className="my-4 border-t-2 border-primary-500/40 dark:border-primary-400/40" />
               <div className="lg:w-1/2 pb-4 lg:[overflow-wrap:anywhere]">
                 <table className="w-full border-collapse text-sm">
                   <tbody>
@@ -441,6 +444,7 @@ function DailySalesReportContent() {
                   </tbody>
                 </table>
               </div>
+              </>
             )
           })()}
         </div>
