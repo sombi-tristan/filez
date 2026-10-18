@@ -512,10 +512,9 @@ export default function DailySalesFormPage() {
                     : null
                   return (
                     <div key={r.pump_id}>
-                      {/* Closing meter takes the full width on a phone, with consumption and
-                          pour back side by side under it; one row of three on a computer. */}
-                      <div className="grid grid-cols-2 sm:grid-cols-[2fr_1fr_1fr]">
-                        <div className="col-span-2 sm:col-span-1">
+                      {/* Closing meter, consumption and pour back on one row at every width. */}
+                      <div className="grid grid-cols-[2fr_1fr_1fr]">
+                        <div className="min-w-0">
                           <Field label={`${r.label} · closing meter`}>
                             <NumberInput
                               value={r.closing_meter}
@@ -524,10 +523,10 @@ export default function DailySalesFormPage() {
                             />
                           </Field>
                         </div>
-                        <div className="border-t sm:border-t-0 sm:border-l border-line">
+                        <div className="min-w-0 border-l border-line">
                           <Field label="Consumption (L)">{litresWithAccount(idx, r, 'consumption')}</Field>
                         </div>
-                        <div className="border-t sm:border-t-0 border-l border-line">
+                        <div className="min-w-0 border-l border-line">
                           <Field label="Pour back (L)">{litresWithAccount(idx, r, 'pour_back')}</Field>
                         </div>
                       </div>
