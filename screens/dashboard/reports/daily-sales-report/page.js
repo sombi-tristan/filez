@@ -120,6 +120,10 @@ function DailySalesReportContent() {
     () => orgId ? db.customers.where('orgId').equals(orgId).toArray() : [],
     [orgId]
   )
+  const livePayments = useLiveQuery(
+    () => orgId ? db.customerPayments.where('orgId').equals(orgId).toArray() : [],
+    [orgId]
+  )
   const customerMap = useMemo(() => {
     if (!liveCustomers) return {}
     return Object.fromEntries(liveCustomers.map(c => [c.id, c.name || 'Unknown']))
@@ -137,10 +141,12 @@ function DailySalesReportContent() {
       nozzles,
       tanks,
       banks,
+      customers: liveCustomers || [],
+      customerPayments: livePayments || [],
       startDate: reportStart,
       endDate: reportEnd,
     })
-  }, [generated, reportStart, reportEnd, loading, orgId, nozzles, tanks, banks, liveSales, liveReceipts, liveLodgements])
+  }, [generated, reportStart, reportEnd, loading, orgId, nozzles, tanks, banks, liveSales, liveReceipts, liveLodgements, liveCustomers, livePayments])
 
   const handleExport = async () => {
     if (!report) return
@@ -378,10 +384,10 @@ function DailySalesReportContent() {
             </div>
           </div>
 
-          {/* ===== BELOW: CONSUMPTION, POUR BACK, TOTALS ===== */}
-          {/* Under both columns, one table in three sections, each with its own heading row:
-              Consumption, Pour Back (when the day has any), then the day's Totals. Half the width
-              on a computer, the whole width on a phone. */}
+          {/* ===== BELOW: CONSUMPTION, POUR BACK, BALANCES, TOTALS ===== */}
+          {/* Under both columns, one table in sections, each with its own heading row:
+              Consumption, Pour Back, Balances (each when the day has any), then the day's Totals.
+              Half the width on a computer, the whole width on a phone. */}
           {(() => {
             const consEntries = currentDayReport.consumption.entries.filter(e => !e.isPourBack)
             const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
@@ -413,6 +419,31 @@ function DailySalesReportContent() {
                   <tbody>
                     {section('Consumption', consEntries)}
                     {section('Pour Back', pbEntries)}
+                    {/* Credit customers' balances at the end of the day, the ones not at zero. */}
+                    {currentDayReport.balances.rows.length > 0 && (
+                      <>
+                        <tr className={subHdr}>
+                          <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
+                        </tr>
+                        <tr className={subHdr}>
+                          <th className={`${cell} text-left font-bold`}>Customer</th>
+                          <th className={`${cellR} font-bold`}>Owes station</th>
+                          <th className={`${cellR} font-bold`}>Station owes</th>
+                        </tr>
+                        {currentDayReport.balances.rows.map((b) => (
+                          <tr key={b.customerId}>
+                            <td className={cell}>{b.name}</td>
+                            <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
+                            <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
+                          </tr>
+                        ))}
+                        <tr className="font-bold">
+                          <td className={cell}>Total</td>
+                          <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
+                          <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
+                        </tr>
+                      </>
+                    )}
                     <tr className={subHdr}>
                       <th className={`${cell} text-left font-bold`}>Totals</th>
                       <th className={`${cellR} font-bold`}>Sales</th>
