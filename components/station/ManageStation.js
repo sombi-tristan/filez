@@ -6,18 +6,14 @@ import { Loader2, Pencil, Settings, ChevronRight, Trash2 } from 'lucide-react'
 import { INPUT, LABEL, BTN_PRIMARY, BTN_DANGER, IconChip } from '@/components/ui'
 
 /**
- * Manage station, at the top of the station's Settings screen and always open (it used to sit
+ * Manage station, in the Station tab of the station's Settings and always open (it used to sit
  * folded at the bottom of the station home): setting up a station that is not finished yet,
  * renaming it, and deleting it. The owner's alone, so it shows nothing to staff.
  */
-export default function ManageStation({ stationId }) {
-  const router = useRouter()
-  const [station, setStation] = useState(null)
-  const [isOwner, setIsOwner] = useState(false)
-  const [name, setName] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState(null) // { ok, text }
 
+/** The station and whether the person signed in owns it: { station, isOwner } (null until known). */
+function useStation(stationId) {
+  const [state, setState] = useState({ station: null, isOwner: false })
   useEffect(() => {
     let alive = true
     Promise.all([
@@ -26,12 +22,33 @@ export default function ManageStation({ stationId }) {
     ]).then(([orgs, me]) => {
       if (!alive) return
       const s = (orgs.stations || [])[0] || null
-      setStation(s)
-      setName(s?.name || '')
-      setIsOwner(!!s && !!me?.user?.id && s.owner_id === me.user.id)
+      setState({ station: s, isOwner: !!s && !!me?.user?.id && s.owner_id === me.user.id })
     }).catch(() => {})
     return () => { alive = false }
   }, [stationId])
+  return state
+}
+
+/** Whether the person signed in owns the station: Settings hides its Station tab from staff. */
+export function useStationOwner(stationId) {
+  return useStation(stationId).isOwner
+}
+
+export default function ManageStation({ stationId }) {
+  const router = useRouter()
+  const loaded = useStation(stationId)
+  const [station, setStation] = useState(null)
+  const isOwner = loaded.isOwner
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState(null) // { ok, text }
+
+  // The station as loaded, then as renamed here.
+  useEffect(() => {
+    if (!loaded.station) return
+    setStation(loaded.station)
+    setName(loaded.station.name || '')
+  }, [loaded.station])
 
   const rename = async (e) => {
     e.preventDefault()
@@ -61,9 +78,9 @@ export default function ManageStation({ stationId }) {
     setMessage({ ok: false, text: body.error || `Could not delete (${res.status})` })
   }
 
-  if (!isOwner) return null
+  if (!isOwner || !station) return null
   return (
-    <section className="mb-4 w-full bg-surface border-card border-line rounded-house p-3">
+    <section className="mb-4">
       <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Manage station</h2>
 
       {!station.onboarding_complete && (
