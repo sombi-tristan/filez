@@ -19,6 +19,10 @@ import {
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
+// A nozzle row: the pump's number, then closing meter (wider), consumption and pour back.
+// minmax(0, …) lets the columns shrink below an input's built-in width, or a phone scrolls sideways.
+const NOZZLE_GRID = 'grid grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'
+
 function blankEntry(nozzles, tanks) {
   return {
     _key: crypto.randomUUID(),
@@ -451,6 +455,7 @@ export default function DailySalesFormPage() {
       <div className="flex items-center">
         <NumberInput
           data-skip-enter
+          aria-label={`${r.label} ${type === 'pour_back' ? 'pour back' : 'consumption'} (litres)`}
           value={r[field]}
           onValue={(v) => updateNozzleReading(activeTab, idx, field, v)}
           onBlur={() => maybePromptAccount(activeTab, idx, type)}
@@ -503,42 +508,51 @@ export default function DailySalesFormPage() {
 
             {current.nozzleReadings.length > 0 && (
               <FieldGroup title="Nozzle readings" aside={<span className="text-[13px] text-content-faint">Blank uses the last closing</span>}>
-                {current.nozzleReadings.map((r, idx) => {
-                  const consCustName = Number(r.consumption) > 0 && r.consumption_customer_id
-                    ? customers.find(c => c.id === r.consumption_customer_id)?.name
-                    : null
-                  const pbCustName = Number(r.pour_back) > 0 && r.pour_back_customer_id
-                    ? customers.find(c => c.id === r.pour_back_customer_id)?.name
-                    : null
-                  return (
-                    <div key={r.pump_id}>
-                      {/* Closing meter, consumption and pour back on one row at every width. */}
-                      <div className="grid grid-cols-[2fr_1fr_1fr]">
-                        <div className="min-w-0">
-                          <Field label={`${r.label} · closing meter`}>
-                            <NumberInput
-                              value={r.closing_meter}
-                              onValue={(v) => updateNozzleReading(activeTab, idx, 'closing_meter', v)}
-                              placeholder={prevClosing[r.pump_id] != null ? String(prevClosing[r.pump_id]) : ''}
-                            />
-                          </Field>
-                        </div>
-                        <div className="min-w-0 border-l border-line">
-                          <Field label="Consumption (L)">{litresWithAccount(idx, r, 'consumption')}</Field>
-                        </div>
-                        <div className="min-w-0 border-l border-line">
-                          <Field label="Pour back (L)">{litresWithAccount(idx, r, 'pour_back')}</Field>
-                        </div>
-                      </div>
-                      {(consCustName || pbCustName) && (
-                        <div className="px-3 pb-1 flex flex-wrap gap-x-3 text-[13px] text-primary-600 dark:text-primary-400">
-                          {consCustName && <span>Consumption: {consCustName}</span>}
-                          {pbCustName && <span>Pour back: {pbCustName}</span>}
-                        </div>
-                      )}
+                {/* One heading per fuel naming the columns, then a row per pump: its number and the
+                    closing meter, consumption and pour back fields, with no label of their own, so
+                    the fields follow one another straight down the fuel. */}
+                {[...new Set(current.nozzleReadings.map(r => r.fuel_type))].map((fuel) => (
+                  <div key={fuel}>
+                    <div className={`${NOZZLE_GRID} border-t border-line text-[13px] font-semibold text-content-muted`}>
+                      <span className="px-3 py-1.5 text-content">{fuel}</span>
+                      <span className="px-3 py-1.5">Meter</span>
+                      <span className="px-3 py-1.5"><span className="sm:hidden">Cons.</span><span className="hidden sm:inline">Consumption (L)</span></span>
+                      <span className="px-3 py-1.5"><span className="sm:hidden">P/B</span><span className="hidden sm:inline">Pour back (L)</span></span>
                     </div>
-                  )
-                })}
+                    {current.nozzleReadings.map((r, idx) => {
+                      if (r.fuel_type !== fuel) return null
+                      const consCustName = Number(r.consumption) > 0 && r.consumption_customer_id
+                        ? customers.find(c => c.id === r.consumption_customer_id)?.name
+                        : null
+                      const pbCustName = Number(r.pour_back) > 0 && r.pour_back_customer_id
+                        ? customers.find(c => c.id === r.pour_back_customer_id)?.name
+                        : null
+                      return (
+                        <div key={r.pump_id} className="border-t border-line">
+                          <div className={NOZZLE_GRID}>
+                            <span className="self-center px-3 text-[15px] font-semibold text-content-muted">{r.label.slice(fuel.length).trim()}</span>
+                            <div className="min-w-0">
+                              <NumberInput
+                                aria-label={`${r.label} closing meter`}
+                                value={r.closing_meter}
+                                onValue={(v) => updateNozzleReading(activeTab, idx, 'closing_meter', v)}
+                                placeholder={prevClosing[r.pump_id] != null ? String(prevClosing[r.pump_id]) : ''}
+                              />
+                            </div>
+                            <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'consumption')}</div>
+                            <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'pour_back')}</div>
+                          </div>
+                          {(consCustName || pbCustName) && (
+                            <div className="px-3 pb-1 flex flex-wrap gap-x-3 text-[13px] text-primary-600 dark:text-primary-400">
+                              {consCustName && <span>Consumption: {consCustName}</span>}
+                              {pbCustName && <span>Pour back: {pbCustName}</span>}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
               </FieldGroup>
             )}
 
