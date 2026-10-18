@@ -50,6 +50,7 @@ console.log('\nConsumption, pour back and totals')
     below.indexOf("section('Consumption'") > 0 && below.indexOf("section('Consumption'") < below.indexOf("section('Pour Back'") && below.indexOf("section('Pour Back'") < below.indexOf('>Totals<') &&
     below.includes('>TOTAL POS<') && below.includes('>CASH<'))
   check('half the width on a computer', below.includes('<div className="lg:w-1/2 pb-4 lg:[overflow-wrap:anywhere]">'))
+  check('a divider sets it apart from the rest of the report', /<hr className="my-4 border-t-2 border-primary-500\/40 dark:border-primary-400\/40" \/>\s*<div className="lg:w-1\/2/.test(below))
 }
 
 console.log('\nStock table')

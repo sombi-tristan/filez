@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { Children, isValidElement, useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from '@/lib/nav'
 import Link from '@/lib/nav'
 import {
@@ -23,28 +23,44 @@ const LODGEMENT_TYPES = [
   { value: 'other', label: 'Other' },
 ]
 
-function Accordion({ icon: Icon, title, count, defaultOpen, children }) {
-  const [open, setOpen] = useState(defaultOpen || false)
+/** One section of the Settings tabs: its content in a framed box (its tab carries the title). */
+function Pane({ children }) {
+  return <section className={`mb-2 px-4 py-3 ${CARD_LINE}`}>{children}</section>
+}
+
+/**
+ * Station Settings as tabs: one tab per Pane, drawn from its own title, icon and count, and only
+ * the chosen Pane shown. A Pane left out (Tank to Nozzle Mapping before there are nozzles and
+ * tanks) has no tab.
+ */
+function Tabs({ children }) {
+  const panes = Children.toArray(children).filter((c) => isValidElement(c) && c.type === Pane)
+  const [active, setActive] = useState(panes[0]?.props.title)
+  const current = panes.find((p) => p.props.title === active) || panes[0]
   return (
-    <section className={`mb-2 overflow-hidden ${CARD_LINE}`}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2 px-4 py-3 bg-subtle hover:bg-subtle transition-colors"
-      >
-        <IconChip icon={Icon} className="w-8 h-8" iconClass="w-4 h-4" />
-        <span className="text-sm font-semibold text-content">{title}</span>
-        {count > 0 && (
-          <span className="text-xs text-content-muted bg-subtle px-1.5 py-0.5 rounded-full">{count}</span>
-        )}
-        <ChevronDown className={`w-4 h-4 text-content-faint ml-auto transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="px-4 py-3">
-          {children}
-        </div>
-      )}
-    </section>
+    <>
+      <div role="tablist" className="mb-3 flex gap-1 overflow-x-auto border-b border-line">
+        {panes.map((p) => {
+          const { title, icon: Icon, count } = p.props
+          const on = p === current
+          return (
+            <button
+              key={title}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setActive(title)}
+              className={`flex items-center gap-1.5 px-3 py-2 -mb-px whitespace-nowrap text-sm font-semibold border-b-2 transition-colors ${on ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content'}`}
+            >
+              <Icon className="w-4 h-4" />
+              {title}
+              {count > 0 && <span className="text-xs text-content-muted bg-subtle px-1.5 py-0.5 rounded-full">{count}</span>}
+            </button>
+          )
+        })}
+      </div>
+      {current}
+    </>
   )
 }
 
@@ -265,7 +281,8 @@ export default function StationSettingsPage() {
       <WebCopy stationId={stationId} stationName={stationName} />
 
       {/* Location */}
-      <Accordion icon={MapPin} title="Location" defaultOpen>
+      <Tabs>
+      <Pane icon={MapPin} title="Location">
         <input
           type="text"
           placeholder="e.g. 12 Lekki-Epe Expressway, Lagos"
@@ -274,10 +291,10 @@ export default function StationSettingsPage() {
           onChange={(e) => setLocation(e.target.value)}
           className={INPUT}
         />
-      </Accordion>
+      </Pane>
 
       {/* Nozzles */}
-      <Accordion icon={Fuel} title="Nozzles" count={nozzles.length}>
+      <Pane icon={Fuel} title="Nozzles" count={nozzles.length}>
         {nozzles.length > 0 && (
           <div className="divide-y divide-line mb-3">
             {nozzles.map((n, i) => (
@@ -308,10 +325,10 @@ export default function StationSettingsPage() {
         <button onClick={addNozzle} className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
           <Plus className="w-4 h-4" /> Add nozzle
         </button>
-      </Accordion>
+      </Pane>
 
       {/* Tanks */}
-      <Accordion icon={Fuel} title="Underground Tanks" count={tanks.length}>
+      <Pane icon={Fuel} title="Underground Tanks" count={tanks.length}>
         {tanks.length > 0 && (
           <div className="divide-y divide-line mb-3">
             {tanks.map((t, i) => (
@@ -349,11 +366,11 @@ export default function StationSettingsPage() {
         <button onClick={addTank} className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
           <Plus className="w-4 h-4" /> Add tank
         </button>
-      </Accordion>
+      </Pane>
 
       {/* Tank to Nozzle Mapping */}
       {nozzles.length > 0 && tanks.length > 0 && (
-        <Accordion icon={ArrowRight} title="Tank to Nozzle Mapping" count={Object.keys(mappings).length}>
+        <Pane icon={ArrowRight} title="Tank to Nozzle Mapping" count={Object.keys(mappings).length}>
           <div className="divide-y divide-line">
             {nozzles.map((n, i) => {
               const key = `${n.fuel_type}-${n.pump_number}`
@@ -378,11 +395,11 @@ export default function StationSettingsPage() {
               )
             })}
           </div>
-        </Accordion>
+        </Pane>
       )}
 
       {/* Lodgements */}
-      <Accordion icon={Landmark} title="Lodgements" count={lodgements.length}>
+      <Pane icon={Landmark} title="Lodgements" count={lodgements.length}>
         {lodgements.length > 0 && (
           <div className="divide-y divide-line mb-3">
             {lodgements.map((l, i) => (
@@ -430,10 +447,10 @@ export default function StationSettingsPage() {
         <button onClick={addLodgement} className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
           <Plus className="w-4 h-4" /> Add lodgement
         </button>
-      </Accordion>
+      </Pane>
 
       {/* Lube Products */}
-      <Accordion icon={Droplets} title="Lube Products" count={lubeProducts.length}>
+      <Pane icon={Droplets} title="Lube Products" count={lubeProducts.length}>
         <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2 rounded mb-3">
           Opening stock values are automatically adjusted when old entries (&gt;3 months) are consolidated to keep current balances accurate.
         </p>
@@ -476,10 +493,10 @@ export default function StationSettingsPage() {
         <button onClick={addLubeProduct} className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
           <Plus className="w-4 h-4" /> Add product
         </button>
-      </Accordion>
+      </Pane>
 
       {/* Accounts */}
-      <Accordion icon={Users} title="Accounts" count={customers.length}>
+      <Pane icon={Users} title="Accounts" count={customers.length}>
         <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2 rounded mb-3">
           Opening balances are automatically adjusted when old entries (&gt;3 months) are consolidated to keep current balances accurate.
         </p>
@@ -537,7 +554,8 @@ export default function StationSettingsPage() {
         <button onClick={addCustomer} className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
           <Plus className="w-4 h-4" /> Add account
         </button>
-      </Accordion>
+      </Pane>
+      </Tabs>
 
       {/* Save */}
       {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4 mt-4">{error}</p>}

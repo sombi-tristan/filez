@@ -7,6 +7,8 @@ import { Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildSalesOperationReport } from '@/lib/buildSalesOperationReport'
 import { exportSalesOperationExcel } from '@/lib/exportSalesOperationExcel'
+import { exportSalesOperationGenericExcel } from '@/lib/exportSalesOperationGenericExcel'
+import { REPORT_CARD, REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE } from '@/components/ui'
 import DateRange from '@/components/reports/DateRange'
 import { defaultReportStart, exportAllowed, rangeDays } from '@/lib/reportRange'
 import { tabOffsetFor } from '@/lib/dayTabs'
@@ -16,6 +18,15 @@ import { isRainoilGroup } from '@/lib/exportGroup'
 
 // The longest range one run covers, as on the audit report.
 const MAX_DAYS = 32
+
+// The report's sections, as tabs over the day's tables (the audit report's way); the day itself
+// is chosen in the tabs below the report.
+const SECTIONS = [
+  { key: 'sales', label: 'Sales' },
+  { key: 'stock', label: 'Stock' },
+  { key: 'cash', label: 'Lodgements & Cash' },
+  { key: 'lube', label: 'Lube' },
+]
 
 function fmt(n) {
   if (n == null || isNaN(n) || n === '') return ''
@@ -51,6 +62,7 @@ function SalesOperationContent() {
   const [reportStart, setReportStart] = useState(monthStartStr)
   const [reportEnd, setReportEnd] = useState(todayStr)
   const [activeSheetName, setActiveSheetName] = useState('')
+  const [section, setSection] = useState('sales')
   const [tabOffset, setTabOffset] = useState(0)
   const TAB_COUNT = 14
 
@@ -157,7 +169,9 @@ function SalesOperationContent() {
     if (!exportAllowed()) { setAskedToExport(true); return }
     setExporting(true)
     try {
-      await exportSalesOperationExcel({
+      // Rainoil stations export their own form; every other station a plain workbook.
+      const exportFn = isRainoilGroup(stationGroup) ? exportSalesOperationExcel : exportSalesOperationGenericExcel
+      await exportFn({
         report,
         stationName,
         startDate: reportStart,
@@ -180,14 +194,6 @@ function SalesOperationContent() {
     return (
       <div className="max-w-4xl px-4 sm:px-8 py-8">
         <p className="text-base text-content-muted">No station selected.</p>
-      </div>
-    )
-  }
-
-  if (!isRainoilGroup(stationGroup)) {
-    return (
-      <div className="max-w-4xl px-4 sm:px-8 py-8">
-        <p className="text-base text-content-muted">This report is for Rainoil stations.</p>
       </div>
     )
   }
@@ -240,14 +246,26 @@ function SalesOperationContent() {
               <p className="text-content-faint text-sm">No sheets in this range.</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 p-4 border border-line rounded-house">
-              {/* The box follows the theme and pads the sheet. The sheet is always light, like the
-                  paper form (app/globals.css .sheet-light), 70% of the box and centred, but never
-                  narrower than its table at its narrowest (min-w-min): long figures do not wrap,
-                  and a table wider than the sheet spilled out to the right, off centre. Wider than
-                  the box, the box scrolls instead. */}
-              <div className="sheet-light w-[70%] min-w-min mx-auto">
-                <SalesOperationGrid sheet={activeSheet} stationName={stationName} />
+            <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 ${REPORT_CARD}`}>
+              <div role="tablist" className="sticky top-0 z-10 flex overflow-x-auto border-b border-primary-500/40 bg-subtle">
+                {SECTIONS.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={section === t.key}
+                    onClick={() => setSection(t.key)}
+                    className={`px-4 py-1.5 text-sm font-medium border-r border-primary-500/40 shrink-0 whitespace-nowrap transition-colors ${section === t.key ? 'bg-surface text-primary-600 border-b-2 border-b-blue-600 -mb-px' : 'text-content-muted hover:bg-surface hover:text-primary-600'}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="px-4 sm:px-8 py-4">
+                {section === 'sales' && <SalesSection sheet={activeSheet} />}
+                {section === 'stock' && <StockSection sheet={activeSheet} />}
+                {section === 'cash' && <CashSection sheet={activeSheet} />}
+                {section === 'lube' && <LubeSection sheet={activeSheet} />}
               </div>
             </div>
           )}
@@ -306,413 +324,101 @@ function SalesOperationContent() {
   )
 }
 
-/**
- * Single 11-column grid replicating the August 2023 Lucky Way reference exactly.
- * Stubbed sections use the reference's placeholder values to keep visual parity.
- */
-function SalesOperationGrid({ sheet, stationName }) {
-  const fuelByType = Object.fromEntries(sheet.fuel.map(f => [f.fuelType, f]))
-  const stockByType = Object.fromEntries(sheet.stock.map(s => [s.fuelType, s]))
-  const deposits = sheet.bankRows.deposits
-  const pos = sheet.bankRows.pos
-  const cash = sheet.cash
-  const lubeItems = sheet.lube || []
-  const lubeAmount = lubeItems.reduce((s, l) => s + (l.amount || 0), 0)
+// ─── The sections: plain report tables, as on the audit report ───
 
-  // Palette matched to the August 2023 reference (inspected from .xlsx)
-  const cell = 'border border-black px-2 py-1 align-middle'
-  const cellL = `${cell} text-left`
-  const cellC = `${cell} text-center`
-  const cellR = `${cell} text-right`
-  const label = 'bg-[#B4C6E7] font-bold'      // label cells (Station, Date only)
-  const colHdr = 'bg-[#F4B083] font-bold'      // orange column headers
-  const section = 'bg-[#BDD6EE] font-bold'     // section title rows + blank separators
-  const fuelLbl = 'bg-[#C5E0B3]'               // green — entire col A from R4 to R38
-  const yellow = 'bg-[#FFFF00]'                // total/output formula cells
-  const gray = 'bg-[#D8D8D8]'                  // merged blank blocks (B8:J8, H10:K13)
-  const labelCell = `${cellL} ${label}`
-  const fuelCell = `${cellC} ${fuelLbl}`
-  const fuelLeft = `${cellL} ${fuelLbl} font-bold`
+const cell = `border ${REPORT_LINE} px-1.5 py-1`
+const cellR = `${cell} text-right`
 
-  const BUDGET = { PMS: 14400, AGO: 480, DPK: 240 }
-  const COMP = {
-    PMS: { rainoil: 537, c1: 'PRIME',  p1: 6,     c2: 'NNPC', p2: 511, c3: 'YOZIDDA', p3: 511, c4: 'NASKO', p4: 505 },
-    AGO: { rainoil: 650, c1: 'Conoil', p1: 650,   c2: 'NNPC', p2: 670, c3: 'YOZIDDA', p3: 680, c4: 'NASKO', p4: 680 },
-    DPK: { rainoil: 700, c1: 'PRIME',  p1: 'NIL', c2: 'NNPC', p2: 0,   c3: 'YOZZIDA', p3: 0,   c4: 'NASKO', p4: 'NIL' },
-  }
-
-  // Helper: produce a fuel data row (R5/R6/R7)
-  const fuelRow = (ft) => {
-    const f = fuelByType[ft] || {}
-    return (
-      <tr key={`fuel-${ft}`}>
-        <td className={fuelCell}>{ft}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.price1)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.actualSalesP1)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.rttP1)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.consP1)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.price2)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.actualSalesP2)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.rttP2)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(f.consP2)}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(f.totalActualLtrs)}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(f.amount)}</td>
-      </tr>
-    )
-  }
-
-  // Helper: produce a stock data row (R11/R12/R13)
-  const stockRow = (ft) => {
-    const s = stockByType[ft] || {}
-    const truckShortage = (s.actualReceived || 0) - (s.waybill || 0)
-    return (
-      <tr key={`stock-${ft}`}>
-        <td className={fuelCell}>{ft}</td>
-        <td className={`${cellC} font-bold`}>{fmt(s.opening)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(s.waybill)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(s.actualReceived)}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(truckShortage)}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(s.totalDispensed)}</td>
-        <td className={`${cellC} font-bold`}>{fmt(s.closing)}</td>
-        {/* H:K covered by R10's rowSpan=4 colSpan=4 merged cell */}
-      </tr>
-    )
-  }
-
-  // A fuel's overages from the stock: expected is 1% of what left the tanks, actual is what the
-  // meters dispensed beyond that, less pour back. Their difference is the stock variance, which
-  // the recon rows and the budget rows both show.
-  const overage = (ft) => {
-    const s = stockByType[ft] || {}
-    const f = fuelByType[ft] || {}
-    const fell = (s.opening || 0) + (s.waybill || 0) - (s.closing || 0)
-    const expected = fell * 0.01
-    const actual = (s.totalDispensed || 0) - fell - ((f.rttP1 || 0) + (f.rttP2 || 0))
-    return { expected, actual }
-  }
-  const stockVariance = (ft) => { const o = overage(ft); return o.actual - o.expected }
-
-  // Helper: produce a recon row (R16/R17/R18)
-  const reconRow = (ft) => {
-    const { expected: expectedOverage, actual: actualOverage } = overage(ft)
-    const variance = stockVariance(ft)
-    const msg = variance > 0
-      ? 'Liquid height variation on the Positive side'
-      : 'Liquid height variation on the Negative side'
-    return (
-      <tr key={`recon-${ft}`}>
-        <td className={fuelCell}>{ft}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(Math.round(expectedOverage))}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(Math.round(actualOverage))}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(Math.round(variance))}</td>
-        <td className={cellL} colSpan={7}>{msg}</td>
-      </tr>
-    )
-  }
-
-  // Helper: budget row (R28/R29/R30). Its Variance is calculated from the stock (actual overage
-  // less expected overage), as on the recon rows, not sales less the budget.
-  const budgetRow = (ft) => {
-    const f = fuelByType[ft] || {}
-    const budget = BUDGET[ft]
-    const total = f.totalActualLtrs || 0
-    const achievement = budget ? total / budget : 0
-    const variance = stockVariance(ft)
-    const comment = variance < 0 ? 'Low Demand' : 'High Demand'
-    return (
-      <tr key={`budget-${ft}`}>
-        <td className={fuelCell}>{ft}</td>
-        <td className={`${cellC} font-bold`}>{fmt(budget)}</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{(achievement * 100).toFixed(1)}%</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(Math.round(variance))}</td>
-        <td className={cellC} colSpan={7}>{comment}</td>
-      </tr>
-    )
-  }
-
-  // Helper: competitor row (R34/R35/R36) — placeholders
-  const compRow = (ft) => {
-    const c = COMP[ft]
-    return (
-      <tr key={`comp-${ft}`}>
-        <td className={fuelCell}>{ft}</td>
-        <td className={`${cellC} font-bold`}>{fmt(c.rainoil)}</td>
-        <td className={cellC}>{c.c1}</td>
-        <td className={`${cellC} font-bold`}>{typeof c.p1 === 'number' ? fmt(c.p1) : c.p1}</td>
-        <td className={cellC}>{c.c2}</td>
-        <td className={`${cellC} font-bold`}>{fmt(c.p2)}</td>
-        <td className={cellC}>{c.c3}</td>
-        <td className={`${cellC} font-bold`}>{fmt(c.p3)}</td>
-        <td className={cellC}>{c.c4}</td>
-        <td className={`${cellC} font-bold`}>{typeof c.p4 === 'number' ? fmt(c.p4) : c.p4}</td>
-        <td className={cell}></td>
-      </tr>
-    )
-  }
-
-  // Lube total
-  const lubeTotals = lubeItems.reduce((a, i) => ({
-    opening: a.opening + (i.openingStock || 0),
-    supply:  a.supply  + (i.productSupply || 0),
-    sales:   a.sales   + (i.sales || 0),
-    closing: a.closing + (i.closingStock || 0),
-    amount:  a.amount  + (i.amount || 0),
-    variance:a.variance+ (i.variance || 0),
-  }), { opening: 0, supply: 0, sales: 0, closing: 0, amount: 0, variance: 0 })
-
+/** A titled table: a header row, body rows (the first cell a label), an optional total row. */
+function ReportTable({ title, head, rows, total }) {
   return (
-    <table className="w-full border-collapse text-xs min-w-[700px]" style={{ fontFamily: 'Corbel, Calibri, sans-serif' }}>
-      <colgroup>
-        <col style={{ width: '13.21%' }} />
-        <col style={{ width: '8.49%' }} />
-        <col style={{ width: '10.38%' }} />
-        <col style={{ width: '7.08%' }} />
-        <col style={{ width: '7.08%' }} />
-        <col style={{ width: '8.49%' }} />
-        <col style={{ width: '10.38%' }} />
-        <col style={{ width: '7.08%' }} />
-        <col style={{ width: '7.08%' }} />
-        <col style={{ width: '11.32%' }} />
-        <col style={{ width: '9.43%' }} />
-      </colgroup>
-      <tbody>
-        {/* R1: Station (A1:A2 vertical merge via rowSpan, #REF! to match reference) */}
-        <tr>
-          <td className={`${cellC} ${label}`} rowSpan={2}>#REF!</td>
-          <td className={labelCell}>Station</td>
-          <td className={`${cellC} font-bold`} colSpan={9}>{stationName || ''}</td>
-        </tr>
-
-        {/* R2: Date + Times */}
-        <tr>
-          <td className={labelCell}>Date</td>
-          <td className={cellL} colSpan={3}>{sheet.date}</td>
-          <td className={labelCell}>Opening Time</td>
-          <td className={cellL} colSpan={2}>6;00am</td>
-          <td className={labelCell}>Closing Time</td>
-          <td className={cellL} colSpan={2}>9;00pm</td>
-        </tr>
-
-        {/* R3: blank separator (section blue) */}
-        <tr><td colSpan={11} className={`${cell} ${section} h-3`}></td></tr>
-
-        {/* R4: Fuel headers (col A green) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Price 1</td>
-          <td className={`${cellC} ${colHdr}`}>Actual Sales @P1</td>
-          <td className={`${cellC} ${colHdr}`}>RTT @P1</td>
-          <td className={`${cellC} ${colHdr}`}>Cons. @P1</td>
-          <td className={`${cellC} ${colHdr}`}>Price 2</td>
-          <td className={`${cellC} ${colHdr}`}>Actual Sales @P2</td>
-          <td className={`${cellC} ${colHdr}`}>RTT @P2</td>
-          <td className={`${cellC} ${colHdr}`}>Cons. @P2</td>
-          <td className={`${cellC} ${colHdr}`}>Total Actual Sales (Ltrs)</td>
-          <td className={`${cellC} ${colHdr}`}>Amount (N)</td>
-        </tr>
-
-        {/* R5–R7: PMS/AGO/DPK */}
-        {fuelRow('PMS')}
-        {fuelRow('AGO')}
-        {fuelRow('DPK')}
-
-        {/* R8: LUBES (B:J merged with gray fill) */}
-        <tr>
-          <td className={fuelCell}>LUBES</td>
-          <td className={`${cell} ${gray}`} colSpan={9}></td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeAmount)}</td>
-        </tr>
-
-        {/* R9: STOCK INVENTORY title */}
-        <tr><td colSpan={11} className={`${cellL} ${section}`}>STOCK INVENTORY (LITRES)</td></tr>
-
-        {/* R10: stock headers (col A green; H:K merged with R11-R13 as gray block) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Opening stock</td>
-          <td className={`${cellC} ${colHdr}`}>Waybill Qty Supplied</td>
-          <td className={`${cellC} ${colHdr}`}>Actual Qty Received</td>
-          <td className={`${cellC} ${colHdr}`}>Truck Shortage</td>
-          <td className={`${cellC} ${colHdr}`}>Total Dispensed</td>
-          <td className={`${cellC} ${colHdr}`}>Closing stock</td>
-          <td className={`${cell} ${gray}`} rowSpan={4} colSpan={4}></td>
-        </tr>
-
-        {/* R11–R13 */}
-        {stockRow('PMS')}
-        {stockRow('AGO')}
-        {stockRow('DPK')}
-
-        {/* R14: STOCK RECONCILIATION title */}
-        <tr><td colSpan={11} className={`${cellL} ${section}`}>STOCK RECONCILIATION (Litres)</td></tr>
-
-        {/* R15: recon headers (col A green; E:K merged white) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Expected Overage</td>
-          <td className={`${cellC} ${colHdr}`}>Actual Overage</td>
-          <td className={`${cellC} ${colHdr}`}>Variance</td>
-          <td className={cell} colSpan={7}></td>
-        </tr>
-
-        {/* R16–R18 */}
-        {reconRow('PMS')}
-        {reconRow('AGO')}
-        {reconRow('DPK')}
-
-        {/* R19: blank (section blue) */}
-        <tr><td colSpan={11} className={`${cell} ${section} h-3`}></td></tr>
-
-        {/* R20: deposit + POS headers (col A green) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          {['Deposit 1', 'Deposit 2', 'Deposit 3', 'Deposit 4', 'Bank POS 1', 'Bank POS 2', 'Bank POS 3', 'Bank POS 4', 'Bank POS 5', 'Bank POS 6'].map(h => (
-            <td key={h} className={`${cellC} ${colHdr}`}>{h}</td>
+    <div className="mb-6">
+      <div className={`${REPORT_HEAD} px-2 py-1.5 text-sm font-bold`}>{title}</div>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className={REPORT_SUBHEAD}>
+            {head.map((h, i) => <th key={i} className={`${i ? cellR : cell} font-bold`}>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, ri) => (
+            <tr key={ri}>
+              {r.map((v, i) => <td key={i} className={i ? cellR : `${cell} font-bold`}>{v}</td>)}
+            </tr>
           ))}
-        </tr>
+          {total && (
+            <tr className={`${REPORT_SUBHEAD} font-bold`}>
+              {total.map((v, i) => <td key={i} className={i ? cellR : cell}>{v}</td>)}
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
-        {/* R21: amounts (col A green) */}
-        <tr>
-          <td className={fuelLeft}>Amount (₦)</td>
-          {[0, 1, 2, 3].map(i => <td key={`d${i}`} className={`${cellC} font-bold`}>{fmt(deposits[i]?.amount)}</td>)}
-          {[0, 1, 2, 3, 4, 5].map(i => <td key={`p${i}`} className={`${cellC} font-bold`}>{fmt(pos[i]?.amount)}</td>)}
-        </tr>
+function SalesSection({ sheet }) {
+  return (
+    <ReportTable
+      title={`Sales: ${sheet.sheetName}`}
+      head={['Fuel', 'Price 1', 'Actual sales @P1', 'RTT @P1', 'Cons. @P1', 'Price 2', 'Actual sales @P2', 'RTT @P2', 'Cons. @P2', 'Total actual (L)', 'Amount (₦)']}
+      rows={sheet.fuel.map((f) => [f.fuelType, fmt(f.price1), fmt(f.actualSalesP1), fmt(f.rttP1), fmt(f.consP1), fmt(f.price2), fmt(f.actualSalesP2), fmt(f.rttP2), fmt(f.consP2), fmt(f.totalActualLtrs), fmt(f.amount)])}
+      total={['Total', '', '', '', '', '', '', '', '', fmt(sheet.fuel.reduce((t, f) => t + f.totalActualLtrs, 0)), fmt(sheet.fuel.reduce((t, f) => t + f.amount, 0))]}
+    />
+  )
+}
 
-        {/* R22: bank names (col A green) */}
-        <tr>
-          <td className={fuelLeft}>Bank</td>
-          {[0, 1, 2, 3].map(i => <td key={`db${i}`} className={cellC}>{deposits[i]?.bankName || ''}</td>)}
-          {[0, 1, 2, 3, 4, 5].map(i => <td key={`pb${i}`} className={cellC}>{pos[i]?.bankName || ''}</td>)}
-        </tr>
+function StockSection({ sheet }) {
+  return (
+    <>
+      <ReportTable
+        title={`Stock: ${sheet.sheetName}`}
+        head={['Fuel', 'Opening', 'Waybill', 'Actual received', 'Truck shortage', 'Total dispensed', 'Closing']}
+        rows={sheet.stock.map((s) => [s.fuelType, fmt(s.opening), fmt(s.waybill), fmt(s.actualReceived), fmt(s.truckShortage), fmt(s.totalDispensed), fmt(s.closing)])}
+      />
+      <ReportTable
+        title="Overage"
+        head={['Fuel', 'Expected overage', 'Actual overage', 'Variance', 'Comment']}
+        rows={(sheet.overage || []).map((o) => [o.fuelType, fmt(Math.round(o.expected)), fmt(Math.round(o.actual)), fmt(Math.round(o.variance)),
+          o.variance > 0 ? 'Liquid height variation on the positive side' : 'Liquid height variation on the negative side'])}
+      />
+    </>
+  )
+}
 
-        {/* R23: CASH RECON title */}
-        <tr><td colSpan={11} className={`${cellL} ${section}`}>CASH RECONCILIATION (₦)</td></tr>
+function CashSection({ sheet }) {
+  const { deposits = [], pos = [], transfers = [] } = sheet.lodgements || {}
+  const lodged = [
+    ...deposits.map((d) => ['Bank deposit', d.bankName, d.amount]),
+    ...pos.map((d) => ['POS', d.bankName, d.amount]),
+    ...transfers.map((d) => ['Transfer', d.bankName, d.amount]),
+  ]
+  const cash = sheet.cash
+  return (
+    <>
+      <ReportTable
+        title={`Lodgements: ${sheet.sheetName}`}
+        head={['Type', 'Bank', 'Amount (₦)']}
+        rows={lodged.length ? lodged.map(([t, b, a]) => [t, b, fmt(a)]) : [['None', '', '']]}
+        total={['Total', '', fmt(lodged.reduce((t, r) => t + r[2], 0))]}
+      />
+      <ReportTable
+        title="Cash"
+        head={['', 'Total expected sales', 'Previous day cash @ hand', 'Total bank deposit', 'Total POS & Transfer', 'Expected Cash @ Hand', 'Actual cash @ hand', 'Variance']}
+        rows={[['Amount (₦)', fmt(cash.totalExpectedSales), fmt(cash.prevDayCash), fmt(cash.totalBankDeposit), fmt(cash.totalPOS + cash.totalTransfer), fmt(cash.expectedCashAtHand), fmt(cash.actualCashAtHand), fmt(cash.variance)]]}
+      />
+    </>
+  )
+}
 
-        {/* R24: cash recon headers (col A green) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Total Expected Sales</td>
-          <td className={`${cellC} ${colHdr}`}>Previous Day Cash @ Hand</td>
-          <td className={`${cellC} ${colHdr}`}>Total Bank Deposit</td>
-          {/* The form has no column for transfers: they count with POS, so the row adds up. */}
-          <td className={`${cellC} ${colHdr}`}>Total POS &amp; Transfer</td>
-          <td className={`${cellC} ${colHdr}`}>Expected Cash @ Hand</td>
-          <td className={`${cellC} ${colHdr}`}>Actual Cash @ Hand</td>
-          <td className={`${cellC} ${colHdr}`}>Variance in Cash</td>
-          <td className={`${cellC} ${colHdr}`} colSpan={3}>Reason for Cash Variance</td>
-        </tr>
-
-        {/* R25: cash values (col A green) */}
-        <tr>
-          <td className={fuelLeft}>Amount (₦)</td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalExpectedSales)}</td>
-          <td className={`${cellC} font-bold`}>{fmt(cash.prevDayCash)}</td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalBankDeposit)}</td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalPOS + cash.totalTransfer)}</td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.expectedCashAtHand)}</td>
-          <td className={`${cellC} font-bold`}>{fmt(cash.actualCashAtHand)}</td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.variance)}</td>
-          <td className={cellL} colSpan={3}>{cash.reason || ''}</td>
-        </tr>
-
-        {/* R26: blank (section blue) */}
-        <tr><td colSpan={11} className={`${cell} ${section} h-3`}></td></tr>
-
-        {/* R27: budget headers (col A green) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Budget (Ltrs)</td>
-          <td className={`${cellC} ${colHdr}`}>Achievement</td>
-          <td className={`${cellC} ${colHdr}`}>Variance (Ltrs)</td>
-          <td className={`${cellC} ${colHdr}`} colSpan={7}>Comments on Sales Achievement (Issues that Increased or Reduced Sales on this Date)</td>
-        </tr>
-
-        {/* R28–R30: budget rows */}
-        {budgetRow('PMS')}
-        {budgetRow('AGO')}
-        {budgetRow('DPK')}
-
-        {/* R31: LUBES budget (placeholder zeros) */}
-        <tr>
-          <td className={fuelCell}>LUBES</td>
-          <td className={`${cellC} font-bold`}>0</td>
-          <td className={`${cellC} font-bold ${yellow}`}>0</td>
-          <td className={`${cellC} font-bold ${yellow}`}>0</td>
-          <td className={cellC} colSpan={7}></td>
-        </tr>
-
-        {/* R32: blank (section blue) */}
-        <tr><td colSpan={11} className={`${cell} ${section} h-3`}></td></tr>
-
-        {/* R33: competitor headers (col A green) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Rainoil</td>
-          <td className={`${cellC} ${colHdr}`}>Competitor 1</td>
-          <td className={`${cellC} ${colHdr}`}>Price 1</td>
-          <td className={`${cellC} ${colHdr}`}>Competitor 2</td>
-          <td className={`${cellC} ${colHdr}`}>Price 2</td>
-          <td className={`${cellC} ${colHdr}`}>Competitor 3</td>
-          <td className={`${cellC} ${colHdr}`}>Price 3</td>
-          <td className={`${cellC} ${colHdr}`}>Competitor 4</td>
-          <td className={`${cellC} ${colHdr}`}>Price 4</td>
-          <td className={`${cell} ${colHdr}`}></td>
-        </tr>
-
-        {/* R34–R36: competitor rows */}
-        {compRow('PMS')}
-        {compRow('AGO')}
-        {compRow('DPK')}
-
-        {/* R37: LUBE BREAKDOWN title */}
-        <tr><td colSpan={11} className={`${cellL} ${section}`}>LUBE SALES BREAKDOWN</td></tr>
-
-        {/* R38: lube headers (col A green) */}
-        <tr>
-          <td className={`${cell} ${fuelLbl}`}></td>
-          <td className={`${cell} ${colHdr}`}></td>
-          <td className={`${cellC} ${colHdr}`}>Litre</td>
-          <td className={`${cellC} ${colHdr}`}>Unit Price</td>
-          <td className={`${cellC} ${colHdr}`}>Opening Stock Units</td>
-          <td className={`${cellC} ${colHdr}`}>Product Supply Units</td>
-          <td className={`${cellC} ${colHdr}`}>Sales Units</td>
-          <td className={`${cellC} ${colHdr}`}>Closing Stock Units</td>
-          <td className={`${cellC} ${colHdr}`}>Amount (₦)</td>
-          <td className={`${cellC} ${colHdr}`}>Variance Units</td>
-          <td className={`${cell} ${colHdr}`}></td>
-        </tr>
-
-        {/* R39+: lube product rows (A:B merged; Sales/Amount/Variance yellow) */}
-        {lubeItems.map((l, i) => (
-          <tr key={`lube-${i}`}>
-            <td className={cellL} colSpan={2}>{l.productName}</td>
-            <td className={`${cellC} font-bold`}>{fmt(l.litre)}</td>
-            <td className={`${cellC} font-bold`}>{fmt(l.unitPrice)}</td>
-            <td className={`${cellC} font-bold`}>{fmt(l.openingStock)}</td>
-            <td className={`${cellC} font-bold`}>{fmt(l.productSupply)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(l.sales)}</td>
-            <td className={`${cellC} font-bold`}>{fmt(l.closingStock)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(l.amount)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(l.variance)}</td>
-            <td className={cell}></td>
-          </tr>
-        ))}
-
-        {lubeItems.length > 0 && (
-          <tr>
-            <td className={`${cellL} ${yellow} font-bold`} colSpan={2}>TOTAL</td>
-            <td className={`${cell} ${yellow}`}></td>
-            <td className={`${cell} ${yellow}`}></td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeTotals.opening)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeTotals.supply)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeTotals.sales)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeTotals.closing)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeTotals.amount)}</td>
-            <td className={`${cellC} font-bold ${yellow}`}>{fmt(lubeTotals.variance)}</td>
-            <td className={`${cell} ${yellow}`}></td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+function LubeSection({ sheet }) {
+  if (!sheet.lube?.length) return <p className="text-sm text-content-muted py-6">No lube products with stock or sales on this day.</p>
+  return (
+    <ReportTable
+      title={`Lube: ${sheet.sheetName}`}
+      head={['Product', 'Litre', 'Unit price', 'Opening', 'Supply', 'Sales', 'Closing', 'Amount (₦)', 'Variance']}
+      rows={sheet.lube.map((l) => [l.productName, fmt(l.litre), fmt(l.unitPrice), fmt(l.openingStock), fmt(l.productSupply), fmt(l.sales), fmt(l.closingStock), fmt(l.amount), fmt(l.variance)])}
+      total={['Total', '', '', '', '', fmt(sheet.lube.reduce((t, l) => t + l.sales, 0)), '', fmt(sheet.lube.reduce((t, l) => t + l.amount, 0)), '']}
+    />
   )
 }

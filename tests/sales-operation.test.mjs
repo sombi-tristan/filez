@@ -1,9 +1,11 @@
 /**
  * Pins the Sales Operation report's place and look (screens/dashboard/reports/sales-operation):
  *
- *   Rainoil only: it is Rainoil's own form, so a station outside the RAINOIL group
- *   (lib/exportGroup.js) neither lists it (sidebar, station home, staff permissions) nor opens it.
- *   The sheet sits at 70% of the box holding it, centred, and is always light: no dark mode.
+ *   Every station has it again, audit-style: section tabs (Sales, Stock, Lodgements & Cash,
+ *   Lube) over plain report tables, the day chosen in the tabs below, and none of the Rainoil
+ *   form's budget or competitor prices on screen. A Rainoil station exports its replica workbook
+ *   (lib/exportSalesOperationExcel.js); every other station a plain one
+ *   (lib/exportSalesOperationGenericExcel.js). At most 32 days, like the audit report.
  *
  * Run: node tests/sales-operation.test.mjs
  */
@@ -21,39 +23,22 @@ const check = (label, ok) => {
 const KEY = 'report-sales-operation'
 const keysIn = (sections) => sections.flatMap((s) => (s.links || s.items || []).map((l) => l.pageKey))
 
-console.log('Listed only for Rainoil stations')
-check('marked Rainoil only', nav.REPORT_LINKS('x').find((l) => l.pageKey === KEY)?.rainoilOnly === true)
-check('not in the sidebar of another group\'s station', !keysIn(nav.buildStationNav('x', { isOwner: true, groupName: 'Other Group' })).includes(KEY))
-check('not in the sidebar of a station with no group', !keysIn(nav.buildStationNav('x', { isOwner: true })).includes(KEY))
-check('in the sidebar of a Rainoil station', keysIn(nav.buildStationNav('x', { isOwner: true, groupName: ' rainoil ' })).includes(KEY))
-check('not on another station\'s home', !keysIn(nav.REPORT_SECTIONS('x', 'Other Group')).includes(KEY))
-check('on a Rainoil station\'s home', keysIn(nav.REPORT_SECTIONS('x', 'RAINOIL')).includes(KEY))
-check('not offered in another station\'s staff permissions', !nav.reportPermissionOptions('Other Group').some((o) => o.key === KEY))
-check('offered in a Rainoil station\'s', nav.reportPermissionOptions('RAINOIL').some((o) => o.key === KEY))
-check('the other reports are untouched', keysIn(nav.REPORT_SECTIONS('x', 'Other Group')).length === nav.REPORT_LINKS('x').length - 1)
-
-console.log('\nThe screens pass the station\'s group')
-check('the sidebar', read('components/StationSidebar.js').includes('groupName: current?.station_group'))
-const home = read('screens/dashboard/stations/[stationId]/page.js')
-check('station home', home.includes('REPORT_SECTIONS(stationId, station?.station_group)') && home.includes('reportPermissionOptions(station?.station_group)'))
+console.log('Every station has it')
+check('not marked Rainoil only', !nav.REPORT_LINKS('x').find((l) => l.pageKey === KEY)?.rainoilOnly)
+check('in the sidebar of any station', keysIn(nav.buildStationNav('x', { isOwner: true, groupName: 'Other Group' })).includes(KEY) && keysIn(nav.buildStationNav('x', { isOwner: true })).includes(KEY))
+check('on any station\'s home and in its staff permissions', keysIn(nav.REPORT_SECTIONS('x', 'Other Group')).includes(KEY) && nav.reportPermissionOptions('Other Group').some((o) => o.key === KEY))
 
 const page = read('screens/dashboard/reports/sales-operation/page.js')
-console.log('\nOpened on another station')
-check('says it is for Rainoil stations, and shows no sheet', page.includes('isRainoilGroup(stationGroup)') && page.includes('This report is for Rainoil stations.'))
+console.log('\nAudit-style screen')
+check('no longer turns other stations away', !page.includes('This report is for Rainoil stations.'))
+check('section tabs: Sales, Stock, Lodgements & Cash, Lube', ["{ key: 'sales', label: 'Sales' }", "{ key: 'stock', label: 'Stock' }", "{ key: 'cash', label: 'Lodgements & Cash' }", "{ key: 'lube', label: 'Lube' }"].every((s) => page.includes(s)) && page.includes('role="tablist"'))
+check('plain report tables in the report frame, not the replica sheet', page.includes('${REPORT_CARD}') && page.includes('REPORT_HEAD') && !page.includes('SalesOperationGrid') && !page.includes('sheet-light'))
+check('no budget, achievement or competitor prices on screen', !/Budget|Achievement|Competitor/.test(page))
+check('overage and truck shortage come from the builder', page.includes('sheet.overage') && page.includes('s.truckShortage'))
+check('the light sheet\'s styles are gone', !read('app/globals.css').includes('.sheet-light'))
 
-console.log('\nThe sheet')
-// The box follows the theme and pads the sheet; only the sheet is light. The sheet is never
-// narrower than its table at its narrowest (min-content: long figures do not wrap, and the
-// report's text is a size up), or the table spills out of it to the right and it looks off
-// centre; wider than the box, the box scrolls instead.
-check('the box follows the theme, with padding round the sheet', /<div className="flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 p-4 border border-line rounded-house">/.test(page) && !/<div className="sheet-light flex-1/.test(page))
-check('the sheet: 70% of the box, centred, never narrower than its table, light', /<div className="sheet-light w-\[70%\] min-w-min mx-auto">/.test(page))
-check('squeezes to fit rather than holding 1100px, down to 700px', page.includes('className="w-full border-collapse text-xs min-w-[700px]"') && !page.includes('min-w-[1100px]'))
-check('its columns keep their proportions', !/<col style=\{\{ width: \d+ \}\}/.test(page) && /<col style=\{\{ width: '[\d.]+%' \}\}/.test(page))
-const css = read('app/globals.css')
-const light = css.match(/\.sheet-light\s*\{([^}]*)\}/)?.[1] || ''
-check('always light: white, dark text, light lines', ['--surface: 255 255 255', '--content: 15 20 25', '--line-ch: 207 217 222', 'color-scheme: light'].every((v) => light.includes(v)) && /background-color:\s*#fff/.test(light))
-check('its bold text stays black, as on the form', /--bold-ink:\s*rgb\(15 20 25\)/.test(light))
+console.log('\nExport')
+check('Rainoil stations their replica, others a plain workbook', /isRainoilGroup\(stationGroup\)\s*\?\s*exportSalesOperationExcel\s*:\s*exportSalesOperationGenericExcel/.test(page))
 
 console.log('\nAt most 32 days, like the audit report')
 check('Load greys out over 32 days', /disabled=\{!startDate \|\| !endDate \|\| startDate > endDate \|\| rangeDays\(startDate, endDate\) > MAX_DAYS\}/.test(page) && page.includes('const MAX_DAYS = 32'))
