@@ -113,6 +113,10 @@ function DailySalesReportContent() {
     () => orgId ? db.customers.where('orgId').equals(orgId).toArray() : [],
     [orgId]
   )
+  const livePayments = useLiveQuery(
+    () => orgId ? db.customerPayments.where('orgId').equals(orgId).toArray() : [],
+    [orgId]
+  )
   const customerMap = useMemo(() => {
     if (!liveCustomers) return {}
     return Object.fromEntries(liveCustomers.map(c => [c.id, c.name || 'Unknown']))
@@ -130,10 +134,12 @@ function DailySalesReportContent() {
       nozzles,
       tanks,
       banks,
+      customers: liveCustomers || [],
+      customerPayments: livePayments || [],
       startDate: reportStart,
       endDate: reportEnd,
     })
-  }, [generated, reportStart, reportEnd, loading, orgId, nozzles, tanks, banks, liveSales, liveReceipts, liveLodgements])
+  }, [generated, reportStart, reportEnd, loading, orgId, nozzles, tanks, banks, liveSales, liveReceipts, liveLodgements, liveCustomers, livePayments])
 
   const handleExport = async () => {
     if (!report) return
@@ -422,6 +428,36 @@ function DailySalesReportContent() {
                   </>
                 )
               })()}
+
+              {/* Credit customers' balances at the end of the day, the ones not at zero. */}
+              {currentDayReport.balances.rows.length > 0 && (
+                <table className="w-full border-collapse text-sm mb-2">
+                  <thead>
+                    <tr className={subHdr}>
+                      <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
+                    </tr>
+                    <tr className={subHdr}>
+                      <th className={`${cell} text-left font-bold`}>Customer</th>
+                      <th className={`${cellR} font-bold`}>Owes station</th>
+                      <th className={`${cellR} font-bold`}>Station owes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentDayReport.balances.rows.map((b) => (
+                      <tr key={b.customerId}>
+                        <td className={cell}>{b.name}</td>
+                        <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
+                        <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-bold">
+                      <td className={cell}>Total</td>
+                      <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
+                      <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
 
               {/* Summary */}
               <table className="w-full border-collapse text-sm">
