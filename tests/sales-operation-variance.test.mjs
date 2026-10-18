@@ -59,5 +59,8 @@ for (const r of [4, 15, 20]) {
 }
 check('two lines of header text fit', /const HEADER_ROW_HEIGHT = (3[0-9]|[4-9][0-9])\b/.test(excel))
 
+console.log('\nSales Operation export: no thick border round the sheet')
+check('the outer edge is a thin line, like the grid', !excel.includes("style: 'thick'") && !/\bthick\(/.test(excel) && /const edge\s*=\s*\(argb = BLACK\) => \(\{ style: 'thin'/.test(excel))
+
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
 process.exit(failures === 0 ? 0 : 1)

@@ -1,9 +1,10 @@
 /**
  * Pins the Sales Operation report's place and look (screens/dashboard/reports/sales-operation):
  *
- *   Every station has it again, audit-style: section tabs (Sales, Stock, Lodgements & Cash,
- *   Lube) over plain report tables, the day chosen in the tabs below, and none of the Rainoil
- *   form's budget or competitor prices on screen. A Rainoil station exports its replica workbook
+ *   Every station has it again, in the app's report styling: each day one page, its parts
+ *   stacked in the form's order (Sales, Stock, Overage, Lodgements, Cash, Lube) as plain report
+ *   tables, no section tabs (the owner asked for the styling, not the audit report's tabs), the
+ *   day chosen in the tabs below, and none of the Rainoil form's budget or competitor prices. A Rainoil station exports its replica workbook
  *   (lib/exportSalesOperationExcel.js); every other station a plain one
  *   (lib/exportSalesOperationGenericExcel.js). At most 32 days, like the audit report.
  *
@@ -31,7 +32,11 @@ check('on any station\'s home and in its staff permissions', keysIn(nav.REPORT_S
 const page = read('screens/dashboard/reports/sales-operation/page.js')
 console.log('\nAudit-style screen')
 check('no longer turns other stations away', !page.includes('This report is for Rainoil stations.'))
-check('section tabs: Sales, Stock, Lodgements & Cash, Lube', ["{ key: 'sales', label: 'Sales' }", "{ key: 'stock', label: 'Stock' }", "{ key: 'cash', label: 'Lodgements & Cash' }", "{ key: 'lube', label: 'Lube' }"].every((s) => page.includes(s)) && page.includes('role="tablist"'))
+check('no section tabs', !page.includes('const SECTIONS') && !page.includes('role="tablist"') && !page.includes('setSection'))
+{
+  const order = ['<SalesSection sheet={activeSheet} />', '<StockSection sheet={activeSheet} />', '<CashSection sheet={activeSheet} />', '<LubeSection sheet={activeSheet} />'].map((s) => page.indexOf(s))
+  check('the whole day on one page, its parts stacked in the form\'s order', order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])))
+}
 check('plain report tables in the report frame, not the replica sheet', page.includes('${REPORT_CARD}') && page.includes('REPORT_HEAD') && !page.includes('SalesOperationGrid') && !page.includes('sheet-light'))
 check('no budget, achievement or competitor prices on screen', !/Budget|Achievement|Competitor/.test(page))
 check('overage and truck shortage come from the builder', page.includes('sheet.overage') && page.includes('s.truckShortage'))
