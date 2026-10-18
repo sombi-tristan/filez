@@ -1,11 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Loader2 } from 'lucide-react'
+import { Download, Upload, Loader2, ChevronRight } from 'lucide-react'
 import Modal from '@/components/Modal'
 import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
-import { BTN_PRIMARY, CARD, SectionHeader } from '@/components/ui'
+import { BTN_PRIMARY, IconChip } from '@/components/ui'
 import RestoreBackup from '@/components/desktop/RestoreBackup'
+
+// A list card, like the station home's "View all reports": icon, name and a line, an arrow.
+const LIST_CARD = 'w-full flex items-center gap-3 p-3 bg-subtle rounded-house text-left transition-colors hover:bg-primary-500/10 disabled:opacity-50'
+
+function CardBody({ icon, busy, title, line }) {
+  return (
+    <>
+      {busy ? <span className="w-10 h-10 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></span> : <IconChip icon={icon} className="w-10 h-10" iconClass="w-5 h-5" />}
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-medium text-content">{title}</span>
+        <span className="block text-xs text-content-muted">{line}</span>
+      </span>
+      <ChevronRight className="w-4 h-4 text-content-faint flex-shrink-0" />
+    </>
+  )
+}
 
 /**
  * Desktop build: the station's data lives only on this computer, so the hub carries the tools
@@ -44,18 +60,18 @@ export default function ThisComputer({ isOwner, stationName }) {
   if (!isOwner) return null
 
   return (
-    <section className="mb-8">
-      <SectionHeader>This computer</SectionHeader>
-      <div className={`p-3 flex flex-wrap gap-2 ${CARD}`}>
-        {isOwner && paid && (
-          <>
-            <button onClick={backup} disabled={!!busy} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}>
-              {busy === 'backup' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Back up data
-            </button>
-            <RestoreBackup disabled={!!busy} />
-          </>
-        )}
-      </div>
+    <section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">
+      <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">This computer</h2>
+      {isOwner && paid && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button type="button" onClick={backup} disabled={!!busy} className={LIST_CARD}>
+            <CardBody icon={Download} busy={busy === 'backup'} title="Back up data" line="Save this station to a file" />
+          </button>
+          <RestoreBackup disabled={!!busy} className={LIST_CARD}>
+            <CardBody icon={Upload} title="Restore backup" line="Overwrite or pad from a backup file" />
+          </RestoreBackup>
+        </div>
+      )}
       {isOwner && !paid && (
         <div className="mt-2"><PaidNote what="Backing up and restoring stations" /></div>
       )}

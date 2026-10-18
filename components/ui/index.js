@@ -27,31 +27,30 @@ import { ChevronRight } from 'lucide-react'
  * and bg-subtle both in the class list, and which one wins is decided by their order in the
  * generated stylesheet rather than in the string.
  */
-export const CARD_LINE = 'border-card border-primary-500/40 dark:border-primary-400/40'
-export const CARD = `bg-surface ${CARD_LINE}`
+export const CARD_LINE = 'border-card border-primary-500/25 dark:border-primary-400/25 rounded-house'
+// The solid look: a card is a light fill with a thin line round it and 8px corners.
+export const CARD = `bg-subtle ${CARD_LINE}`
 export const CARD_HOVER = 'hover:border-primary-500 dark:hover:border-primary-400 transition-colors'
-export const CHIP_MONO = 'bg-primary-100 text-primary-600 dark:bg-primary-950/50 dark:text-primary-300'
-// App-wide control look: translucent blue fill + 2px blue border, darker border when
-// highlighted (focus/hover), blue text + icons. Shared by every Button variant and input.
-export const OUTLINE = 'border-2 border-primary-500/40 dark:border-primary-400/40 bg-primary-500/10 text-primary-700 dark:text-primary-300 transition-all'
+export const CHIP_MONO = 'bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-300'
+// App-wide control look: a solid light-blue fill with a 1px line and 8px corners, the line
+// darkening when highlighted (focus/hover), blue text + icons.
+export const OUTLINE = 'border border-primary-500/30 dark:border-primary-400/30 bg-primary-500/15 text-primary-700 dark:text-primary-200 rounded-house transition-all'
 
 /**
  * The four button looks, exported as class strings as well as being what <Button> renders.
  *
- * Everything-outline: no variant is ever a solid fill. What separates them is how hard the
- * outline is drawn. `framed` is the resting state, a 40% border over a 10% wash. `primary` is
- * the same box at full strength, so a form's Save does not look identical to its Cancel.
- * `danger` keeps the shape in semantic red. `quiet` has no box at all — the way out of a form,
- * with the same padding so a row still lines up.
+ * Solid: `primary` is a solid blue fill with white text, so a form's Save stands apart from its
+ * Cancel. `framed` is the everyday button, a solid light-blue fill with a thin line. `danger` is
+ * solid red with white text. `quiet` has no box at all — the way out of a form, with the same
+ * padding so a row still lines up.
  *
  * They are exported because most station screens hand-roll their buttons with their own
  * padding, icons and disabled rules, and swapping a class string is a styling change where
  * rewriting them all as <Button> would be a structural one.
  */
-export const BTN_FRAMED = `${OUTLINE} hover:bg-primary-500/20 hover:border-primary-600 dark:hover:border-primary-400`
-// Sits where framed's hover lands, so its own hover has to go a step further again.
-export const BTN_PRIMARY = 'border-2 border-primary-600 dark:border-primary-400 bg-primary-500/20 text-primary-800 dark:text-primary-100 transition-all hover:bg-primary-500/30 dark:hover:border-primary-300'
-export const BTN_DANGER = 'border-2 border-red-500/40 dark:border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 hover:border-red-600 dark:hover:border-red-500 transition-all'
+export const BTN_FRAMED = `${OUTLINE} hover:bg-primary-500/25 hover:border-primary-600 dark:hover:border-primary-400`
+export const BTN_PRIMARY = 'border border-primary-600 bg-primary-600 text-white rounded-house transition-all hover:bg-primary-700 hover:border-primary-700'
+export const BTN_DANGER = 'border border-red-600 bg-red-600 text-white rounded-house transition-all hover:bg-red-700 hover:border-red-700'
 export const BTN_QUIET = 'text-content-muted hover:text-content hover:bg-subtle transition-all'
 
 // ---- Report chrome ----
@@ -63,8 +62,8 @@ export const BTN_QUIET = 'text-content-muted hover:text-content hover:bg-subtle 
 // colour, but with no dark counterpart, so in dark mode the grid kept the light-mode border
 // while everything around it swapped. REPORT_LINE carries both halves.
 export const REPORT_LINE = 'border-primary-500/40 dark:border-primary-400/40'
-export const REPORT_CARD = `border-card ${REPORT_LINE}`
-export const REPORT_RULE = `border-t-2 ${REPORT_LINE}`
+export const REPORT_CARD = `border-card ${REPORT_LINE} rounded-house p-1`
+export const REPORT_RULE = `border-t ${REPORT_LINE}`
 // One deliberate difference from store's copy: no `text-xs`. store's ReportTable owns its own
 // type scale, whereas each station table sets its own (`text-sm`, `text-xs`, `font-bold`), and
 // baking a size in here would silently shrink headers that already read correctly.
@@ -204,11 +203,8 @@ export function Row({ href, label, desc, icon, badge, allowed = true, onBlocked 
  * Action button/link. Internal href → Link; external href (target set) → plain anchor;
  * otherwise a <button>.
  *
- * Everything-outline design: no variant is ever a solid fill. What separates them is how
- * hard the outline is drawn. `framed` is the resting state, a 40% border over a 10% wash.
- * `primary` is the same box at full strength, so a form's Save does not look identical to
- * its Cancel. `danger` keeps the shape in semantic red. `quiet` has no box at all — the way
- * out of a form, with the same padding so a row still lines up.
+ * The variants are the BTN_* looks above: `primary` solid blue, `framed` solid light blue with
+ * a thin line, `danger` solid red, `quiet` no box at all.
  */
 export function Button({ href, onClick, icon: Icon, children, target, rel, type = 'button', variant = 'framed', size = 'md', iconClass = 'w-4 h-4', className = '', disabled }) {
   const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-3 py-2 text-sm' }
@@ -241,15 +237,15 @@ export function EmptyState({ icon: Icon, title, children, action, className = ''
 }
 
 // ---- Form controls ----
-// Material-style field: just a bottom border (no box, no fill), underline darkening on focus.
-// Buttons keep the full OUTLINE box — this style is text/number inputs and selects only.
+// The solid look's field: a filled light-blue box with a 1px line all round and 8px corners, the
+// line turning blue while you type.
 /**
- * The underline without a width, for the few fields that are not full-bleed: a quantity box
+ * The field without a width, for the few fields that are not full-bleed: a quantity box
  * in a table row, a meter reading beside a pump name. Composing `${INPUT} w-20` instead would
  * leave `w-full` and `w-20` both in the class list, and which one wins is decided by their
  * order in the generated stylesheet rather than in the string.
  */
-export const INPUT_BASE = `border-b-2 border-primary-500/40 dark:border-primary-400/40 bg-primary-500/10 focus:bg-primary-500/15 px-2 py-2 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint`
+export const INPUT_BASE = `border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 focus:bg-primary-500/15 px-2 py-2 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint`
 export const INPUT = `w-full ${INPUT_BASE}`
 /**
  * The underline with no padding at all, for a field whose insets are set by an adornment — a
@@ -257,22 +253,19 @@ export const INPUT = `w-full ${INPUT_BASE}`
  * would leave `px-2` and `pl-10` both in the class list, and which one wins is decided by their
  * order in the generated stylesheet rather than in the string.
  */
-export const INPUT_BARE = 'border-b-2 border-primary-500/40 dark:border-primary-400/40 bg-primary-500/10 focus:bg-primary-500/15 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint'
+export const INPUT_BARE = 'border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 focus:bg-primary-500/15 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint'
 export const LABEL = 'block text-sm font-semibold text-content mb-1.5'
 
 /**
- * The same underline for a control you cannot put INPUT on directly: a SearchableSelect
+ * The same field for a control you cannot put INPUT on directly: a SearchableSelect
  * (whose className lands on its wrapper div, not its trigger), or an input with something
- * beside it such as a currency prefix.
- *
- * Deliberately NO fill. The tint on INPUT marks a box you type into; a select or a picker is
- * something you choose from, and colouring those too turns every control into a filled slab.
+ * beside it such as a currency prefix. Filled like INPUT, for the solid look.
  *
  * It is `focus-within` rather than `focus` for that reason: the element carrying the border
  * is never the element that takes focus. Carries no padding, since the control inside brings
  * its own and doubling them makes a field visibly taller than its neighbours.
  */
-export const FIELD = 'w-full border-b-2 border-primary-500/40 dark:border-primary-400/40 bg-transparent transition-colors focus-within:border-primary-600 dark:focus-within:border-primary-400'
+export const FIELD = 'w-full border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 transition-colors focus-within:border-primary-600 dark:focus-within:border-primary-400'
 
 /**
  * The OUTLINE box for a control whose className lands on a WRAPPER rather than on the input
@@ -282,7 +275,7 @@ export const FIELD = 'w-full border-b-2 border-primary-500/40 dark:border-primar
  *
  * Mirrors the box store-portal/components/ReportControls.js:37 wraps its own DateInput in.
  */
-export const OUTLINE_WITHIN = 'border-2 border-primary-500/40 dark:border-primary-400/40 bg-primary-500/10 text-primary-700 dark:text-primary-300 focus-within:border-primary-600 dark:focus-within:border-primary-400 transition-colors'
+export const OUTLINE_WITHIN = 'border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 text-primary-700 dark:text-primary-300 focus-within:border-primary-600 dark:focus-within:border-primary-400 transition-colors'
 
 // ---- Entry-form chrome ----
 /**

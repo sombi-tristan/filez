@@ -11,6 +11,7 @@ import {
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import StationSwitch from '@/components/desktop/StationSwitch'
 import WebCopy from '@/components/desktop/WebCopy'
+import ManageStation from '@/components/station/ManageStation'
 import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
 
 const FUEL_TYPES = ['PMS', 'AGO', 'DPK']
@@ -254,6 +255,9 @@ export default function StationSettingsPage() {
 
   return (
     <div className="max-w-lg px-4 sm:px-8 py-8">
+
+      {/* Set up an unfinished station, and rename it (owner only, always open). */}
+      <ManageStation stationId={stationId} />
 
       {/* Desktop build: the other stations on this computer (the sidebar only names this one). */}
       <StationSwitch stationId={stationId} />

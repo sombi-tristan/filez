@@ -253,7 +253,7 @@ function ProductReceivedReportContent() {
   return (
     <AccessGate orgId={orgId} pageKey="report-product-received">
       {({ isOwner }) => (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] lg:max-w-none mx-auto px-4 sm:px-6 lg:px-2">
       {/* Header + date range */}
       <div className="flex items-center justify-between py-3 shrink-0">
         <h1 className="text-lg font-bold text-content">Product Received</h1>
@@ -266,13 +266,6 @@ function ProductReceivedReportContent() {
             onGenerate={handleGenerate}
             disabled={!startDate || !endDate || startDate > endDate}
           />
-          <Link
-            href={`/dashboard/reports/dip-calculator?org_id=${orgId}`}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
-          >
-            <Calculator className="w-4 h-4" />
-            Dip Calculator
-          </Link>
         </div>
       </div>
       {askedToExport && !paid && <div className="mb-3 shrink-0"><PaidNote what="Exporting a report" /></div>}
@@ -281,7 +274,7 @@ function ProductReceivedReportContent() {
       <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 pb-4 ${REPORT_CARD}`}>
         {!generated ? (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+            <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
         ) : !deliveries ? (
           <div className="flex justify-center py-20">

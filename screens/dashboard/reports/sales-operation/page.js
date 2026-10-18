@@ -8,10 +8,14 @@ import { db } from '@/lib/db'
 import { buildSalesOperationReport } from '@/lib/buildSalesOperationReport'
 import { exportSalesOperationExcel } from '@/lib/exportSalesOperationExcel'
 import DateRange from '@/components/reports/DateRange'
-import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
+import { defaultReportStart, exportAllowed, rangeDays } from '@/lib/reportRange'
 import { tabOffsetFor } from '@/lib/dayTabs'
 import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
+import { isRainoilGroup } from '@/lib/exportGroup'
+
+// The longest range one run covers, as on the audit report.
+const MAX_DAYS = 32
 
 function fmt(n) {
   if (n == null || isNaN(n) || n === '') return ''
@@ -55,6 +59,8 @@ function SalesOperationContent() {
   const [banks, setBanks] = useState([])
   const [lubeProducts, setLubeProducts] = useState([])
   const [stationName, setStationName] = useState('')
+  // The station's group, once known (null until then): the report is Rainoil's own form.
+  const [stationGroup, setStationGroup] = useState(null)
   const [exporting, setExporting] = useState(false)
   // Exporting is a paid feature: without a subscription the button shows PaidNote instead.
   const paid = Boolean(useLicence()?.paid)
@@ -85,7 +91,8 @@ function SalesOperationContent() {
         const all = [...(data.stations || []), ...(data.memberStations || [])]
         const match = all.find(s => s.id === orgId)
         if (match) setStationName(match.name || '')
-      }).catch(() => {})
+        setStationGroup(match?.station_group || '')
+      }).catch(() => setStationGroup(''))
     }
     load()
     return () => { cancelled = true }
@@ -135,6 +142,7 @@ function SalesOperationContent() {
     const s = startDateRef.current
     const e = endDateRef.current
     if (!s || !e) return
+    if (rangeDays(s, e) > MAX_DAYS) return
     setGenerating(true)
     setTimeout(() => {
       setReportStart(s)
@@ -160,7 +168,7 @@ function SalesOperationContent() {
     }
   }
 
-  if (loading) {
+  if (loading || (orgId && stationGroup === null)) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
@@ -176,12 +184,20 @@ function SalesOperationContent() {
     )
   }
 
+  if (!isRainoilGroup(stationGroup)) {
+    return (
+      <div className="max-w-4xl px-4 sm:px-8 py-8">
+        <p className="text-base text-content-muted">This report is for Rainoil stations.</p>
+      </div>
+    )
+  }
+
   const activeSheet = report?.sheets.find(s => s.sheetName === activeSheetName) || null
 
   return (
     <AccessGate orgId={orgId} pageKey="report-sales-operation">
       {({ isOwner }) => (
-        <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
+        <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] lg:max-w-none mx-auto px-4 sm:px-6 lg:px-2">
           <div className="flex items-center justify-end py-3 shrink-0">
             <div className="flex flex-wrap items-center justify-end gap-2">
               <DateRange
@@ -191,7 +207,7 @@ function SalesOperationContent() {
                 onEnd={setEndDate}
                 onGenerate={handleGenerate}
                 generating={generating}
-                disabled={!startDate || !endDate || startDate > endDate}
+                disabled={!startDate || !endDate || startDate > endDate || rangeDays(startDate, endDate) > MAX_DAYS}
               />
               {isOwner && (
                 <button
@@ -206,11 +222,14 @@ function SalesOperationContent() {
               )}
             </div>
           </div>
+          {rangeDays(startDate, endDate) > MAX_DAYS && (
+            <p className="text-xs text-red-500 mb-2 shrink-0 text-right">Date range cannot exceed {MAX_DAYS} days ({rangeDays(startDate, endDate)} days selected).</p>
+          )}
           {askedToExport && !paid && <div className="mb-3 shrink-0"><PaidNote what="Exporting a report" /></div>}
 
           {!generated ? (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+              <p className="text-content-faint text-sm">Select a date range and click Load.</p>
             </div>
           ) : !report ? (
             <div className="flex justify-center py-20">
@@ -221,8 +240,15 @@ function SalesOperationContent() {
               <p className="text-content-faint text-sm">No sheets in this range.</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 border border-line">
-              <SalesOperationGrid sheet={activeSheet} stationName={stationName} />
+            <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 p-4 border border-line rounded-house">
+              {/* The box follows the theme and pads the sheet. The sheet is always light, like the
+                  paper form (app/globals.css .sheet-light), 70% of the box and centred, but never
+                  narrower than its table at its narrowest (min-w-min): long figures do not wrap,
+                  and a table wider than the sheet spilled out to the right, off centre. Wider than
+                  the box, the box scrolls instead. */}
+              <div className="sheet-light w-[70%] min-w-min mx-auto">
+                <SalesOperationGrid sheet={activeSheet} stationName={stationName} />
+              </div>
             </div>
           )}
 
@@ -353,13 +379,23 @@ function SalesOperationGrid({ sheet, stationName }) {
     )
   }
 
-  // Helper: produce a recon row (R16/R17/R18)
-  const reconRow = (ft) => {
+  // A fuel's overages from the stock: expected is 1% of what left the tanks, actual is what the
+  // meters dispensed beyond that, less pour back. Their difference is the stock variance, which
+  // the recon rows and the budget rows both show.
+  const overage = (ft) => {
     const s = stockByType[ft] || {}
     const f = fuelByType[ft] || {}
-    const expectedOverage = ((s.opening || 0) + (s.waybill || 0) - (s.closing || 0)) * 0.01
-    const actualOverage = (s.totalDispensed || 0) - ((s.opening || 0) + (s.waybill || 0) - (s.closing || 0)) - ((f.rttP1 || 0) + (f.rttP2 || 0))
-    const variance = actualOverage - expectedOverage
+    const fell = (s.opening || 0) + (s.waybill || 0) - (s.closing || 0)
+    const expected = fell * 0.01
+    const actual = (s.totalDispensed || 0) - fell - ((f.rttP1 || 0) + (f.rttP2 || 0))
+    return { expected, actual }
+  }
+  const stockVariance = (ft) => { const o = overage(ft); return o.actual - o.expected }
+
+  // Helper: produce a recon row (R16/R17/R18)
+  const reconRow = (ft) => {
+    const { expected: expectedOverage, actual: actualOverage } = overage(ft)
+    const variance = stockVariance(ft)
     const msg = variance > 0
       ? 'Liquid height variation on the Positive side'
       : 'Liquid height variation on the Negative side'
@@ -374,20 +410,21 @@ function SalesOperationGrid({ sheet, stationName }) {
     )
   }
 
-  // Helper: budget row (R28/R29/R30) — placeholders
+  // Helper: budget row (R28/R29/R30). Its Variance is calculated from the stock (actual overage
+  // less expected overage), as on the recon rows, not sales less the budget.
   const budgetRow = (ft) => {
     const f = fuelByType[ft] || {}
     const budget = BUDGET[ft]
     const total = f.totalActualLtrs || 0
     const achievement = budget ? total / budget : 0
-    const variance = total - budget
+    const variance = stockVariance(ft)
     const comment = variance < 0 ? 'Low Demand' : 'High Demand'
     return (
       <tr key={`budget-${ft}`}>
         <td className={fuelCell}>{ft}</td>
         <td className={`${cellC} font-bold`}>{fmt(budget)}</td>
         <td className={`${cellC} font-bold ${yellow}`}>{(achievement * 100).toFixed(1)}%</td>
-        <td className={`${cellC} font-bold ${yellow}`}>{fmt(variance)}</td>
+        <td className={`${cellC} font-bold ${yellow}`}>{fmt(Math.round(variance))}</td>
         <td className={cellC} colSpan={7}>{comment}</td>
       </tr>
     )
@@ -424,19 +461,19 @@ function SalesOperationGrid({ sheet, stationName }) {
   }), { opening: 0, supply: 0, sales: 0, closing: 0, amount: 0, variance: 0 })
 
   return (
-    <table className="border-collapse text-xs min-w-[1100px]" style={{ fontFamily: 'Corbel, Calibri, sans-serif' }}>
+    <table className="w-full border-collapse text-xs min-w-[700px]" style={{ fontFamily: 'Corbel, Calibri, sans-serif' }}>
       <colgroup>
-        <col style={{ width: 140 }} />
-        <col style={{ width: 90 }} />
-        <col style={{ width: 110 }} />
-        <col style={{ width: 75 }} />
-        <col style={{ width: 75 }} />
-        <col style={{ width: 90 }} />
-        <col style={{ width: 110 }} />
-        <col style={{ width: 75 }} />
-        <col style={{ width: 75 }} />
-        <col style={{ width: 120 }} />
-        <col style={{ width: 100 }} />
+        <col style={{ width: '13.21%' }} />
+        <col style={{ width: '8.49%' }} />
+        <col style={{ width: '10.38%' }} />
+        <col style={{ width: '7.08%' }} />
+        <col style={{ width: '7.08%' }} />
+        <col style={{ width: '8.49%' }} />
+        <col style={{ width: '10.38%' }} />
+        <col style={{ width: '7.08%' }} />
+        <col style={{ width: '7.08%' }} />
+        <col style={{ width: '11.32%' }} />
+        <col style={{ width: '9.43%' }} />
       </colgroup>
       <tbody>
         {/* R1: Station (A1:A2 vertical merge via rowSpan, #REF! to match reference) */}
@@ -557,7 +594,8 @@ function SalesOperationGrid({ sheet, stationName }) {
           <td className={`${cellC} ${colHdr}`}>Total Expected Sales</td>
           <td className={`${cellC} ${colHdr}`}>Previous Day Cash @ Hand</td>
           <td className={`${cellC} ${colHdr}`}>Total Bank Deposit</td>
-          <td className={`${cellC} ${colHdr}`}>Total POS</td>
+          {/* The form has no column for transfers: they count with POS, so the row adds up. */}
+          <td className={`${cellC} ${colHdr}`}>Total POS &amp; Transfer</td>
           <td className={`${cellC} ${colHdr}`}>Expected Cash @ Hand</td>
           <td className={`${cellC} ${colHdr}`}>Actual Cash @ Hand</td>
           <td className={`${cellC} ${colHdr}`}>Variance in Cash</td>
@@ -570,7 +608,7 @@ function SalesOperationGrid({ sheet, stationName }) {
           <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalExpectedSales)}</td>
           <td className={`${cellC} font-bold`}>{fmt(cash.prevDayCash)}</td>
           <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalBankDeposit)}</td>
-          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalPOS)}</td>
+          <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.totalPOS + cash.totalTransfer)}</td>
           <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.expectedCashAtHand)}</td>
           <td className={`${cellC} font-bold`}>{fmt(cash.actualCashAtHand)}</td>
           <td className={`${cellC} font-bold ${yellow}`}>{fmt(cash.variance)}</td>

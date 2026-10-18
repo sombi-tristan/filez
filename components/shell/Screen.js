@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useContext, useState } from 'react'
+import { Suspense, useContext, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import {
   IonBackButton, IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar,
@@ -11,6 +11,7 @@ import { IconButton, Spinner } from '@/design'
 import { AreaContext, ScreenLocationContext } from '@/lib/nav'
 import { useLicence, ServiceLocked, FreeReportBanner } from '@/components/desktop/LicenceGate'
 import Footer from '@/components/Footer'
+import { recordReportPath } from '@/lib/recentReports'
 
 /**
  * One screen of the Ionic app: an IonPage with the house top bar and the screen's content in
@@ -42,6 +43,11 @@ export default function Screen({ screen }) {
   // Desktop build: a screen whose service has run out shows what it needs instead.
   const licence = useLicence()
   const locked = Boolean(screen.service) && !licence?.active?.[screen.service]
+
+  // A report notes itself on each visit, for the station home's recently opened reports.
+  useEffect(() => {
+    if (screen.report && stationId) recordReportPath(stationId, screen.path)
+  }, [held.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const home = stationId ? `/dashboard/stations/${stationId}` : area
   const atHome = held.pathname === home

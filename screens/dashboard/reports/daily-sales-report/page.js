@@ -231,7 +231,7 @@ function DailySalesReportContent() {
   return (
     <AccessGate orgId={orgId} pageKey="report-daily-sales">
       {({ isOwner }) => (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] lg:max-w-none mx-auto px-4 sm:px-6 lg:px-2">
       {/* Duplicate entry warning */}
       {currentDayHasDuplicates && (
         <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 text-amber-800 dark:text-amber-200 px-3 py-2 text-sm mb-1 shrink-0">
@@ -277,32 +277,32 @@ function DailySalesReportContent() {
       {/* Scrollable content area */}
       {!generated ? (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+          <p className="text-content-faint text-sm">Select a date range and click Load.</p>
         </div>
       ) : !report ? (
         <div className="flex justify-center py-20">
           <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
         </div>
       ) : currentDayReport && (
-        <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 ${REPORT_CARD}`}>
+        <div className={`flex-1 overflow-y-auto overflow-x-auto lg:overflow-x-hidden min-h-0 mb-3 ${REPORT_CARD}`}>
 
-          {/* The stock column wraps beneath the pumps table when the two do not fit side by side, so a
-              computer never scrolls sideways (a phone may still scroll the pumps table). */}
-          <div className="flex flex-wrap gap-6 pb-4">
+          {/* Two columns side by side on a computer, and no sideways scroll there: a figure too long
+              for its cell wraps inside it (a phone, one column, may still scroll the pumps table). */}
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 pb-4 lg:[overflow-wrap:anywhere]">
             {/* ===== LEFT: DAILY SALES OPERATION ===== */}
-            <div className="flex-[3_1_44rem] min-w-0">
+            <div className="min-w-0">
               <div>
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className={subHdr}>
-                      <th className={`${cell} text-left font-bold whitespace-nowrap`}>Pumps</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Opening</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Closing</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Dispensed</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Consumed</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Actual</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Price</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Amount</th>
+                      <th className={`${cell} text-left font-bold whitespace-nowrap lg:whitespace-normal`}>Pumps</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Opening</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Closing</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Dispensed</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Cons</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Actual</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Price</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -322,19 +322,19 @@ function DailySalesReportContent() {
             </div>
 
             {/* ===== RIGHT: STOCK & SUMMARY ===== */}
-            <div className="flex-[2_1_34rem] min-w-0">
+            <div className="min-w-0">
               {/* Tank stock table */}
               <div>
                 <table className="w-full border-collapse text-sm mb-4">
                   <thead>
                     <tr className={subHdr}>
-                      <th className={`${cell} text-left font-bold whitespace-nowrap`}>Tank</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Opening</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Supply</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Closing</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Diff</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>Dispensed</th>
-                      <th className={`${cellR} font-bold whitespace-nowrap`}>OV/SH</th>
+                      <th className={`${cell} text-left font-bold whitespace-nowrap lg:whitespace-normal`}>Tank</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Opening</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Supply</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Closing</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Diff</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Disp.</th>
+                      <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>OV/SH</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -349,14 +349,14 @@ function DailySalesReportContent() {
               <table className="w-full border-collapse text-sm mb-4">
                 <thead>
                   <tr className={subHdr}>
-                    <th className={`${cell} text-left font-bold whitespace-nowrap`}>Account</th>
-                    <th className={`${cellR} font-bold whitespace-nowrap`}>Amount</th>
+                    <th className={`${cell} text-left font-bold whitespace-nowrap lg:whitespace-normal`}>Account</th>
+                    <th className={`${cellR} font-bold whitespace-nowrap lg:whitespace-normal`}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentDayReport.lodgement.bankRows.filter(r => r.deposited > 0).map(row => (
                     <tr key={row.bankId}>
-                      <td className={`${cell} whitespace-nowrap`}>
+                      <td className={`${cell} whitespace-nowrap lg:whitespace-normal`}>
                         <span className="font-bold">{row.bankName}{row.terminalId ? ` - ${row.terminalId}` : ''}</span>
                         <span className="text-xs text-content-faint ml-1">({row.lodgementType === 'bank_deposit' ? 'deposit' : row.lodgementType})</span>
                       </td>
@@ -375,99 +375,74 @@ function DailySalesReportContent() {
                 </tbody>
               </table>
 
-              {/* Consumption & Pour Back entries (split into two tables) */}
-              {(() => {
-                const consEntries = currentDayReport.consumption.entries.filter(e => !e.isPourBack)
-                const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
-                return (
-                  <>
-                    {consEntries.length > 0 && (
-                      <table className="w-full border-collapse text-sm mb-2">
-                        <thead>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`} colSpan={3}>Consumption</th>
-                          </tr>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`}>Account</th>
-                            <th className={`${cell} text-left font-bold`}>Fuel</th>
-                            <th className={`${cellR} font-bold`}>Qty</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {consEntries.map((c, i) => (
-                            <tr key={i}>
-                              <td className={cell}>{customerMap[c.customerId] || 'Unknown'}</td>
-                              <td className={cell}>{c.fuelType || ''}</td>
-                              <td className={cellR}>{fmt(c.quantity)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                    {pbEntries.length > 0 && (
-                      <table className="w-full border-collapse text-sm mb-2">
-                        <thead>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`} colSpan={3}>Pour Back</th>
-                          </tr>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`}>Account</th>
-                            <th className={`${cell} text-left font-bold`}>Fuel</th>
-                            <th className={`${cellR} font-bold`}>Qty</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pbEntries.map((c, i) => (
-                            <tr key={i}>
-                              <td className={cell}>{customerMap[c.customerId] || 'Unknown'}</td>
-                              <td className={cell}>{c.fuelType || ''}</td>
-                              <td className={cellR}>{fmt(c.quantity)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </>
-                )
-              })()}
-
-              {/* Summary */}
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className={subHdr}>
-                    <th className={`${cell} text-left font-bold`}></th>
-                    <th className={`${cellR} font-bold`}>Sales</th>
-                    <th className={`${cellR} font-bold`}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.fuelTypes.map(ft => (
-                    <tr key={ft}>
-                      <td className={`${cell} font-bold`}>{ft}</td>
-                      <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.actual)}</td>
-                      <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.amount)}</td>
-                    </tr>
-                  ))}
-                  <tr className={`${subHdr} font-bold`}>
-                    <td colSpan={2} className={cell}>SALES</td>
-                    <td className={cellR}>{fmt(currentDayReport.totalSales)}</td>
-                  </tr>
-                  <tr className="font-bold">
-                    <td colSpan={2} className={cell}>TOTAL POS</td>
-                    <td className={cellR}>{fmt(currentDayReport.lodgement.totalPOS)}</td>
-                  </tr>
-                  <tr className="font-bold">
-                    <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
-                    <td className={cellR}>{fmt(currentDayReport.lodgement.totalTransfer)}</td>
-                  </tr>
-                  <tr className={`${subHdr} font-bold`}>
-                    <td colSpan={2} className={cell}>CASH</td>
-                    <td className={cellR}>{fmt(currentDayReport.cashBalance)}</td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
+
+          {/* ===== BELOW: CONSUMPTION, POUR BACK, TOTALS ===== */}
+          {/* Under both columns, one table in three sections, each with its own heading row:
+              Consumption, Pour Back (when the day has any), then the day's Totals. Half the width
+              on a computer, the whole width on a phone. */}
+          {(() => {
+            const consEntries = currentDayReport.consumption.entries.filter(e => !e.isPourBack)
+            const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
+            const section = (title, entries) => entries.length > 0 && (
+              <>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`} colSpan={3}>{title}</th>
+                </tr>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`}>Account</th>
+                  <th className={`${cell} text-left font-bold`}>Fuel</th>
+                  <th className={`${cellR} font-bold`}>Qty</th>
+                </tr>
+                {entries.map((c, i) => (
+                  <tr key={`${title}-${i}`}>
+                    <td className={cell}>{customerMap[c.customerId] || 'Unknown'}</td>
+                    <td className={cell}>{c.fuelType || ''}</td>
+                    <td className={cellR}>{fmt(c.quantity)}</td>
+                  </tr>
+                ))}
+              </>
+            )
+            return (
+              <div className="lg:w-1/2 pb-4 lg:[overflow-wrap:anywhere]">
+                <table className="w-full border-collapse text-sm">
+                  <tbody>
+                    {section('Consumption', consEntries)}
+                    {section('Pour Back', pbEntries)}
+                    <tr className={subHdr}>
+                      <th className={`${cell} text-left font-bold`}>Totals</th>
+                      <th className={`${cellR} font-bold`}>Sales</th>
+                      <th className={`${cellR} font-bold`}>Amount</th>
+                    </tr>
+                    {report.fuelTypes.map(ft => (
+                      <tr key={ft}>
+                        <td className={`${cell} font-bold`}>{ft}</td>
+                        <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.actual)}</td>
+                        <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.amount)}</td>
+                      </tr>
+                    ))}
+                    <tr className={`${subHdr} font-bold`}>
+                      <td colSpan={2} className={cell}>SALES</td>
+                      <td className={cellR}>{fmt(currentDayReport.totalSales)}</td>
+                    </tr>
+                    <tr className="font-bold">
+                      <td colSpan={2} className={cell}>TOTAL POS</td>
+                      <td className={cellR}>{fmt(currentDayReport.lodgement.totalPOS)}</td>
+                    </tr>
+                    <tr className="font-bold">
+                      <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
+                      <td className={cellR}>{fmt(currentDayReport.lodgement.totalTransfer)}</td>
+                    </tr>
+                    <tr className={`${subHdr} font-bold`}>
+                      <td colSpan={2} className={cell}>CASH</td>
+                      <td className={cellR}>{fmt(currentDayReport.cashBalance)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )
+          })()}
         </div>
       )}
 
@@ -604,7 +579,7 @@ function FuelGroup({ rows, totals, cell, cellR }) {
           <td className={cellR}>{fmt(r.opening)}</td>
           <td className={cellR}>{fmt(r.closing)}</td>
           <td className={cellR}>{fmt(r.dispensed)}</td>
-          <td className={cellR}>{fmt(r.consumption)}</td>
+          <td className={cellR}>{fmt(r.consumed)}</td>
           <td className={cellR}></td>
           <td className={cellR}></td>
           <td className={cellR}></td>

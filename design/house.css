@@ -1123,10 +1123,17 @@ ion-fab.house-fab {
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ---- ThickCaret: the browser's caret is hidden only while the component is mounted. ---- */
+/* ---- ThickCaret: the browser's caret is hidden only while the component is mounted, and only in
+   the fields it draws in (its TEXT_TYPES). A number or date field keeps the browser's caret, in
+   the accent: ThickCaret cannot find where the caret is in one. ---- */
+
+html.house-thick-caret input {
+  caret-color: var(--accent);
+}
 
 html.house-thick-caret textarea,
-html.house-thick-caret input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):not([type='color']) {
+html.house-thick-caret input:not([type]),
+html.house-thick-caret input:is([type='text'], [type='search'], [type='email'], [type='password'], [type='tel'], [type='url']) {
   caret-color: transparent;
 }
 

@@ -306,7 +306,7 @@ function AuditReportContent() {
   return (
     <AccessGate orgId={orgId} pageKey="report-audit">
       {({ isOwner }) => (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] lg:max-w-none mx-auto px-4 sm:px-6 lg:px-2">
       {/* Header + date range */}
       <div className="flex items-center justify-end py-3 shrink-0">
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -380,7 +380,7 @@ function AuditReportContent() {
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+          <p className="text-content-faint text-sm">Select a date range and click Load.</p>
         </div>
       )}
 
@@ -661,7 +661,7 @@ function LodgementSheet({ report }) {
 
   const sumBanks = (amounts, list) => list.reduce((s, b) => s + (amounts[b.id] || 0), 0)
 
-  const totalCols = 4 + displayBanks.length + 6
+  const totalCols = 4 + displayBanks.length + 7
   const visibleRows = rows.filter(r => r.hasData)
 
   return (
@@ -685,6 +685,7 @@ function LodgementSheet({ report }) {
             )}
             <th className={`${cellR} font-bold`}>Total POS</th>
             <th className={`${cellR} font-bold`}>Total Transfer</th>
+            <th className={`${cellR} font-bold`}>Total Lodged</th>
             <th className={`${cellR} font-bold`}>Expected</th>
             <th className={`${cellR} font-bold`}>Actual</th>
             <th className={`${cellR} font-bold`}>OV/SH</th>
@@ -701,6 +702,7 @@ function LodgementSheet({ report }) {
                   {bank.bank_name}{bank.lodgement_type === 'transfer' ? ' (T)' : ''}
                 </th>
               ))}
+              <th className={cell}></th>
               <th className={cell}></th>
               <th className={cell}></th>
               <th className={cell}></th>
@@ -728,6 +730,7 @@ function LodgementSheet({ report }) {
                 ))}
                 <td className={cellR}>{fmt(tPOS)}</td>
                 <td className={cellR}>{fmt(tTransfer)}</td>
+                <td className={cellR}>{fmt(tPOS + tTransfer)}</td>
                 <td className={cellR}>{fmt(cashSales)}</td>
                 <td className={cellR}>{fmt(row.actual)}</td>
                 <td className={`${cellR} font-bold ${row.ovsh > 0 ? 'text-green-600 dark:text-green-400' : row.ovsh < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
@@ -754,6 +757,7 @@ function LodgementSheet({ report }) {
                 ))}
                 <td className={cellR}>{fmt(gPOS)}</td>
                 <td className={cellR}>{fmt(gTransfer)}</td>
+                <td className={cellR}>{fmt(gPOS + gTransfer)}</td>
                 <td className={cellR}>{fmt(gCash)}</td>
                 <td className={cellR}>{fmt(totals.actual)}</td>
                 <td className={`${cellR} ${totals.ovsh > 0 ? 'text-green-600 dark:text-green-400' : totals.ovsh < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>

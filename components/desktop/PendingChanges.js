@@ -70,7 +70,7 @@ export default function PendingChanges({ open, onClose, stationId, onDiscarded }
             <input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(changes.map((c) => c.key)))} />
             All {changes.length}
           </label>
-          <ul className="max-h-80 overflow-y-auto divide-y divide-line border-2 border-line">
+          <ul className="max-h-80 overflow-y-auto divide-y divide-line border border-line rounded-house">
             {changes.map((c) => (
               <li key={c.key}>
                 <label className="flex items-center gap-3 px-3 py-2 text-sm text-content">

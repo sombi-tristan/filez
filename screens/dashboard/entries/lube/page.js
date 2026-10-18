@@ -96,7 +96,7 @@ export default function LubeFormPage() {
   return (
     <EntryScreen wide>
       {!editId && !editDate && (
-        <div className="mb-2 border-b-2 border-line">
+        <div className="mb-2 border-b border-line">
           <Tabs
             label="Lube entry"
             items={[{ id: 'sales', label: 'Lube sales' }, { id: 'stock', label: 'Lube stock' }]}
