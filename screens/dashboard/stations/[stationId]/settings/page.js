@@ -6,7 +6,7 @@ import Link from '@/lib/nav'
 import {
   Loader2, Fuel, Plus, Trash2, ArrowRight, Landmark,
   CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock,
-  ChevronDown
+  ChevronDown, Building2
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import StationSwitch from '@/components/desktop/StationSwitch'
@@ -30,16 +30,17 @@ function Pane({ children }) {
 
 /**
  * Station Settings as tabs: one tab per Pane, drawn from its own title, icon and count, and only
- * the chosen Pane shown. A Pane left out (Tank to Nozzle Mapping before there are nozzles and
- * tanks) has no tab.
+ * the chosen Pane shown. The tabs share the full width in equal columns and wrap to a second row
+ * on a narrow screen rather than scroll. A Pane left out (Tank to Nozzle Mapping before there are
+ * nozzles and tanks) or marked hidden has no tab.
  */
 function Tabs({ children }) {
-  const panes = Children.toArray(children).filter((c) => isValidElement(c) && c.type === Pane)
+  const panes = Children.toArray(children).filter((c) => isValidElement(c) && c.type === Pane && !c.props.hidden)
   const [active, setActive] = useState(panes[0]?.props.title)
   const current = panes.find((p) => p.props.title === active) || panes[0]
   return (
     <>
-      <div role="tablist" className="mb-3 flex gap-1 overflow-x-auto border-b border-line">
+      <div role="tablist" className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] border-b border-line">
         {panes.map((p) => {
           const { title, icon: Icon, count } = p.props
           const on = p === current
@@ -50,7 +51,7 @@ function Tabs({ children }) {
               role="tab"
               aria-selected={on}
               onClick={() => setActive(title)}
-              className={`flex items-center gap-1.5 px-3 py-2 -mb-px whitespace-nowrap text-sm font-semibold border-b-2 transition-colors ${on ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content'}`}
+              className={`flex flex-col items-center justify-center gap-1 px-2 py-2 -mb-px text-center text-sm leading-tight font-semibold border-b-2 transition-colors ${on ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content'}`}
             >
               <Icon className="w-4 h-4" />
               {title}
@@ -270,18 +271,21 @@ export default function StationSettingsPage() {
   }
 
   return (
-    <div className="max-w-lg px-4 sm:px-8 py-8">
+    <div className="w-full px-4 sm:px-8 py-8">
 
-      {/* Set up an unfinished station, and rename it (owner only, always open). */}
-      <ManageStation stationId={stationId} />
+      <Tabs>
+      {/* The station itself: set it up, rename it, switch to another, make the web match. */}
+      <Pane icon={Building2} title="Station">
+        {/* Set up an unfinished station, and rename it (owner only, always open). */}
+        <ManageStation stationId={stationId} />
 
-      {/* Desktop build: the other stations on this computer (the sidebar only names this one). */}
-      <StationSwitch stationId={stationId} />
-      {/* Desktop build: this computer replaces the web copy of the station (corrections). */}
-      <WebCopy stationId={stationId} stationName={stationName} />
+        {/* Desktop build: the other stations on this computer (the sidebar only names this one). */}
+        <StationSwitch stationId={stationId} />
+        {/* Desktop build: this computer replaces the web copy of the station (corrections). */}
+        <WebCopy stationId={stationId} stationName={stationName} />
+      </Pane>
 
       {/* Location */}
-      <Tabs>
       <Pane icon={MapPin} title="Location">
         <input
           type="text"
