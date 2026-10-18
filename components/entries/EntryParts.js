@@ -55,7 +55,7 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
           onClick={() => prevHref && router.replace(prevHref)}
           disabled={!prevHref}
           aria-label="Previous saved day"
-          className={`${arrow} border-r-2 border-line`}
+          className={`${arrow} border-r border-line`}
         >
           <IonIcon icon={chevronBack} className="text-2xl" aria-hidden="true" />
         </button>
@@ -68,7 +68,7 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
           onClick={() => nextHref && router.replace(nextHref)}
           disabled={!nextHref}
           aria-label="Next saved day"
-          className={`${arrow} border-l-2 border-line`}
+          className={`${arrow} border-l border-line`}
         >
           <IonIcon icon={chevronForward} className="text-2xl" aria-hidden="true" />
         </button>
@@ -83,8 +83,8 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
  */
 export function EntryCard({ title, onRemove, children }) {
   return (
-    <section className={`border-card ${ENTRY_LINE} rounded-house mb-4`}>
-      <div className="flex items-center justify-between min-h-[44px] pl-3 bg-subtle border-b-2 border-line rounded-t-[2px]">
+    <section className={`bg-subtle border-card ${ENTRY_LINE} rounded-house mb-4`}>
+      <div className="flex items-center justify-between min-h-[44px] pl-3 bg-subtle border-b border-line rounded-t-[7px]">
         <h2 className="text-[15px] font-semibold text-content">{title}</h2>
         {onRemove && (
           <button
@@ -97,7 +97,7 @@ export function EntryCard({ title, onRemove, children }) {
           </button>
         )}
       </div>
-      <div className="divide-y-2 divide-line">{children}</div>
+      <div className="divide-y divide-line">{children}</div>
     </section>
   )
 }
@@ -124,8 +124,8 @@ export function FieldRow({ cols = 2, keep = false, children }) {
   const kept = { 2: 'grid-cols-2', 3: 'grid-cols-3' }[cols]
   return (
     <div className={keep
-      ? `grid ${kept} divide-x-2 divide-line`
-      : `grid grid-cols-1 ${grid} divide-y-2 divide-line sm:divide-y-0 sm:divide-x-2`}
+      ? `grid ${kept} divide-x divide-line`
+      : `grid grid-cols-1 ${grid} divide-y divide-line sm:divide-y-0 sm:divide-x`}
     >
       {children}
     </div>
@@ -187,7 +187,7 @@ export function SaveBar({ listHref, saving, saved, isEditing, disabled, error, o
   return (
     <>
       <div
-        className="entry-actionbar fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t-2 lg:border-t-0 border-line"
+        className="entry-actionbar fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t lg:border-t-0 border-line"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-3xl mx-auto flex gap-3">
@@ -246,7 +246,7 @@ export function NotConfigured({ orgId }) {
 export function EntryTabs({ count, active, onChange }) {
   if (count < 2) return null
   return (
-    <div className="mb-3 border-b-2 border-line">
+    <div className="mb-3 border-b border-line">
       <Tabs
         label="Entries for this day"
         items={Array.from({ length: count }, (_, i) => ({ id: String(i), label: `Entry ${i + 1}` }))}

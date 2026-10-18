@@ -16,13 +16,13 @@ module.exports = {
         sans: ['"Source Sans 3"', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
         display: ['Outfit', '"Source Sans 3"', 'system-ui', 'sans-serif'],
       },
-      // Flat-card outline width (design system): definition comes from borders, not shadows.
+      // A card's thin line around its fill (StationMGR's solid look; --edge in app/globals.css).
       borderWidth: {
-        card: '2px',
+        card: '1px',
       },
-      // The house corner (--corner in design/house.css).
+      // StationMGR's corner (--corner, overridden in app/globals.css).
       borderRadius: {
-        house: '4px',
+        house: '8px',
       },
       colors: {
         // Semantic neutral tokens (light/dark via CSS vars in app/globals.css). Screens use

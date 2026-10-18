@@ -6,7 +6,7 @@ import { PoweredBy } from '@/design'
  */
 export default function Footer() {
   return (
-    <footer className="border-t-2 border-line bg-subtle">
+    <footer className="border-t border-line bg-subtle">
       <div className="px-4 py-6 flex flex-col items-center gap-2 text-[15px] text-content-muted">
         <span>&copy; {new Date().getFullYear()} StationMGR</span>
         <PoweredBy />

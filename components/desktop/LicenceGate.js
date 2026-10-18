@@ -113,7 +113,7 @@ export function PaidNote({ what, verb = 'needs' }) {
   const licence = useLicence()
   const clock = licence?.status === 'clock'
   return (
-    <div className="flex flex-col gap-3 p-3 border-2 border-line rounded-house bg-subtle">
+    <div className="flex flex-col gap-3 p-3 border border-line rounded-house bg-subtle">
       <p className="text-[15px] text-content">
         {clock
           ? 'This computer’s clock is behind the last time StationMGR ran. Set the date and time right, then check again.'
@@ -135,7 +135,7 @@ export function FreeReportBanner() {
   if (!licence || licence.paid) return null
   const clock = licence.status === 'clock'
   return (
-    <div className="w-full border-b-2 border-primary-500/40 bg-primary-50 dark:bg-primary-950/30 px-4 py-3">
+    <div className="w-full border-b border-primary-500/40 bg-primary-50 dark:bg-primary-950/30 px-4 py-3">
       <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
         <p className="text-[15px] text-content min-w-0 flex-1">
           {clock

@@ -520,10 +520,10 @@ export default function DailySalesFormPage() {
                             />
                           </Field>
                         </div>
-                        <div className="border-t-2 sm:border-t-0 sm:border-l-2 border-line">
+                        <div className="border-t sm:border-t-0 sm:border-l border-line">
                           <Field label="Consumption (L)">{litresWithAccount(idx, r, 'consumption')}</Field>
                         </div>
-                        <div className="border-t-2 sm:border-t-0 border-l-2 border-line">
+                        <div className="border-t sm:border-t-0 border-l border-line">
                           <Field label="Pour back (L)">{litresWithAccount(idx, r, 'pour_back')}</Field>
                         </div>
                       </div>

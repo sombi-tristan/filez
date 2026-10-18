@@ -189,7 +189,7 @@ function AnalyticsContent() {
           </div>
         ) : (
           <div className="flex items-center justify-center py-20">
-            <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+            <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
         )}
       </div>
@@ -226,7 +226,7 @@ function FuelStatTable({ fuelTypes, columns, totalRow, fuelRows }) {
             const isTotal = rk === 'TOTAL'
             const data = isTotal ? totalRow : fuelRows[rk] || {}
             return (
-              <tr key={rk} className={isTotal ? 'border-b-2 border-line' : i > 1 ? 'border-t border-line' : ''}>
+              <tr key={rk} className={isTotal ? 'border-b border-line' : i > 1 ? 'border-t border-line' : ''}>
                 <td className={`px-3 py-2 ${isTotal ? 'font-bold text-content' : 'font-semibold'}`} style={!isTotal ? { color: FUEL_COLORS[rk] } : {}}>
                   {rk}
                 </td>

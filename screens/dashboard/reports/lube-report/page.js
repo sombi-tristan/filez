@@ -257,7 +257,7 @@ function LubeReportContent() {
   return (
     <AccessGate orgId={orgId} pageKey="report-lube">
       {({ isOwner }) => (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] lg:max-w-none mx-auto px-4 sm:px-6 lg:px-2">
       {/* Header + date range */}
       <div className="flex items-center justify-between py-3 shrink-0">
         <h1 className="text-lg font-bold text-content">Lube Report</h1>
@@ -277,7 +277,7 @@ function LubeReportContent() {
       <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 pb-10 ${REPORT_CARD}`}>
         {!generated ? (
           <div className="flex items-center justify-center py-20">
-            <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+            <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
         ) : activeTab === 'daily-log' ? (
           <DailyLogTable data={dailyLog} cell={cell} cellR={cellR} hdr={hdr} />
@@ -295,7 +295,7 @@ function LubeReportContent() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-xs font-medium border-r border-line ${activeTab === tab.key ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 border-b-2 border-b-blue-600' : 'text-content-muted hover:text-content-strong hover:bg-subtle'}`}
+            className={`px-4 py-2 text-xs font-medium border-r border-line ${activeTab === tab.key ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 border-b border-b-blue-600' : 'text-content-muted hover:text-content-strong hover:bg-subtle'}`}
           >
             {tab.label}
           </button>

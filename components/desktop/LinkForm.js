@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2, Mail, Lock, Store, AlertTriangle } from 'lucide-react'
-import { LABEL } from '@/components/ui'
+import { LABEL, BTN_FRAMED } from '@/components/ui'
 import { AUTH_INPUT, AUTH_SUBMIT } from '@/app/auth/authStyles'
 import { link, finishLink } from '@/lib/local/webSync'
 import { hasWebBridge } from '@/lib/local/web'
@@ -110,7 +110,7 @@ export default function LinkForm({ onLinked, canBackUp = false, createFor = '', 
   if (conflict) {
     return (
       <div className="space-y-4">
-        <div className="flex gap-3 p-3 border-2 border-line rounded-house bg-subtle">
+        <div className="flex gap-3 p-3 border border-line rounded-house bg-subtle">
           <AlertTriangle className="w-5 h-5 shrink-0 text-content-muted mt-0.5" />
           <div className="text-sm text-content">
             <p className="font-semibold mb-1">{conflict.station.name} already has records on the web.</p>
@@ -118,7 +118,7 @@ export default function LinkForm({ onLinked, canBackUp = false, createFor = '', 
           </div>
         </div>
         {canBackUp && (
-          <button type="button" onClick={downloadBackup} className="w-full py-2.5 text-sm font-medium border-2 border-line rounded-house">
+          <button type="button" onClick={downloadBackup} className={`w-full py-2.5 text-sm font-medium ${BTN_FRAMED}`}>
             Back up this computer’s records
           </button>
         )}

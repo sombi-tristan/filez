@@ -1,7 +1,7 @@
 {
   "from": "groo",
-  "commit": "95c1dbf",
-  "synced": "2026-10-17",
+  "commit": "77663ba",
+  "synced": "2026-10-18",
   "files": {
     "README.md": "b51cb7389fcd65e73453c214b58137a5fa110aa85719eecd15100177d7fec06b",
     "check.mjs": "4fc19af8463cfb6aa376e5bdc4a55c7ffef151f8b60d8568581310af97ec6c4a",
@@ -30,7 +30,7 @@
     "components/SwipeRow.jsx": "8ebd55b374b90cf517f0870f0e5fce123cf157f33abd1000be59d685bacd0933",
     "components/Tabs.jsx": "46df8f1a9915866a4879df3f476eb89e98d049a071454ba252bb009534bf530f",
     "components/ThemeControl.jsx": "97f783a57a5cd528962a3d03b330d05be1fef6da2d55daf5d52e64e53d6a000a",
-    "components/ThickCaret.jsx": "712455db567a56c686da33117012e6f0da02a9fdcef6820af672b9fe6a7fb762",
+    "components/ThickCaret.jsx": "cb62daa1c584bd6dbbea596f43d37392617efd90cb081650d465a5c3ae02058e",
     "components/Tile.jsx": "e1af05fdf02ebb99733ed9b4162a2de1ad14a1065b461d70dc04993c7365935f",
     "components/Toast.jsx": "dc75df4ce58ba2ba0c319756b72a4f3800dea0ee6d605eda48674d4004f50b9f",
     "components/Toggle.jsx": "b580f23dfda64516c18435876967690fb07bf19a08a31c218797b9100f45b422",
@@ -39,7 +39,7 @@
     "components/paging.js": "39c1d9e1d44f755718bb77d8c557396a23b027f3e696b0cc9188d9b8571b209d",
     "components/toastSlide.js": "38fec1ff19d15d4eda42ae60826eed1b3dc2749d522a03b872dfe0aaabffd594",
     "components/useOnline.js": "9ce782a78b9ff19eb76373e2d15e2ab67461ac91fd9f63c7539773cceba35e90",
-    "house.css": "0fbaa633163b8f4f0ae769f02fa04eb8d171ecd84e8410b0a683d054f63802be",
+    "house.css": "a0bd05dcb0f0287f6d26a2239f8a6f0e972ef179a102ac2844802e03ab31c9bf",
     "index.js": "ea0e0a67af5d18feb151a8f53813f672bae07729cd5939e745a8cefbfc5182a1"
   }
 }

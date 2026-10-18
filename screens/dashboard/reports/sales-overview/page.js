@@ -133,7 +133,7 @@ function SalesOverviewContent() {
 
   return (
     <AccessGate orgId={orgId} pageKey="report-sales-overview">
-      <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] mx-auto px-4 sm:px-6">
+      <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-[1200px] lg:max-w-none mx-auto px-4 sm:px-6 lg:px-2">
         <div className="flex items-center justify-end py-3 shrink-0">
           <div className="flex flex-wrap items-center justify-end gap-2">
             <DateRange
@@ -163,7 +163,7 @@ function SalesOverviewContent() {
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-content-faint text-sm">Select a date range and click Generate.</p>
+            <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
         )}
       </div>

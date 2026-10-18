@@ -12,6 +12,8 @@ import { BTN_DANGER, BTN_FRAMED, BTN_PRIMARY } from '@/components/ui'
  * then the choice: overwrite everything, or pad the station with what it lacks.
  *
  *   intoNew  make a new station named after the backup first (Add a station), and overwrite it
+ *   className, children  the trigger's own look and content, in place of the framed button
+ *            (This computer's list card: components/ThisComputer.js)
  */
 const SETUP_NAMES = {
   station_tanks: 'tanks', station_pumps: 'pumps', station_banks: 'banks',
@@ -28,7 +30,7 @@ function list(byTable) {
     .map(([t, name]) => `${byTable[t].length} ${name} (${byTable[t].slice(0, 6).join(', ')}${byTable[t].length > 6 ? ', …' : ''})`)
 }
 
-export default function RestoreBackup({ disabled = false, label = 'Restore backup', intoNew = false }) {
+export default function RestoreBackup({ disabled = false, label = 'Restore backup', intoNew = false, className, children }) {
   const fileRef = useRef(null)
   const [backup, setBackup] = useState(null)
   const [summary, setSummary] = useState(null)
@@ -79,8 +81,8 @@ export default function RestoreBackup({ disabled = false, label = 'Restore backu
 
   return (
     <>
-      <button onClick={() => fileRef.current?.click()} disabled={disabled || busy} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_FRAMED}`}>
-        <Upload className="w-4 h-4" /> {label}
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={disabled || busy} className={className || `flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_FRAMED}`}>
+        {children || <><Upload className="w-4 h-4" /> {label}</>}
       </button>
       <input ref={fileRef} type="file" accept=".json,application/json" className="hidden"
         onChange={(e) => { choose(e.target.files?.[0] || null); e.target.value = '' }} />
@@ -100,7 +102,7 @@ export default function RestoreBackup({ disabled = false, label = 'Restore backu
                 The backup{summary.name ? <> of <strong>{summary.name}</strong></> : null} holds {counts.length ? counts.join(', ') : 'no entries'}.
               </p>
               {list(summary.missing).length > 0 && (
-                <div className="flex items-start gap-2 p-3 bg-subtle border-2 border-line">
+                <div className="flex items-start gap-2 p-3 bg-subtle border border-line rounded-house">
                   <AlertTriangle className="w-4 h-4 text-content-muted flex-shrink-0 mt-0.5" />
                   <p><strong>Not in this station yet, and will be created:</strong> {list(summary.missing).join('; ')}.</p>
                 </div>

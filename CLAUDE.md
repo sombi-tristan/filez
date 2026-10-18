@@ -120,7 +120,7 @@ The station's screens run as one Ionic app with Ionic's own router, so screens s
 - Inside the Ionic apps, import useRouter / usePathname / useSearchParams / useParams / Link from "@/lib/nav", never from next/navigation or next/link. lib/nav moves within the stack for addresses inside the app and does a full page load for anything else (sign-in is a plain page).
 - The sidebars are the content of the IonMenu inside an IonSplitPane: a column on a computer, a drawer on a phone. Their groups are accordions (the house SidebarSections), one open at a time, opening the group that holds the screen shown.
 - Screens slide sideways (components/shell/slideTransition.js): an opened screen comes in from the right; Back slides it out to the right and the one underneath comes back from the left.
-- A report's date range and its Generate button are components/reports/DateRange.js: the two dates and a round icon button that stay on one line.
+- A report's date range and its Load button are components/reports/DateRange.js: the two dates and a Load text button, the size of the report's other buttons, on one line.
 - Every screen's footer sits at the bottom of the screen when the content is short (Screen.js). A bar pinned to the bottom of a phone carries the class entry-actionbar, which keeps the footer clear of it.
 
 ---

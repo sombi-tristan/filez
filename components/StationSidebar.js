@@ -148,10 +148,11 @@ export default function StationSidebar({ stationId }) {
 
   if (!stationId) return null
 
-  // visiblePages null means "not restricted", which buildStationNav reads as owner-like.
-  const sections = buildStationNav(stationId, { isOwner: isOwner || visiblePages == null, visiblePages })
-  const home = `/dashboard/stations/${stationId}`
   const current = stations.find((s) => String(s.id) === String(stationId))
+  // visiblePages null means "not restricted", which buildStationNav reads as owner-like. The
+  // station's group decides the Rainoil-only reports.
+  const sections = buildStationNav(stationId, { isOwner: isOwner || visiblePages == null, visiblePages, groupName: current?.station_group })
+  const home = `/dashboard/stations/${stationId}`
 
   const isCurrent = (href) => pathname === href.split('?')[0]
 
