@@ -43,11 +43,11 @@ check('the list starts and sticks level with the date box', list.includes('lg:mt
 
 console.log('\nConsumption, pour back and totals')
 {
-  const right = report.slice(report.indexOf('{/* ===== RIGHT: STOCK & SUMMARY ===== */}'), report.indexOf('{/* ===== BELOW: CONSUMPTION, POUR BACK, TOTALS ===== */}'))
-  const below = report.slice(report.indexOf('{/* ===== BELOW: CONSUMPTION, POUR BACK, TOTALS ===== */}'), report.indexOf('{/* Day tabs'))
-  check('no longer in the right-hand column', right.length > 0 && !right.includes('>Consumption<') && !right.includes('>Pour Back<') && !right.includes('>TOTAL POS<'))
-  check('under both columns, as one table: Consumption, Pour Back, then Totals', (below.match(/<table/g) || []).length === 1 &&
-    below.indexOf("section('Consumption'") > 0 && below.indexOf("section('Consumption'") < below.indexOf("section('Pour Back'") && below.indexOf("section('Pour Back'") < below.indexOf('>Totals<') &&
+  const right = report.slice(report.indexOf('{/* ===== RIGHT: STOCK & SUMMARY ===== */}'), report.indexOf('{/* ===== BELOW: CONSUMPTION, POUR BACK, BALANCES, TOTALS ===== */}'))
+  const below = report.slice(report.indexOf('{/* ===== BELOW: CONSUMPTION, POUR BACK, BALANCES, TOTALS ===== */}'), report.indexOf('{/* Day tabs'))
+  check('no longer in the right-hand column', right.length > 0 && !right.includes('>Consumption<') && !right.includes('>Pour Back<') && !right.includes('>Balances<') && !right.includes('>TOTAL POS<'))
+  check('under both columns, as one table: Consumption, Pour Back, Balances, then Totals', (below.match(/<table/g) || []).length === 1 &&
+    below.indexOf("section('Consumption'") > 0 && below.indexOf("section('Consumption'") < below.indexOf("section('Pour Back'") && below.indexOf("section('Pour Back'") < below.indexOf('>Balances<') && below.indexOf('>Balances<') < below.indexOf('>Totals<') &&
     below.includes('>TOTAL POS<') && below.includes('>CASH<'))
   check('half the width on a computer', below.includes('<div className="lg:w-1/2 pb-4 lg:[overflow-wrap:anywhere]">'))
   check('a divider sets it apart from the rest of the report', /<hr className="my-4 border-t-2 border-primary-500\/40 dark:border-primary-400\/40" \/>\s*<div className="lg:w-1\/2/.test(below))
