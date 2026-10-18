@@ -6,7 +6,7 @@ import { Loader2, Pencil, Settings, ChevronRight } from 'lucide-react'
 import { INPUT, LABEL, BTN_PRIMARY, IconChip } from '@/components/ui'
 
 /**
- * Manage station, at the top of the station's Settings screen and always open (it used to sit
+ * Manage station, in the Station tab of the station's Settings and always open (it used to sit
  * folded at the bottom of the station home): setting up a station that is not finished yet,
  * and renaming it. The owner's alone, so it shows nothing to staff.
  */
@@ -50,7 +50,7 @@ export default function ManageStation({ stationId }) {
 
   if (!isOwner) return null
   return (
-    <section className="mb-4 w-full bg-surface border-card border-line rounded-house p-3">
+    <section className="mb-4">
       <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Manage station</h2>
 
       {!station.onboarding_complete && (

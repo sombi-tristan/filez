@@ -19,15 +19,6 @@ import { isRainoilGroup } from '@/lib/exportGroup'
 // The longest range one run covers, as on the audit report.
 const MAX_DAYS = 32
 
-// The report's sections, as tabs over the day's tables (the audit report's way); the day itself
-// is chosen in the tabs below the report.
-const SECTIONS = [
-  { key: 'sales', label: 'Sales' },
-  { key: 'stock', label: 'Stock' },
-  { key: 'cash', label: 'Lodgements & Cash' },
-  { key: 'lube', label: 'Lube' },
-]
-
 function fmt(n) {
   if (n == null || isNaN(n) || n === '') return ''
   return Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -62,7 +53,6 @@ function SalesOperationContent() {
   const [reportStart, setReportStart] = useState(monthStartStr)
   const [reportEnd, setReportEnd] = useState(todayStr)
   const [activeSheetName, setActiveSheetName] = useState('')
-  const [section, setSection] = useState('sales')
   const [tabOffset, setTabOffset] = useState(0)
   const TAB_COUNT = 14
 
@@ -247,25 +237,14 @@ function SalesOperationContent() {
             </div>
           ) : (
             <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 ${REPORT_CARD}`}>
-              <div role="tablist" className="sticky top-0 z-10 flex overflow-x-auto border-b border-primary-500/40 bg-subtle">
-                {SECTIONS.map((t) => (
-                  <button
-                    key={t.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={section === t.key}
-                    onClick={() => setSection(t.key)}
-                    className={`px-4 py-1.5 text-sm font-medium border-r border-primary-500/40 shrink-0 whitespace-nowrap transition-colors ${section === t.key ? 'bg-surface text-primary-600 border-b-2 border-b-blue-600 -mb-px' : 'text-content-muted hover:bg-surface hover:text-primary-600'}`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
               <div className="px-4 sm:px-8 py-4">
-                {section === 'sales' && <SalesSection sheet={activeSheet} />}
-                {section === 'stock' && <StockSection sheet={activeSheet} />}
-                {section === 'cash' && <CashSection sheet={activeSheet} />}
-                {section === 'lube' && <LubeSection sheet={activeSheet} />}
+                {/* The whole day on one page, its parts in the form's order, in the app's report
+                    styling; the day is chosen in the tabs below. */}
+                <h2 className="mb-3 text-base font-bold text-content">{stationName ? `${stationName}: ` : ''}{activeSheet.sheetName}</h2>
+                <SalesSection sheet={activeSheet} />
+                <StockSection sheet={activeSheet} />
+                <CashSection sheet={activeSheet} />
+                <LubeSection sheet={activeSheet} />
               </div>
             </div>
           )}
@@ -337,7 +316,7 @@ function ReportTable({ title, head, rows, total }) {
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className={REPORT_SUBHEAD}>
-            {head.map((h, i) => <th key={i} className={`${i ? cellR : cell} font-bold`}>{h}</th>)}
+            {head.map((h, i) => <th key={i} className={`${i ? cellR : `${cell} text-left`} font-bold`}>{h}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -360,7 +339,7 @@ function ReportTable({ title, head, rows, total }) {
 function SalesSection({ sheet }) {
   return (
     <ReportTable
-      title={`Sales: ${sheet.sheetName}`}
+      title="Sales"
       head={['Fuel', 'Price 1', 'Actual sales @P1', 'RTT @P1', 'Cons. @P1', 'Price 2', 'Actual sales @P2', 'RTT @P2', 'Cons. @P2', 'Total actual (L)', 'Amount (₦)']}
       rows={sheet.fuel.map((f) => [f.fuelType, fmt(f.price1), fmt(f.actualSalesP1), fmt(f.rttP1), fmt(f.consP1), fmt(f.price2), fmt(f.actualSalesP2), fmt(f.rttP2), fmt(f.consP2), fmt(f.totalActualLtrs), fmt(f.amount)])}
       total={['Total', '', '', '', '', '', '', '', '', fmt(sheet.fuel.reduce((t, f) => t + f.totalActualLtrs, 0)), fmt(sheet.fuel.reduce((t, f) => t + f.amount, 0))]}
@@ -372,7 +351,7 @@ function StockSection({ sheet }) {
   return (
     <>
       <ReportTable
-        title={`Stock: ${sheet.sheetName}`}
+        title="Stock"
         head={['Fuel', 'Opening', 'Waybill', 'Actual received', 'Truck shortage', 'Total dispensed', 'Closing']}
         rows={sheet.stock.map((s) => [s.fuelType, fmt(s.opening), fmt(s.waybill), fmt(s.actualReceived), fmt(s.truckShortage), fmt(s.totalDispensed), fmt(s.closing)])}
       />
@@ -397,7 +376,7 @@ function CashSection({ sheet }) {
   return (
     <>
       <ReportTable
-        title={`Lodgements: ${sheet.sheetName}`}
+        title="Lodgements"
         head={['Type', 'Bank', 'Amount (₦)']}
         rows={lodged.length ? lodged.map(([t, b, a]) => [t, b, fmt(a)]) : [['None', '', '']]}
         total={['Total', '', fmt(lodged.reduce((t, r) => t + r[2], 0))]}
@@ -412,10 +391,10 @@ function CashSection({ sheet }) {
 }
 
 function LubeSection({ sheet }) {
-  if (!sheet.lube?.length) return <p className="text-sm text-content-muted py-6">No lube products with stock or sales on this day.</p>
+  if (!sheet.lube?.length) return <ReportTable title="Lube" head={['Product']} rows={[['No lube products with stock or sales on this day.']]} />
   return (
     <ReportTable
-      title={`Lube: ${sheet.sheetName}`}
+      title="Lube"
       head={['Product', 'Litre', 'Unit price', 'Opening', 'Supply', 'Sales', 'Closing', 'Amount (₦)', 'Variance']}
       rows={sheet.lube.map((l) => [l.productName, fmt(l.litre), fmt(l.unitPrice), fmt(l.openingStock), fmt(l.productSupply), fmt(l.sales), fmt(l.closingStock), fmt(l.amount), fmt(l.variance)])}
       total={['Total', '', '', '', '', fmt(sheet.lube.reduce((t, l) => t + l.sales, 0)), '', fmt(sheet.lube.reduce((t, l) => t + l.amount, 0)), '']}
