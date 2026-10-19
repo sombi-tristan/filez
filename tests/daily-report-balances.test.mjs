@@ -57,7 +57,7 @@ check('no rows, no error', bare.dateReports[0].balances.rows.length === 0)
 
 console.log('\nOn screen')
 const page = readFileSync(new URL('../screens/dashboard/reports/daily-sales-report/page.js', import.meta.url), 'utf8')
-check('Balances is its own table, after the divider and before the totals table', page.indexOf('<hr ') < page.indexOf('>Balances<') && page.indexOf('>Balances<') < page.indexOf('{/* The totals table */}') && page.indexOf('>Balances<') < page.indexOf("section('Consumption'"))
+check('Balances is its own table, after the divider and before the totals table', page.indexOf('<hr ') < page.indexOf('title="Balances"') && page.indexOf('title="Balances"') < page.indexOf('{/* The totals table */}') && page.indexOf('title="Balances"') < page.indexOf("section('Consumption'"))
 check('the page passes customers and their payments', page.includes('customerPayments: livePayments'))
 
 console.log('\nIn Excel')
