@@ -38,7 +38,7 @@ check('Back up and Restore as list cards side by side', computer.includes('grid 
 
 console.log('\nThe very bottom')
 const tail = home.slice(home.indexOf('<ThisComputer'))
-check('Appearance and Sign out on one plain footer row', /<footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">[\s\S]*?Appearance[\s\S]*?<ThemeControl \/>[\s\S]*?Sign out[\s\S]*?<\/footer>/.test(tail))
+check('Appearance and Sign out on one plain footer row', /<footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">[\s\S]*?Appearance[\s\S]*?<ThemeControl cycle \/>[\s\S]*?Sign out[\s\S]*?<\/footer>/.test(tail))
 check('no separate Sign out section', !tail.includes('<section className="mt-8 flex items-center gap-2 flex-wrap">'))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
