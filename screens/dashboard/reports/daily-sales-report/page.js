@@ -384,10 +384,11 @@ function DailySalesReportContent() {
             </div>
           </div>
 
-          {/* ===== BELOW: CONSUMPTION, POUR BACK, BALANCES, TOTALS ===== */}
-          {/* Under both columns, one table in sections, each with its own heading row:
-              Consumption, Pour Back, Balances (each when the day has any), then the day's Totals.
-              Half the width on a computer, the whole width on a phone. */}
+          {/* ===== BELOW: BALANCES, THEN CONSUMPTION, POUR BACK, TOTALS ===== */}
+          {/* Under both columns, after the divider, one row of two boxes: the Balances table (when
+              the day has any), then the totals table in sections, each with its own heading row:
+              Consumption, Pour Back (when the day has any), then the day's Totals. Side by side on
+              a computer, one under the other on a phone. */}
           {(() => {
             const consEntries = currentDayReport.consumption.entries.filter(e => !e.isPourBack)
             const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
@@ -414,36 +415,45 @@ function DailySalesReportContent() {
               <>
               {/* A divider sets the totals apart from the rest of the report above. */}
               <hr className="my-4 border-t-2 border-primary-500/40 dark:border-primary-400/40" />
-              <div className="lg:w-1/2 pb-4 lg:[overflow-wrap:anywhere]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4 lg:[overflow-wrap:anywhere]">
+              {/* The balances table */}
+              {/* Credit customers' balances at the end of the day, the ones not at zero. On a day
+                  with none the left box stays, empty, on a computer so the totals keep to the
+                  right; on a phone it goes. */}
+              <div className="min-w-0 empty:hidden lg:empty:block">
+              {currentDayReport.balances.rows.length > 0 && (
+                  <table className="w-full border-collapse text-sm">
+                    <tbody>
+                      <tr className={subHdr}>
+                        <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
+                      </tr>
+                      <tr className={subHdr}>
+                        <th className={`${cell} text-left font-bold`}>Customer</th>
+                        <th className={`${cellR} font-bold`}>Owes station</th>
+                        <th className={`${cellR} font-bold`}>Station owes</th>
+                      </tr>
+                      {currentDayReport.balances.rows.map((b) => (
+                        <tr key={b.customerId}>
+                          <td className={cell}>{b.name}</td>
+                          <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
+                          <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold">
+                        <td className={cell}>Total</td>
+                        <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
+                        <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+              )}
+              </div>
+              {/* The totals table */}
+              <div className="min-w-0">
                 <table className="w-full border-collapse text-sm">
                   <tbody>
                     {section('Consumption', consEntries)}
                     {section('Pour Back', pbEntries)}
-                    {/* Credit customers' balances at the end of the day, the ones not at zero. */}
-                    {currentDayReport.balances.rows.length > 0 && (
-                      <>
-                        <tr className={subHdr}>
-                          <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
-                        </tr>
-                        <tr className={subHdr}>
-                          <th className={`${cell} text-left font-bold`}>Customer</th>
-                          <th className={`${cellR} font-bold`}>Owes station</th>
-                          <th className={`${cellR} font-bold`}>Station owes</th>
-                        </tr>
-                        {currentDayReport.balances.rows.map((b) => (
-                          <tr key={b.customerId}>
-                            <td className={cell}>{b.name}</td>
-                            <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
-                            <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
-                          </tr>
-                        ))}
-                        <tr className="font-bold">
-                          <td className={cell}>Total</td>
-                          <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
-                          <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
-                        </tr>
-                      </>
-                    )}
                     <tr className={subHdr}>
                       <th className={`${cell} text-left font-bold`}>Totals</th>
                       <th className={`${cellR} font-bold`}>Sales</th>
@@ -474,6 +484,7 @@ function DailySalesReportContent() {
                     </tr>
                   </tbody>
                 </table>
+              </div>
               </div>
               </>
             )

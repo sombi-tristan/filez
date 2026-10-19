@@ -43,14 +43,19 @@ check('the list starts and sticks level with the date box', list.includes('lg:mt
 
 console.log('\nConsumption, pour back and totals')
 {
-  const right = report.slice(report.indexOf('{/* ===== RIGHT: STOCK & SUMMARY ===== */}'), report.indexOf('{/* ===== BELOW: CONSUMPTION, POUR BACK, BALANCES, TOTALS ===== */}'))
-  const below = report.slice(report.indexOf('{/* ===== BELOW: CONSUMPTION, POUR BACK, BALANCES, TOTALS ===== */}'), report.indexOf('{/* Day tabs'))
+  const right = report.slice(report.indexOf('{/* ===== RIGHT: STOCK & SUMMARY ===== */}'), report.indexOf('{/* ===== BELOW: BALANCES, THEN CONSUMPTION, POUR BACK, TOTALS ===== */}'))
+  const below = report.slice(report.indexOf('{/* ===== BELOW: BALANCES, THEN CONSUMPTION, POUR BACK, TOTALS ===== */}'), report.indexOf('{/* Day tabs'))
+  const totalsBox = below.slice(below.indexOf('{/* The totals table */}'))
+  const balancesBox = below.slice(below.indexOf('{/* The balances table */}'), below.indexOf('{/* The totals table */}'))
   check('no longer in the right-hand column', right.length > 0 && !right.includes('>Consumption<') && !right.includes('>Pour Back<') && !right.includes('>Balances<') && !right.includes('>TOTAL POS<'))
-  check('under both columns, as one table: Consumption, Pour Back, Balances, then Totals', (below.match(/<table/g) || []).length === 1 &&
-    below.indexOf("section('Consumption'") > 0 && below.indexOf("section('Consumption'") < below.indexOf("section('Pour Back'") && below.indexOf("section('Pour Back'") < below.indexOf('>Balances<') && below.indexOf('>Balances<') < below.indexOf('>Totals<') &&
-    below.includes('>TOTAL POS<') && below.includes('>CASH<'))
-  check('half the width on a computer', below.includes('<div className="lg:w-1/2 pb-4 lg:[overflow-wrap:anywhere]">'))
-  check('a divider sets it apart from the rest of the report', /<hr className="my-4 border-t-2 border-primary-500\/40 dark:border-primary-400\/40" \/>\s*<div className="lg:w-1\/2/.test(below))
+  check('under both columns, the totals one table: Consumption, Pour Back, then Totals', (totalsBox.match(/<table/g) || []).length === 1 &&
+    totalsBox.indexOf("section('Consumption'") > 0 && totalsBox.indexOf("section('Consumption'") < totalsBox.indexOf("section('Pour Back'") && totalsBox.indexOf("section('Pour Back'") < totalsBox.indexOf('>Totals<') &&
+    totalsBox.includes('>TOTAL POS<') && totalsBox.includes('>CASH<') && !totalsBox.includes('>Balances<'))
+  check('Balances is a box of its own, after the divider and before the totals', (balancesBox.match(/<table/g) || []).length === 1 && balancesBox.includes('>Balances<') &&
+    below.indexOf('<hr ') < below.indexOf('{/* The balances table */}') && below.indexOf('{/* The balances table */}') < below.indexOf('{/* The totals table */}'))
+  check('one row of two boxes on a computer, Balances then Totals; stacked on a phone', below.includes('<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4 lg:[overflow-wrap:anywhere]">') &&
+    (balancesBox.match(/<div className="min-w-0 empty:hidden lg:empty:block">/g) || []).length === 1 && (totalsBox.match(/<div className="min-w-0">/g) || []).length === 1)
+  check('a divider sets them apart from the rest of the report', /<hr className="my-4 border-t-2 border-primary-500\/40 dark:border-primary-400\/40" \/>\s*<div className="grid grid-cols-1 lg:grid-cols-2/.test(below))
 }
 
 console.log('\nStock table')

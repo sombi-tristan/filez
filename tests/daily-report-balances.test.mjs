@@ -57,12 +57,12 @@ check('no rows, no error', bare.dateReports[0].balances.rows.length === 0)
 
 console.log('\nOn screen')
 const page = readFileSync(new URL('../screens/dashboard/reports/daily-sales-report/page.js', import.meta.url), 'utf8')
-check('the Balances section sits before Totals', page.indexOf('>Balances<') > 0 && page.indexOf('>Balances<') < page.indexOf('>Totals<'))
+check('Balances is its own table, after the divider and before the totals table', page.indexOf('<hr ') < page.indexOf('>Balances<') && page.indexOf('>Balances<') < page.indexOf('{/* The totals table */}') && page.indexOf('>Balances<') < page.indexOf("section('Consumption'"))
 check('the page passes customers and their payments', page.includes('customerPayments: livePayments'))
 
 console.log('\nIn Excel')
 const excel = readFileSync(new URL('../lib/exportDailyReportExcel.js', import.meta.url), 'utf8')
-check('the Balances section sits after Pour Back and before the summary', excel.indexOf("'Balances'") > excel.indexOf("renderSection('Pour Back'") && excel.indexOf("'Balances'") < excel.indexOf("'SALES'"))
+check('the Balances block comes first, before Consumption, as on screen', excel.indexOf("'Balances'") > 0 && excel.indexOf("'Balances'") < excel.indexOf("renderSection('Consumption'"))
 check('its columns are Owes station and Station owes', excel.includes("'Owes station'") && excel.includes("'Station owes'"))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
