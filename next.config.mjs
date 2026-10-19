@@ -94,4 +94,14 @@ const nextConfig = {
   },
 }
 
-export default withPWA(nextConfig)
+/**
+ * The Android app (scripts/build-android.mjs): the screens written out as files (out/) for the
+ * app to carry, with no server. So no service worker and no headers, and the API is the site's.
+ */
+const androidConfig = {
+  output: 'export',
+  images: { ...nextConfig.images, unoptimized: true },
+  env: { NEXT_PUBLIC_API_ORIGIN: 'https://www.stationmgr.site' },
+}
+
+export default process.env.STATIONMGR_TARGET === 'android' ? androidConfig : withPWA(nextConfig)

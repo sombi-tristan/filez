@@ -1,8 +1,29 @@
 'use client'
 
-import { useEffect } from 'react'
+// Android app only: /api requests go to the site (lib/appFetch.js). A no-op on the website.
+import '@/lib/appFetch'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
+import { IS_APP } from '@/lib/platform'
 
 export default function AppShell({ children }) {
+  // The Android app has no middleware.js, so it checks here what the website's middleware does:
+  // /dashboard needs a signed-in user, or it goes to the login page and back after. The app has
+  // no home page to show; it opens the dashboard. On the website this shows the page at once.
+  const [ready, setReady] = useState(!IS_APP)
+  useEffect(() => {
+    if (!IS_APP) return
+    const { pathname, search } = window.location
+    if (pathname === '/') return window.location.replace('/dashboard')
+    if (!pathname.startsWith('/dashboard')) return setReady(true)
+    // Without Supabase settings the login page shows the error; a blank app would hide it.
+    if (!supabase) return setReady(true)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true)
+      else window.location.replace(`/auth/login?next=${encodeURIComponent(pathname + search)}`)
+    })
+  }, [])
+
   useEffect(() => {
     // Force-update stale service workers and clear old API caches
     if ('serviceWorker' in navigator) {
@@ -34,5 +55,5 @@ export default function AppShell({ children }) {
 
   // The dashboard and the admin area draw their own top bar, menu and screens as Ionic apps
   // (components/shell/IonicShell.js). Everything else (home, auth, offline) is a plain page.
-  return <>{children}</>
+  return <>{ready ? children : null}</>
 }
