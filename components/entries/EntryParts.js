@@ -232,8 +232,9 @@ export function SaveBar({ listHref, saving, saved, isEditing, disabled, error, o
 export const figure = (n) => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
 
 /**
- * Read-only figures worked out from an entry as it is typed, in a row under its fields:
- * `items` is [{ label, value, bad }], `bad` showing the value in red.
+ * Read-only figures worked out from an entry as it is typed, in a row under its fields, in
+ * small text so they read apart from what is typed: `items` is [{ label, value, bad }], `bad`
+ * showing the value in red.
  */
 export function Figures({ items }) {
   return (
@@ -241,7 +242,7 @@ export function Figures({ items }) {
       {items.map(({ label, value, bad }) => (
         <div key={label} className="flex items-baseline gap-2">
           <span className="text-[13px] font-semibold text-content-muted">{label}</span>
-          <output className={`text-[15px] font-bold tabular-nums ${bad ? 'text-red-600 dark:text-red-400' : 'text-content'}`}>{value}</output>
+          <output className={`text-[13px] font-semibold tabular-nums ${bad ? 'text-red-600 dark:text-red-400' : 'text-content'}`}>{value}</output>
         </div>
       ))}
     </div>
