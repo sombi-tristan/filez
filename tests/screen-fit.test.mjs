@@ -51,7 +51,7 @@ console.log('\nConsumption, pour back and totals')
   check('under both columns, the totals one table: Consumption, Pour Back, then Totals', (totalsBox.match(/<table/g) || []).length === 1 &&
     totalsBox.indexOf("section('Consumption'") > 0 && totalsBox.indexOf("section('Consumption'") < totalsBox.indexOf("section('Pour Back'") && totalsBox.indexOf("section('Pour Back'") < totalsBox.indexOf('>Totals<') &&
     totalsBox.includes('>TOTAL POS<') && totalsBox.includes('>CASH<') && !totalsBox.includes('>Balances<'))
-  check('Balances is a box of its own, after the divider and before the totals', (balancesBox.match(/<table/g) || []).length === 1 && balancesBox.includes('>Balances<') &&
+  check('Balances is a box of its own, after the divider and before the totals', (balancesBox.match(/<table/g) || []).length === 1 && balancesBox.includes('title="Balances"') &&
     below.indexOf('<hr ') < below.indexOf('{/* The balances table */}') && below.indexOf('{/* The balances table */}') < below.indexOf('{/* The totals table */}'))
   check('one row of two boxes on a computer, Balances then Totals; stacked on a phone', below.includes('<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4 lg:[overflow-wrap:anywhere]">') &&
     (balancesBox.match(/<div className="min-w-0 empty:hidden lg:empty:block">/g) || []).length === 1 && (totalsBox.match(/<div className="min-w-0">/g) || []).length === 1)
