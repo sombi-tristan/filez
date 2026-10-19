@@ -228,6 +228,26 @@ export function SaveBar({ listHref, saving, saved, isEditing, disabled, error, o
   )
 }
 
+/** Units and naira as the forms show worked-out figures: thousands separated, at most two decimals. */
+export const figure = (n) => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
+
+/**
+ * Read-only figures worked out from an entry as it is typed, in a row under its fields:
+ * `items` is [{ label, value, bad }], `bad` showing the value in red.
+ */
+export function Figures({ items }) {
+  return (
+    <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line bg-subtle/60 px-3 py-2">
+      {items.map(({ label, value, bad }) => (
+        <div key={label} className="flex items-baseline gap-2">
+          <span className="text-[13px] font-semibold text-content-muted">{label}</span>
+          <output className={`text-[15px] font-bold tabular-nums ${bad ? 'text-red-600 dark:text-red-400' : 'text-content'}`}>{value}</output>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** The screen while an entry form reads the day from the device. */
 export function EntryLoading() {
   return <div className="flex justify-center py-20"><Spinner /></div>
