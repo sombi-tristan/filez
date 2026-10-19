@@ -74,10 +74,10 @@ check('a short description under the name, two lines at most', /<p className="[^
 // The design the owner pointed at: a white panel with its heading inside, pale borderless tiles,
 // the whole section in the middle of the page.
 check('a white panel, its heading inside, full width', /<section className="w-full bg-surface border-card border-line rounded-house p-3">\s*<h2[^>]*>Entries<\/h2>/.test(tiles))
-check('pale tiles with no line', /const cls = `w-full h-28[^`]*bg-subtle rounded-house[^`]*`/.test(tiles) && !/const cls = `[^`]*\$\{CARD\}/.test(tiles))
+check('pale tiles with no line', /const cls = `w-full h-24[^`]*bg-subtle rounded-house[^`]*`/.test(tiles) && !/const cls = `[^`]*\$\{CARD\}/.test(tiles))
 check('a soft blue round icon', tiles.includes('<IconChip icon={link.icon} className="w-10 h-10"'))
 
-check('tiles fill the row in equal columns, 112px tall', tiles.includes('<div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">') && /const cls = `w-full h-28 flex flex-col items-center justify-center[^`]*text-center bg-subtle rounded-house/.test(tiles))
+check('tiles fill the row in equal columns, 96px tall', tiles.includes('<div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">') && /const cls = `w-full h-24 flex flex-col items-center justify-center[^`]*text-center bg-subtle rounded-house/.test(tiles))
 
 console.log('\nReport screens on a computer')
 // The gap beside the sidebar was the wrapper's 24px side padding, and a 1200px cap centred it.

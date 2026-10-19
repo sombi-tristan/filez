@@ -40,8 +40,12 @@ const style = (name) => {
 const NAMES = ['CARD_LINE', 'CARD', 'OUTLINE', 'BTN_FRAMED', 'BTN_PRIMARY', 'BTN_DANGER', 'REPORT_CARD', 'INPUT_BASE', 'INPUT_BARE', 'FIELD', 'OUTLINE_WITHIN']
 for (const name of NAMES) {
   const s = style(name)
-  check(`${name}: no 2px outline, 8px corners`, s && !/\bborder(-b|-t)?-2\b/.test(s) && s.includes('rounded-house'))
+  check(`${name}: no 2px outline, house corners`, s && !/\bborder(-b|-t)?-2\b/.test(s) && s.includes('rounded-house'))
 }
+check('buttons have half corners (4px), the rest the full 8px',
+  ['BTN_FRAMED', 'BTN_PRIMARY', 'BTN_DANGER'].every((n) => style(n).includes('rounded-house-btn')) &&
+  NAMES.filter((n) => !n.startsWith('BTN_')).every((n) => !style(n).includes('rounded-house-btn')) &&
+  /'house-btn':\s*'4px'/.test(tw))
 check('cards are filled', style('CARD').includes('bg-subtle'))
 check('the main button is solid blue with white text', /\bbg-primary-600\b/.test(style('BTN_PRIMARY')) && style('BTN_PRIMARY').includes('text-white'))
 check('the danger button is solid red with white text', /\bbg-red-600\b/.test(style('BTN_DANGER')) && style('BTN_DANGER').includes('text-white'))
