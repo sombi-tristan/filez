@@ -12,9 +12,13 @@ import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_SELECT } from '@/components/ui'
 import {
   EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, SubscribeNotice,
-  SaveBar, EntryLoading, NotConfigured, adjacentDates,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates, Figures, figure,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
+import { isDefaultAccount } from '@/lib/defaultAccounts'
+
+/** A balance as the Account Ledger reads it: above zero the account owes the station. */
+const balanceText = (b) => (b > 0 ? `₦${figure(b)} owed` : b < 0 ? `₦${figure(-b)} in credit` : '₦0')
 
 function blankEntry() {
   return { _key: crypto.randomUUID(), id: null, customerId: '', amountPaid: '', salesAmount: '', notes: '' }
@@ -99,6 +103,11 @@ export default function CustomerPaymentsFormPage() {
   )
   const savedDates = useLiveQuery(
     () => (orgId ? db.customerPayments.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate).filter(Boolean))].sort()) : []),
+    [orgId], []
+  )
+  // Every saved transaction of the station, for each account's balance under its entry.
+  const allPayments = useLiveQuery(
+    () => (orgId ? db.customerPayments.where('orgId').equals(orgId).toArray() : []),
     [orgId], []
   )
 
@@ -220,6 +229,23 @@ export default function CustomerPaymentsFormPage() {
                 <NumberInput value={entry.salesAmount} onValue={(v) => updateEntry(idx, 'salesAmount', v)} placeholder="0.00" />
               </Field>
             </FieldRow>
+            {(() => {
+              // The account's balance before this transaction and after it, the Account Ledger's
+              // way: opening balance + every sale - every payment up to the day (the entry being
+              // edited left out). The default accounts (consumption) carry no balance.
+              const account = customers.find((c) => c.id === entry.customerId)
+              if (!account || isDefaultAccount(account)) return null
+              const before = (allPayments || [])
+                .filter((p) => p.customerId === account.id && p.entryDate <= formDate && !originalIds.includes(p.id))
+                .reduce((b, p) => b + (Number(p.salesAmount) || 0) - (Number(p.amountPaid) || 0), Number(account.opening_balance) || 0)
+              const after = before + (Number(entry.salesAmount) || 0) - (Number(entry.amountPaid) || 0)
+              return (
+                <Figures items={[
+                  { label: 'Balance before', value: balanceText(before) },
+                  { label: 'After this', value: balanceText(after) },
+                ]} />
+              )
+            })()}
             <Field label="Notes">
               <textarea value={entry.notes} onChange={(e) => updateEntry(idx, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
             </Field>
