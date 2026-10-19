@@ -5,7 +5,7 @@ import { useRouter, useParams } from '@/lib/nav'
 import Link from '@/lib/nav'
 import {
   Loader2, Fuel, Plus, Trash2, ArrowRight, Landmark,
-  CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock,
+  CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock, Cylinder,
   ChevronDown, Monitor, ChevronRight, Building2
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
@@ -28,17 +28,18 @@ function Pane({ children }) {
 
 /**
  * Station Settings as tabs: one tab per Pane, drawn from its own title, icon and count, and only
- * the chosen Pane shown. The tabs share the full width in equal columns and wrap to a second row
- * on a narrow screen rather than scroll. A Pane left out (Tank to Nozzle Mapping before there are
- * nozzles and tanks) or marked hidden has no tab.
+ * the chosen Pane shown. The tabs are a second sidebar: a framed column down the left, as wide as
+ * its longest label (labels never wrap), with the chosen Pane beside it. On a phone the column
+ * shows only each tab's icon and count, so the Pane keeps the room. A Pane left out (Tank to
+ * Nozzle Mapping before there are nozzles and tanks) or marked hidden has no tab.
  */
 function Tabs({ children }) {
   const panes = Children.toArray(children).filter((c) => isValidElement(c) && c.type === Pane && !c.props.hidden)
   const [active, setActive] = useState(panes[0]?.props.title)
   const current = panes.find((p) => p.props.title === active) || panes[0]
   return (
-    <>
-      <div role="tablist" className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] border-b border-line">
+    <div className="flex items-start gap-3">
+      <div role="tablist" aria-orientation="vertical" className={`shrink-0 flex flex-col py-1 bg-surface ${CARD_LINE}`}>
         {panes.map((p) => {
           const { title, icon: Icon, count } = p.props
           const on = p === current
@@ -48,18 +49,20 @@ function Tabs({ children }) {
               type="button"
               role="tab"
               aria-selected={on}
+              aria-label={title}
+              title={title}
               onClick={() => setActive(title)}
-              className={`flex flex-col items-center justify-center gap-1 px-2 py-2 -mb-px text-center text-sm leading-tight font-semibold border-b-2 transition-colors ${on ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content'}`}
+              className={`flex items-center gap-2 px-3 py-2 text-left text-sm font-semibold whitespace-nowrap border-l-2 transition-colors ${on ? 'border-primary-600 bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300' : 'border-transparent text-content-muted hover:text-content hover:bg-subtle'}`}
             >
-              <Icon className="w-4 h-4" />
-              {title}
+              <Icon className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline flex-1">{title}</span>
               {count > 0 && <span className="text-xs text-content-muted bg-subtle px-1.5 py-0.5 rounded-full">{count}</span>}
             </button>
           )
         })}
       </div>
-      {current}
-    </>
+      <div className="flex-1 min-w-0">{current}</div>
+    </div>
   )
 }
 
@@ -325,7 +328,7 @@ export default function StationSettingsPage() {
       </Pane>
 
       {/* Tanks */}
-      <Pane icon={Fuel} title="Underground Tanks" count={tanks.length}>
+      <Pane icon={Cylinder} title="Underground Tanks" count={tanks.length}>
         {tanks.length > 0 && (
           <div className="divide-y divide-line mb-3">
             {tanks.map((t, i) => (
