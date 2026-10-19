@@ -696,17 +696,10 @@ export default function DailySalesFormPage() {
                 aside={<Toggle checked={current.closeOfBusiness} onChange={(v) => updateEntry(activeTab, 'closeOfBusiness', v)} label="Final entry" />}
               >
                 {current.closeOfBusiness && current.tankReadings.map((r, idx) => (
-                  <FieldRow key={r.tank_id} cols={2} keep>
-                    <div className="flex flex-col justify-center px-3 py-2.5 bg-subtle/50">
+                  // The tank, its closing stock, and its over (+) or short (-) worked out from it.
+                  <FieldRow key={r.tank_id} cols={3} keep>
+                    <div className="flex items-center px-3 py-2.5 bg-subtle/50">
                       <span className="text-[15px] text-content-muted">{r.label}</span>
-                      {ovshOf(r) != null && (
-                        <output
-                          aria-label={`${r.label} over or short (litres)`}
-                          className={`text-[13px] font-semibold tabular-nums ${ovshOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
-                        >
-                          OV/SH {ovshOf(r) > 0 ? '+' : ''}{figure(ovshOf(r))} L
-                        </output>
-                      )}
                     </div>
                     <Field label="Litres">
                       <NumberInput
@@ -714,6 +707,14 @@ export default function DailySalesFormPage() {
                         onValue={(v) => updateTankReading(activeTab, idx, v)}
                         placeholder={prevTankClosing[r.tank_id] != null ? String(prevTankClosing[r.tank_id]) : ''}
                       />
+                    </Field>
+                    <Field label="OV/SH (L)">
+                      <output
+                        aria-label={`${r.label} over or short (litres)`}
+                        className={`block px-3 py-[7px] text-right text-[13px] font-semibold tabular-nums ${ovshOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+                      >
+                        {ovshOf(r) == null ? '—' : `${ovshOf(r) > 0 ? '+' : ''}${figure(ovshOf(r))}`}
+                      </output>
                     </Field>
                   </FieldRow>
                 ))}
