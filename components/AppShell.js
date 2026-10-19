@@ -1,5 +1,7 @@
 'use client'
 
+// Android app only: /api requests go to the site (lib/appFetch.js). A no-op on the website.
+import '@/lib/appFetch'
 import { useEffect } from 'react'
 
 export default function AppShell({ children }) {
