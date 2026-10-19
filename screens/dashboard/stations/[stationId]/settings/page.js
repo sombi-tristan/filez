@@ -6,10 +6,10 @@ import Link from '@/lib/nav'
 import {
   Loader2, Fuel, Plus, Trash2, ArrowRight, Landmark,
   CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock, Cylinder,
-  ChevronDown, Monitor, ChevronRight, Building2
+  ChevronDown, Monitor, ChevronRight, Building2, LogOut
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
-import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
+import { INPUT_BASE, INPUT, BTN_PRIMARY, BTN_FRAMED, CARD_LINE, IconChip } from '@/components/ui'
 import ManageStation, { useStationOwner } from '@/components/station/ManageStation'
 
 const FUEL_TYPES = ['PMS', 'AGO', 'DPK']
@@ -225,6 +225,29 @@ export default function StationSettingsPage() {
     setCustomers((prev) => prev.filter((_, idx) => idx !== i))
   }
 
+  // Staff leave the station from its Station tab (the owner cannot leave their own).
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setIsPlatformAdmin(data?.user?.role === 'admin'))
+      .catch(() => {})
+  }, [])
+  const leaveStation = async () => {
+    if (!confirm('Leave this station? You will lose access to its entries and data.')) return
+    setLeaving(true)
+    const res = await fetch('/api/invites/leave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ org_id: stationId }),
+    })
+    if (res.ok) {
+      router.push('/dashboard')
+    }
+    setLeaving(false)
+  }
+
   const submittingRef = useRef(false)
   const handleSave = async () => {
     if (submittingRef.current) return
@@ -275,10 +298,25 @@ export default function StationSettingsPage() {
   return (
     <div className="w-full px-4 sm:px-8 py-8">
       <Tabs>
-      {/* The station itself: set it up, rename it or delete it. The owner's alone: staff get no tab. */}
-      <Pane icon={Building2} title="Station" hidden={!isOwner}>
-        {/* Set up an unfinished station, rename it or delete it (owner only, always open). */}
-        <ManageStation stationId={stationId} />
+      {/* The station itself. The owner sets it up, renames it or deletes it (always open); staff
+          leave it here. A platform admin on a station that is not theirs gets no tab: leaving
+          goes through membership, which they never had. */}
+      <Pane icon={Building2} title="Station" hidden={!isOwner && isPlatformAdmin}>
+        {isOwner ? (
+          <ManageStation stationId={stationId} />
+        ) : (
+          <div>
+            <p className="text-sm text-content-muted mb-3">Leaving loses your access to this station&apos;s entries and data.</p>
+            <button
+              onClick={leaveStation}
+              disabled={leaving}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_FRAMED}`}
+            >
+              {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+              Leave Station
+            </button>
+          </div>
+        )}
       </Pane>
 
       {/* Location */}
@@ -557,18 +595,21 @@ export default function StationSettingsPage() {
       </Pane>
       </Tabs>
 
-      {/* Save */}
-      {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4 mt-4">{error}</p>}
-      {success && <p className="text-sm text-green-600 dark:text-green-400 mb-4 mt-4">{success}</p>}
+      {/* Save, stuck to the bottom of the screen while the tabs above it scroll, on phone and
+          computer alike; it settles in its place once the page is scrolled to the end. */}
+      <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-8 mt-4 px-4 sm:px-8 py-3 bg-canvas border-t border-line">
+        {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
+        {success && <p className="text-sm text-green-600 dark:text-green-400 mb-3">{success}</p>}
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium disabled:opacity-50 mt-4 ${BTN_PRIMARY}`}
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        Save changes
-      </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save changes
+        </button>
+      </div>
 
       {/* The StationMGR Desktop computers linked to this owner's stations, and revoking one. */}
       <Link href="/dashboard/computers" className={`mt-8 flex items-center gap-2 px-4 py-3 ${CARD_LINE}`}>

@@ -3,7 +3,8 @@
  *
  *   Manage Station moved to the station's Settings screen, always open
  *   (components/station/ManageStation.js): setting up an unfinished station, renaming it and
- *   deleting it. Appearance, Leave Station and Sign out are a plain footer row at the very bottom.
+ *   deleting it. Appearance and Sign out are a plain footer row at the very bottom; staff leave
+ *   the station from the same Station tab in Settings.
  *
  * Run: node tests/home-tail.test.mjs
  */
@@ -22,7 +23,8 @@ const manage = read('components/station/ManageStation.js')
 
 console.log('Manage Station')
 check('no longer on the station home', !home.includes('Manage Station') && !home.includes('setShowManage') && !home.includes('updateStation') && !home.includes('deleteStation'))
-check('in Settings, in the Station tab', /import ManageStation(, \{ useStationOwner \})? from '@\/components\/station\/ManageStation'/.test(settings) && /title="Station"[^>]*>\s*(\{\/\*[^*]*\*\/\}\s*)?<ManageStation stationId=\{stationId\} \/>/.test(settings))
+check('in Settings, in the Station tab', /import ManageStation(, \{ useStationOwner \})? from '@\/components\/station\/ManageStation'/.test(settings) && /title="Station"[^>]*>\s*(\{\/\*[^*]*\*\/\}\s*)?(\{isOwner \? \(\s*)?<ManageStation stationId=\{stationId\} \/>/.test(settings))
+check('Leave Station in the Station tab, for staff, not for a platform admin', /title="Station" hidden=\{!isOwner && isPlatformAdmin\}>[\s\S]*?<ManageStation stationId=\{stationId\} \/>\s*\) : \([\s\S]*?onClick=\{leaveStation\}[\s\S]*?Leave Station/.test(settings) && settings.includes("fetch('/api/invites/leave'"))
 check('always open: no fold', !manage.includes('showManage') && !manage.includes('ChevronDown'))
 // In the Settings tabs' Station tab now, whose box frames it: no frame of its own.
 check('its heading inside, no frame of its own (the Station tab frames it)', /<section className="mb-4">\s*<h2[^>]*>Manage station<\/h2>/.test(manage))
@@ -33,7 +35,8 @@ check('deletes it, after asking', manage.includes("method: 'DELETE'") && manage.
 
 console.log('\nThe very bottom')
 const tail = home.slice(home.indexOf('{/* The very bottom'))
-check('Appearance, Leave Station and Sign out on one plain footer row', /<footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">[\s\S]*?Appearance[\s\S]*?<ThemeControl cycle \/>[\s\S]*?Leave Station[\s\S]*?Sign out[\s\S]*?<\/footer>/.test(tail))
+check('Appearance and Sign out on one plain footer row', /<footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">[\s\S]*?Appearance[\s\S]*?<ThemeControl cycle \/>[\s\S]*?Sign out[\s\S]*?<\/footer>/.test(tail))
+check('no Leave Station on the station home', !home.includes('onClick={leaveStation}') && !home.includes('/api/invites/leave'))
 check('no separate Sign out section', !home.includes('<section className="mt-8 flex items-center gap-2 flex-wrap">'))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
