@@ -1,0 +1,12 @@
+{
+  "appId": "com.premeval.stationmgr",
+  "appName": "StationMGR",
+  "webDir": "www",
+  "server": {
+    "url": "https://stationmgr.site/dashboard",
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#ffffff"
+  }
+}
