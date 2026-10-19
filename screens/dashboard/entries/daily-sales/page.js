@@ -17,7 +17,7 @@ import {
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
-import { sortEntries } from '@/lib/salesCalculations'
+import { sortEntries, calculateDateNozzles } from '@/lib/salesCalculations'
 
 // A nozzle row: the pump's number, then closing meter (wider), consumption, pour back and the
 // computed actual sales. minmax(0, …) lets the columns shrink below an input's built-in width,
@@ -59,6 +59,58 @@ function openingMeters(saved, editingIds, formDate, readings, nozzles) {
     if (r.pump_id != null) open[r.pump_id] = Number(r.closing_meter || 0)
   }
   return open
+}
+
+/**
+ * Each tank's day, for the OV/SH beside its closing stock, the Daily Sales Report's way
+ * (lib/buildDailyReport.js): its opening is the last final entry's closing before the day, else
+ * the tank's opening stock; its supply is the day's receipts into it; what it dispensed is the
+ * day's meters on the pumps drawing from it (closing less opening, every shift of the day with
+ * the form among them). OV/SH = closing - opening - supply + dispensed.
+ */
+function tankDay(saved, receipts, editingIds, formDate, readings, nozzles, tanks) {
+  const dateOf = (e) => e.entryDate || e.entry_date || ''
+  const others = (saved || [])
+    .filter((e) => !editingIds.includes(e.id) && dateOf(e) <= formDate)
+    .map((e) => ({ ...e, entryDate: dateOf(e) }))
+
+  const lastFinal = sortEntries(others.filter((e) => e.entryDate < formDate && (e.closeOfBusiness || e.close_of_business))).pop()
+  const opening = {}
+  for (const t of tanks) {
+    const r = (lastFinal?.tankReadings || lastFinal?.tank_readings || []).find((x) => x.tank_id === t.id)
+    opening[t.id] = r ? Number(r.closing_stock || 0) : Number(t.opening_stock || 0)
+  }
+
+  const supply = {}
+  for (const r of receipts || []) {
+    if (r.entryDate === formDate && r.tankId) supply[r.tankId] = (supply[r.tankId] || 0) + Number(r.actualVolume || 0)
+  }
+
+  // The day's shifts and the one before them are all the meters need.
+  const lastBefore = others.reduce((d, e) => (e.entryDate < formDate && e.entryDate > d ? e.entryDate : d), '')
+  const editing = (saved || []).find((e) => editingIds.includes(e.id))
+  const form = {
+    id: '￿',
+    entryDate: formDate,
+    createdAt: editing?.createdAt || '9999-12-31T23:59:59.999Z',
+    nozzleReadings: readings
+      .filter((r) => r.closing_meter !== '' && r.closing_meter != null)
+      .map((r) => ({ pump_id: r.pump_id, closing_meter: Number(r.closing_meter) })),
+  }
+  const day = calculateDateNozzles(
+    [...others.filter((e) => e.entryDate === formDate || e.entryDate === lastBefore), form], nozzles, tanks, formDate,
+  )
+  const tankOf = Object.fromEntries(nozzles.map((n) => [n.id, n.tank_id]))
+  const dispensed = {}
+  for (const entry of day.entries) {
+    for (const ft of day.fuelTypes) {
+      for (const n of entry.fuelGroups[ft].nozzles) {
+        const tid = tankOf[n.pumpId]
+        if (tid) dispensed[tid] = (dispensed[tid] || 0) + n.dispensed
+      }
+    }
+  }
+  return { opening, supply, dispensed }
 }
 
 function blankEntry(nozzles, tanks) {
@@ -277,6 +329,11 @@ export default function DailySalesFormPage() {
     () => (orgId ? db.dailySales.where('orgId').equals(orgId).toArray() : []),
     [orgId], []
   )
+  // The day's product receipts, the supply in each tank's OV/SH.
+  const dayReceipts = useLiveQuery(
+    () => (orgId && formDate ? db.productReceipts.where('orgId').equals(orgId).filter((r) => r.entryDate === formDate).toArray() : []),
+    [orgId, formDate], []
+  )
 
   const editEntry = (item) => {
     const entry = (dayEntries || []).find((e) => e.id === item.id)
@@ -479,6 +536,13 @@ export default function DailySalesFormPage() {
   // closing meter (blank: the opening) less the opening, consumption and pour back; per fuel,
   // its litres at the price entered above.
   const opening = current ? openingMeters(savedSales, originalIds, formDate, current.nozzleReadings, nozzles) : {}
+  // A tank's over (+) or short (-) on the final entry, once its closing stock is typed.
+  const dayTanks = current?.closeOfBusiness ? tankDay(savedSales, dayReceipts, originalIds, formDate, current.nozzleReadings, nozzles, tanks) : null
+  const ovshOf = (r) => {
+    if (!dayTanks || r.closing_stock === '' || r.closing_stock == null) return null
+    const t = r.tank_id
+    return Number(r.closing_stock) - (dayTanks.opening[t] ?? 0) - (dayTanks.supply[t] || 0) + (dayTanks.dispensed[t] || 0)
+  }
   const actualOf = (r) => {
     const open = opening[r.pump_id] ?? 0
     const close = r.closing_meter !== '' && r.closing_meter != null ? Number(r.closing_meter) : open
@@ -565,7 +629,7 @@ export default function DailySalesFormPage() {
                 {/* One heading per fuel naming the columns, then a row per pump: its number and the
                     closing meter, consumption and pour back fields, with no label of their own, so
                     the fields follow one another straight down the fuel, and its actual sales,
-                    worked out as they are typed. The fuel's total and amount close it. */}
+                    worked out as they are typed. The day's total sales close the readings. */}
                 {readingFuels.map((fuel) => (
                   <div key={fuel}>
                     <div className={`${NOZZLE_GRID} border-t border-line text-[13px] font-semibold text-content-muted`}>
@@ -599,7 +663,7 @@ export default function DailySalesFormPage() {
                             <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'pour_back')}</div>
                             <output
                               aria-label={`${r.label} actual sales (litres)`}
-                              className={`min-w-0 self-center px-3 text-right text-[15px] font-semibold tabular-nums truncate ${actualOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+                              className={`min-w-0 self-center px-3 text-right text-[13px] font-semibold tabular-nums truncate ${actualOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
                             >
                               {figure(actualOf(r))}
                             </output>
@@ -613,22 +677,11 @@ export default function DailySalesFormPage() {
                         </div>
                       )
                     })}
-                    <div className={`${NOZZLE_GRID} border-t border-line bg-subtle/60`}>
-                      <span className="col-span-4 px-3 py-2 text-[13px] font-semibold text-content-muted">
-                        {fuel} total
-                        <span className="block text-content">
-                          {figure(fuelActual(fuel))} L × ₦{figure(current.prices[fuel])} = ₦{figure(fuelAmount(fuel))}
-                        </span>
-                      </span>
-                      <output aria-label={`${fuel} total actual sales (litres)`} className="self-center px-3 text-right text-[15px] font-bold tabular-nums truncate text-content">
-                        {figure(fuelActual(fuel))}
-                      </output>
-                    </div>
                   </div>
                 ))}
                 <div className="flex items-center justify-between border-t border-line px-3 py-2.5">
-                  <span className="text-[15px] font-semibold text-content-muted">Total sales</span>
-                  <output aria-label="Total sales (naira)" className="text-base font-bold tabular-nums text-content">₦{figure(dayAmount)}</output>
+                  <span className="text-[13px] font-semibold text-content-muted">Total sales</span>
+                  <output aria-label="Total sales (naira)" className="text-[13px] font-semibold tabular-nums text-content">₦{figure(dayAmount)}</output>
                 </div>
               </FieldGroup>
             )}
@@ -643,7 +696,8 @@ export default function DailySalesFormPage() {
                 aside={<Toggle checked={current.closeOfBusiness} onChange={(v) => updateEntry(activeTab, 'closeOfBusiness', v)} label="Final entry" />}
               >
                 {current.closeOfBusiness && current.tankReadings.map((r, idx) => (
-                  <FieldRow key={r.tank_id} cols={2} keep>
+                  // The tank, its closing stock, and its over (+) or short (-) worked out from it.
+                  <FieldRow key={r.tank_id} cols={3} keep>
                     <div className="flex items-center px-3 py-2.5 bg-subtle/50">
                       <span className="text-[15px] text-content-muted">{r.label}</span>
                     </div>
@@ -653,6 +707,14 @@ export default function DailySalesFormPage() {
                         onValue={(v) => updateTankReading(activeTab, idx, v)}
                         placeholder={prevTankClosing[r.tank_id] != null ? String(prevTankClosing[r.tank_id]) : ''}
                       />
+                    </Field>
+                    <Field>
+                      <output
+                        aria-label={`${r.label} over or short (litres)`}
+                        className={`block px-3 py-[7px] text-right text-[13px] font-semibold tabular-nums ${ovshOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+                      >
+                        {ovshOf(r) == null ? '—' : `${ovshOf(r) > 0 ? '+' : ''}${figure(ovshOf(r))}`}
+                      </output>
                     </Field>
                   </FieldRow>
                 ))}
