@@ -57,12 +57,25 @@ check('no rows, no error', bare.dateReports[0].balances.rows.length === 0)
 
 console.log('\nOn screen')
 const page = readFileSync(new URL('../screens/dashboard/reports/daily-sales-report/page.js', import.meta.url), 'utf8')
-check('the Balances table sits after Pour Back and before the Summary', page.indexOf('>Balances<') > page.indexOf('>Pour Back<') && page.indexOf('>Balances<') < page.indexOf('{/* Summary */}'))
+{
+  // As on desktop: under both columns, a divider, then one row of two boxes, Balances and the totals.
+  const right = page.slice(page.indexOf('{/* ===== RIGHT: STOCK & SUMMARY ===== */}'), page.indexOf('{/* ===== BELOW: BALANCES, THEN CONSUMPTION, POUR BACK, TOTALS ===== */}'))
+  const below = page.slice(page.indexOf('{/* ===== BELOW: BALANCES, THEN CONSUMPTION, POUR BACK, TOTALS ===== */}'), page.indexOf('{/* Day tabs'))
+  const totalsBox = below.slice(below.indexOf('{/* The totals table */}'))
+  const balancesBox = below.slice(below.indexOf('{/* The balances table */}'), below.indexOf('{/* The totals table */}'))
+  check('consumption, pour back, balances and totals are out of the right-hand column', right.length > 0 && !right.includes('>Consumption<') && !right.includes('>Pour Back<') && !right.includes('>Balances<') && !right.includes('>TOTAL POS<'))
+  check('a divider under both columns', /<hr className="my-4 border-t-2 border-primary-500\/40 dark:border-primary-400\/40" \/>\s*<div className="grid grid-cols-1 lg:grid-cols-2/.test(below))
+  check('one row of two boxes on a computer, Balances then the totals; stacked on a phone', below.includes('<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4 lg:[overflow-wrap:anywhere]">') &&
+    (balancesBox.match(/<table/g) || []).length === 1 && balancesBox.includes('>Balances<') && balancesBox.includes('<div className="min-w-0 empty:hidden lg:empty:block">'))
+  check('the totals one table: Consumption, Pour Back, then Totals', (totalsBox.match(/<table/g) || []).length === 1 &&
+    totalsBox.indexOf("section('Consumption'") > 0 && totalsBox.indexOf("section('Consumption'") < totalsBox.indexOf("section('Pour Back'") && totalsBox.indexOf("section('Pour Back'") < totalsBox.indexOf('>Totals<') &&
+    totalsBox.includes('>TOTAL POS<') && totalsBox.includes('>CASH<') && !totalsBox.includes('>Balances<'))
+}
 check('the page passes customers and their payments', page.includes('customerPayments: livePayments'))
 
 console.log('\nIn Excel')
 const excel = readFileSync(new URL('../lib/exportDailyReportExcel.js', import.meta.url), 'utf8')
-check('the Balances section sits after Pour Back and before the summary', excel.indexOf("'Balances'") > excel.indexOf("renderSection('Pour Back'") && excel.indexOf("'Balances'") < excel.indexOf("'SALES'"))
+check('the Balances block comes first, before Consumption, as on screen', excel.indexOf("'Balances'") > 0 && excel.indexOf("'Balances'") < excel.indexOf("renderSection('Consumption'"))
 check('its columns are Owes station and Station owes', excel.includes("'Owes station'") && excel.includes("'Station owes'"))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)

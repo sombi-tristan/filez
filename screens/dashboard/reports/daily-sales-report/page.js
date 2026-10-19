@@ -372,130 +372,114 @@ function DailySalesReportContent() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
 
-              {/* Consumption & Pour Back entries (split into two tables) */}
-              {(() => {
-                const consEntries = currentDayReport.consumption.entries.filter(e => !e.isPourBack)
-                const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
-                return (
-                  <>
-                    {consEntries.length > 0 && (
-                      <table className="w-full border-collapse text-sm mb-2">
-                        <thead>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`} colSpan={3}>Consumption</th>
-                          </tr>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`}>Account</th>
-                            <th className={`${cell} text-left font-bold`}>Fuel</th>
-                            <th className={`${cellR} font-bold`}>Qty</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {consEntries.map((c, i) => (
-                            <tr key={i}>
-                              <td className={cell}>{customerMap[c.customerId] || 'Unknown'}</td>
-                              <td className={cell}>{c.fuelType || ''}</td>
-                              <td className={cellR}>{fmt(c.quantity)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                    {pbEntries.length > 0 && (
-                      <table className="w-full border-collapse text-sm mb-2">
-                        <thead>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`} colSpan={3}>Pour Back</th>
-                          </tr>
-                          <tr className={subHdr}>
-                            <th className={`${cell} text-left font-bold`}>Account</th>
-                            <th className={`${cell} text-left font-bold`}>Fuel</th>
-                            <th className={`${cellR} font-bold`}>Qty</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pbEntries.map((c, i) => (
-                            <tr key={i}>
-                              <td className={cell}>{customerMap[c.customerId] || 'Unknown'}</td>
-                              <td className={cell}>{c.fuelType || ''}</td>
-                              <td className={cellR}>{fmt(c.quantity)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </>
-                )
-              })()}
-
-              {/* Credit customers' balances at the end of the day, the ones not at zero. */}
+          {/* ===== BELOW: BALANCES, THEN CONSUMPTION, POUR BACK, TOTALS ===== */}
+          {/* Under both columns, after the divider, one row of two boxes: the Balances table (when
+              the day has any), then the totals table in sections, each with its own heading row:
+              Consumption, Pour Back (when the day has any), then the day's Totals. Side by side on
+              a computer, one under the other on a phone. */}
+          {(() => {
+            const consEntries = currentDayReport.consumption.entries.filter(e => !e.isPourBack)
+            const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
+            const section = (title, entries) => entries.length > 0 && (
+              <>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`} colSpan={3}>{title}</th>
+                </tr>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`}>Account</th>
+                  <th className={`${cell} text-left font-bold`}>Fuel</th>
+                  <th className={`${cellR} font-bold`}>Qty</th>
+                </tr>
+                {entries.map((c, i) => (
+                  <tr key={`${title}-${i}`}>
+                    <td className={cell}>{customerMap[c.customerId] || 'Unknown'}</td>
+                    <td className={cell}>{c.fuelType || ''}</td>
+                    <td className={cellR}>{fmt(c.quantity)}</td>
+                  </tr>
+                ))}
+              </>
+            )
+            return (
+              <>
+              {/* A divider sets the totals apart from the rest of the report above. */}
+              <hr className="my-4 border-t-2 border-primary-500/40 dark:border-primary-400/40" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4 lg:[overflow-wrap:anywhere]">
+              {/* The balances table */}
+              {/* Credit customers' balances at the end of the day, the ones not at zero. On a day
+                  with none the left box stays, empty, on a computer so the totals keep to the
+                  right; on a phone it goes. */}
+              <div className="min-w-0 empty:hidden lg:empty:block">
               {currentDayReport.balances.rows.length > 0 && (
-                <table className="w-full border-collapse text-sm mb-2">
-                  <thead>
-                    <tr className={subHdr}>
-                      <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
-                    </tr>
-                    <tr className={subHdr}>
-                      <th className={`${cell} text-left font-bold`}>Customer</th>
-                      <th className={`${cellR} font-bold`}>Owes station</th>
-                      <th className={`${cellR} font-bold`}>Station owes</th>
-                    </tr>
-                  </thead>
+                  <table className="w-full border-collapse text-sm">
+                    <tbody>
+                      <tr className={subHdr}>
+                        <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
+                      </tr>
+                      <tr className={subHdr}>
+                        <th className={`${cell} text-left font-bold`}>Customer</th>
+                        <th className={`${cellR} font-bold`}>Owes station</th>
+                        <th className={`${cellR} font-bold`}>Station owes</th>
+                      </tr>
+                      {currentDayReport.balances.rows.map((b) => (
+                        <tr key={b.customerId}>
+                          <td className={cell}>{b.name}</td>
+                          <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
+                          <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold">
+                        <td className={cell}>Total</td>
+                        <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
+                        <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+              )}
+              </div>
+              {/* The totals table */}
+              <div className="min-w-0">
+                <table className="w-full border-collapse text-sm">
                   <tbody>
-                    {currentDayReport.balances.rows.map((b) => (
-                      <tr key={b.customerId}>
-                        <td className={cell}>{b.name}</td>
-                        <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
-                        <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
+                    {section('Consumption', consEntries)}
+                    {section('Pour Back', pbEntries)}
+                    <tr className={subHdr}>
+                      <th className={`${cell} text-left font-bold`}>Totals</th>
+                      <th className={`${cellR} font-bold`}>Sales</th>
+                      <th className={`${cellR} font-bold`}>Amount</th>
+                    </tr>
+                    {report.fuelTypes.map(ft => (
+                      <tr key={ft}>
+                        <td className={`${cell} font-bold`}>{ft}</td>
+                        <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.actual)}</td>
+                        <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.amount)}</td>
                       </tr>
                     ))}
+                    <tr className={`${subHdr} font-bold`}>
+                      <td colSpan={2} className={cell}>SALES</td>
+                      <td className={cellR}>{fmt(currentDayReport.totalSales)}</td>
+                    </tr>
                     <tr className="font-bold">
-                      <td className={cell}>Total</td>
-                      <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
-                      <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
+                      <td colSpan={2} className={cell}>TOTAL POS</td>
+                      <td className={cellR}>{fmt(currentDayReport.lodgement.totalPOS)}</td>
+                    </tr>
+                    <tr className="font-bold">
+                      <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
+                      <td className={cellR}>{fmt(currentDayReport.lodgement.totalTransfer)}</td>
+                    </tr>
+                    <tr className={`${subHdr} font-bold`}>
+                      <td colSpan={2} className={cell}>CASH</td>
+                      <td className={cellR}>{fmt(currentDayReport.cashBalance)}</td>
                     </tr>
                   </tbody>
                 </table>
-              )}
-
-              {/* Summary */}
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className={subHdr}>
-                    <th className={`${cell} text-left font-bold`}></th>
-                    <th className={`${cellR} font-bold`}>Sales</th>
-                    <th className={`${cellR} font-bold`}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.fuelTypes.map(ft => (
-                    <tr key={ft}>
-                      <td className={`${cell} font-bold`}>{ft}</td>
-                      <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.actual)}</td>
-                      <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.amount)}</td>
-                    </tr>
-                  ))}
-                  <tr className={`${subHdr} font-bold`}>
-                    <td colSpan={2} className={cell}>SALES</td>
-                    <td className={cellR}>{fmt(currentDayReport.totalSales)}</td>
-                  </tr>
-                  <tr className="font-bold">
-                    <td colSpan={2} className={cell}>TOTAL POS</td>
-                    <td className={cellR}>{fmt(currentDayReport.lodgement.totalPOS)}</td>
-                  </tr>
-                  <tr className="font-bold">
-                    <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
-                    <td className={cellR}>{fmt(currentDayReport.lodgement.totalTransfer)}</td>
-                  </tr>
-                  <tr className={`${subHdr} font-bold`}>
-                    <td colSpan={2} className={cell}>CASH</td>
-                    <td className={cellR}>{fmt(currentDayReport.cashBalance)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+              </div>
+              </div>
+              </>
+            )
+          })()}
         </div>
       )}
 
