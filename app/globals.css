@@ -344,3 +344,14 @@ html ion-buttons ion-button.house-btn.house-btn:not(.house-btn-icon) {
 :where(:root:not([data-theme='dark'])) .border-primary-500\/40 {
   border-color: rgb(var(--primary-500) / 0.6);
 }
+
+/* The station home, every word a step bolder (screens/dashboard/stations/[stationId]/page.js
+   marks it station-bold): plain text 400 -> 600, medium and semibold -> 700. Bold stays 700,
+   the heaviest Source Sans 3 the app loads (app/layout.js). */
+.station-bold {
+  font-weight: 600;
+}
+
+.station-bold :is(.font-medium, .font-semibold) {
+  font-weight: 700;
+}

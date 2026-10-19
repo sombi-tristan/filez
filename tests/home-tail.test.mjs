@@ -33,7 +33,7 @@ check('deletes it, after asking', manage.includes("method: 'DELETE'") && manage.
 
 console.log('\nThe very bottom')
 const tail = home.slice(home.indexOf('{/* The very bottom'))
-check('Appearance, Leave Station and Sign out on one plain footer row', /<footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">[\s\S]*?Appearance[\s\S]*?<ThemeControl \/>[\s\S]*?Leave Station[\s\S]*?Sign out[\s\S]*?<\/footer>/.test(tail))
+check('Appearance, Leave Station and Sign out on one plain footer row', /<footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">[\s\S]*?Appearance[\s\S]*?<ThemeControl cycle \/>[\s\S]*?Leave Station[\s\S]*?Sign out[\s\S]*?<\/footer>/.test(tail))
 check('no separate Sign out section', !home.includes('<section className="mt-8 flex items-center gap-2 flex-wrap">'))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
