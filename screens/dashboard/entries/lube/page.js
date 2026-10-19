@@ -14,7 +14,7 @@ import { ENTRY_INPUT, ENTRY_SELECT } from '@/components/ui'
 import { Tabs } from '@/design'
 import {
   EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, SubscribeNotice,
-  SaveBar, EntryLoading, NotConfigured, adjacentDates,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates, Figures, figure,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
@@ -78,23 +78,6 @@ function stockAt(product, sales, date, leaveOut = []) {
   return sales
     .filter((s) => s.productId === product.id && s.entryDate <= date && !leaveOut.includes(s.id))
     .reduce((t, s) => t + (Number(s.unitReceived) || 0) - (Number(s.unitSold) || 0), Number(product.opening_stock) || 0)
-}
-
-/** Units and naira as the form shows them: thousands separated, at most two decimals. */
-const figure = (n) => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
-
-/** Read-only figures worked out from an entry as it is typed, in a row under its fields. */
-function Figures({ items }) {
-  return (
-    <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line bg-subtle/60 px-3 py-2">
-      {items.map(({ label, value, bad }) => (
-        <div key={label} className="flex items-baseline gap-2">
-          <span className="text-[13px] font-semibold text-content-muted">{label}</span>
-          <output className={`text-[15px] font-bold tabular-nums ${bad ? 'text-red-600 dark:text-red-400' : 'text-content'}`}>{value}</output>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 export default function LubeFormPage() {
@@ -333,8 +316,8 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
 
       {/* The day's lube sales: what is saved for the day, with the entries in the form as typed. */}
       <div className="mb-4 flex items-center justify-between border-card border-line rounded-house px-3 py-2.5">
-        <span className="text-[15px] font-semibold text-content-muted">Day&apos;s lube sales</span>
-        <output className="text-base font-bold tabular-nums text-content">
+        <span className="text-[13px] font-semibold text-content-muted">Day&apos;s lube sales</span>
+        <output className="text-[13px] font-semibold tabular-nums text-content">
           ₦{figure(
             dayEntries.filter((e) => !originalIds.includes(e.id)).reduce((t, e) => t + (Number(e.unitSold) || 0) * (Number(e.price) || 0), 0)
             + entries.reduce((t, e) => t + (Number(e.unitSold) || 0) * (Number(e.price) || 0), 0)

@@ -603,7 +603,7 @@ export default function DailySalesFormPage() {
                             <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'pour_back')}</div>
                             <output
                               aria-label={`${r.label} actual sales (litres)`}
-                              className={`min-w-0 self-center px-3 text-right text-[15px] font-semibold tabular-nums truncate ${actualOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+                              className={`min-w-0 self-center px-3 text-right text-[13px] font-semibold tabular-nums truncate ${actualOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
                             >
                               {figure(actualOf(r))}
                             </output>
@@ -620,8 +620,8 @@ export default function DailySalesFormPage() {
                   </div>
                 ))}
                 <div className="flex items-center justify-between border-t border-line px-3 py-2.5">
-                  <span className="text-[15px] font-semibold text-content-muted">Total sales</span>
-                  <output aria-label="Total sales (naira)" className="text-base font-bold tabular-nums text-content">₦{figure(dayAmount)}</output>
+                  <span className="text-[13px] font-semibold text-content-muted">Total sales</span>
+                  <output aria-label="Total sales (naira)" className="text-[13px] font-semibold tabular-nums text-content">₦{figure(dayAmount)}</output>
                 </div>
               </FieldGroup>
             )}
