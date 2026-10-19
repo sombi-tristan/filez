@@ -12,7 +12,7 @@ import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_DATE } from '@/components/ui'
 import {
   EntryScreen, DayBar, EntryCard, Field, FieldGroup, FieldRow, NumberInput,
-  SaveBar, EntryLoading, NotConfigured, adjacentDates,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates, Figures, figure,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 
@@ -393,6 +393,18 @@ export default function ProductReceiptFormPage() {
                   />
                 </FieldRow>
               ))}
+              {(() => {
+                // What this delivery puts in each fuel's tanks, and in all, as it is typed.
+                const litres = (t) => Number(current.tankVolumes?.[t.id]) || 0
+                const fuels = [...new Set(tanks.map((t) => t.fuel_type))]
+                const byFuel = fuels.map((f) => [f, tanks.filter((t) => t.fuel_type === f).reduce((s, t) => s + litres(t), 0)])
+                return (
+                  <Figures items={[
+                    ...byFuel.map(([f, l]) => ({ label: f, value: `${figure(l)} L` })),
+                    { label: 'Total received', value: `${figure(byFuel.reduce((s, [, l]) => s + l, 0))} L` },
+                  ]} />
+                )
+              })()}
             </FieldGroup>
 
             <Field label="Notes">
