@@ -565,7 +565,7 @@ export default function DailySalesFormPage() {
                 {/* One heading per fuel naming the columns, then a row per pump: its number and the
                     closing meter, consumption and pour back fields, with no label of their own, so
                     the fields follow one another straight down the fuel, and its actual sales,
-                    worked out as they are typed. The fuel's total and amount close it. */}
+                    worked out as they are typed. The day's total sales close the readings. */}
                 {readingFuels.map((fuel) => (
                   <div key={fuel}>
                     <div className={`${NOZZLE_GRID} border-t border-line text-[13px] font-semibold text-content-muted`}>
@@ -613,17 +613,6 @@ export default function DailySalesFormPage() {
                         </div>
                       )
                     })}
-                    <div className={`${NOZZLE_GRID} border-t border-line bg-subtle/60`}>
-                      <span className="col-span-4 px-3 py-2 text-[13px] font-semibold text-content-muted">
-                        {fuel} total
-                        <span className="block text-content">
-                          {figure(fuelActual(fuel))} L × ₦{figure(current.prices[fuel])} = ₦{figure(fuelAmount(fuel))}
-                        </span>
-                      </span>
-                      <output aria-label={`${fuel} total actual sales (litres)`} className="self-center px-3 text-right text-[15px] font-bold tabular-nums truncate text-content">
-                        {figure(fuelActual(fuel))}
-                      </output>
-                    </div>
                   </div>
                 ))}
                 <div className="flex items-center justify-between border-t border-line px-3 py-2.5">
