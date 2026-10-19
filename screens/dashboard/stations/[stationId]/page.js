@@ -63,7 +63,6 @@ export default function StationPage() {
   const [subscription, setSubscription] = useState(null)
 
   // Manage station accordion
-  const [leaving, setLeaving] = useState(false)
 
   // Sync state
   const [syncing, setSyncing] = useState(false)
@@ -255,20 +254,6 @@ export default function StationPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ invite_id: inviteId, visible_pages: updated }),
     })
-  }
-
-  const leaveStation = async () => {
-    if (!confirm('Leave this station? You will lose access to its entries and data.')) return
-    setLeaving(true)
-    const res = await fetch('/api/invites/leave', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ org_id: stationId }),
-    })
-    if (res.ok) {
-      router.push('/dashboard')
-    }
-    setLeaving(false)
   }
 
   const handleSignOut = async () => {
@@ -582,7 +567,8 @@ export default function StationPage() {
 
         {staffSection}
 
-      {/* The very bottom: Appearance, Leave Station and Sign out on one plain footer row. */}
+      {/* The very bottom: Appearance and Sign out on one plain footer row. Leave Station is in
+          Settings, in the Station tab. */}
       <footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-content-muted uppercase tracking-wide">Appearance</span>
@@ -590,18 +576,6 @@ export default function StationPage() {
           <ThemeControl cycle />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Not for a platform admin: leaving goes through the membership route, so on a
-              station they were never invited to it would do nothing at all. */}
-          {!isPlatformAdmin && (
-            <button
-              onClick={leaveStation}
-              disabled={leaving}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
-            >
-              {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-              Leave Station
-            </button>
-          )}
           <button
             onClick={handleSignOut}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${BTN_FRAMED}`}
