@@ -236,3 +236,11 @@ ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon::part(na
 [data-theme='dark'] .dark\:text-primary-400 { color: rgb(var(--primary-300)); }
 [data-theme='dark'] .dark\:text-primary-300 { color: rgb(var(--primary-200)); }
 [data-theme='dark'] .dark\:text-primary-200 { color: rgb(var(--primary-100)); }
+
+/* Premeval blue icons: in light mode a blue icon is Premeval's own blue (#0093DD, the 500), not
+   the darker 600/700/800 the text beside it takes: an icon coloured so itself, or sitting in blue
+   text with no colour of its own. Only icons; dark mode keeps its light blues. */
+:root:not([data-theme='dark']) .lucide:is(.text-primary-600, .text-primary-700, .text-primary-800),
+:root:not([data-theme='dark']) :is(.text-primary-600, .text-primary-700, .text-primary-800) .lucide:not([class*="text-"]) {
+  color: rgb(var(--primary-500));
+}
