@@ -19,7 +19,8 @@ const read = (...p) => readFileSync(resolve(__dirname, '..', ...p), 'utf8')
 
 const shell = read('components', 'shell', 'IonicShell.js')
 const screen = read('components', 'shell', 'Screen.js')
-const dashboardPage = read('app', 'dashboard', '[[...path]]', 'page.js')
+// page.js only lists the address the Android build writes; DashboardApp.js mounts the shell.
+const dashboardPage = read('app', 'dashboard', '[[...path]]', 'DashboardApp.js')
 const adminPage = read('app', 'admin', '[[...path]]', 'page.js')
 const nav = read('lib', 'nav.js')
 const routes = read('screens', 'routes.js')
