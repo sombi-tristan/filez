@@ -5,7 +5,7 @@
   "description": "StationMGR Android app: the screens from npm run build:android, carried in the app",
   "scripts": {
     "sync": "cap sync android",
-    "apk": "npm --prefix .. run build:android && cap sync android && cd android && gradlew.bat assembleRelease"
+    "apk": "npm --prefix .. run build:android && cap sync android && cd android && .\\gradlew.bat assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
