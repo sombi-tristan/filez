@@ -23,9 +23,17 @@ const LODGEMENT_TYPES = [
   { value: 'other', label: 'Other' },
 ]
 
-/** One section of the Settings tabs: its content in a framed box (its tab carries the title). */
-function Pane({ children }) {
-  return <section className={`mb-2 px-4 py-3 ${CARD_LINE}`}>{children}</section>
+/**
+ * One section of the Settings tabs: its title on top and its content, in a framed box. The tab
+ * carries the title too, but on a phone a tab is only its icon, so the section names itself.
+ */
+function Pane({ title, children }) {
+  return (
+    <section className={`mb-2 px-4 py-3 ${CARD_LINE}`}>
+      <h2 className="text-base font-bold text-content mb-3">{title}</h2>
+      {children}
+    </section>
+  )
 }
 
 /**

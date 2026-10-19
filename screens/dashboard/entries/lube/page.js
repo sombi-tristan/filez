@@ -108,6 +108,9 @@ export default function LubeFormPage() {
 
       {subBlocked && <SubscribeNotice />}
 
+      {/* The tab's own title, also when editing an entry hides the tabs. */}
+      <h2 className="text-base font-bold text-content mb-3">{tab === 'sales' ? 'Lube sales' : 'Lube stock'}</h2>
+
       {tab === 'sales'
         ? <LubeSalesForm {...formProps} />
         : <LubeStockForm {...formProps} />
