@@ -6,7 +6,6 @@ import Image from 'next/image'
 import { Fuel, ClipboardList, BarChart3, Users } from 'lucide-react'
 import Footer from '@/components/Footer'
 import DesktopDownload from '@/components/DesktopDownload'
-import AndroidDownload from '@/components/AndroidDownload'
 import { BTN_FRAMED, BTN_PRIMARY } from '@/components/ui'
 
 export default function LandingPage() {
@@ -93,8 +92,6 @@ export default function LandingPage() {
           </>
         )}
       </div>
-
-      <AndroidDownload />
 
       <div className="border-t border-line pt-12">
         <div className="grid sm:grid-cols-2 gap-8">
