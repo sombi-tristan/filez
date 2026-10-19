@@ -23,9 +23,17 @@ const LODGEMENT_TYPES = [
   { value: 'other', label: 'Other' },
 ]
 
-/** One section of the Settings tabs: its content in a framed box (its tab carries the title). */
-function Pane({ children }) {
-  return <section className={`mb-2 px-4 py-3 ${CARD_LINE}`}>{children}</section>
+/**
+ * One section of the Settings tabs: its title on top and its content, in a framed box. The tab
+ * carries the title too, but on a phone a tab is only its icon, so the section names itself.
+ */
+function Pane({ title, children }) {
+  return (
+    <section className={`mb-2 px-4 py-3 ${CARD_LINE}`}>
+      <h2 className="text-base font-bold text-content mb-3">{title}</h2>
+      {children}
+    </section>
+  )
 }
 
 /**
@@ -564,18 +572,21 @@ export default function StationSettingsPage() {
       </Pane>
       </Tabs>
 
-      {/* Save */}
-      {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4 mt-4">{error}</p>}
-      {success && <p className="text-sm text-green-600 dark:text-green-400 mb-4 mt-4">{success}</p>}
+      {/* Save, stuck to the bottom of the screen while the tabs above it scroll; it settles in
+          its place once the page is scrolled to the end. */}
+      <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-8 mt-4 px-4 sm:px-8 py-3 bg-canvas border-t border-line">
+        {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
+        {success && <p className="text-sm text-green-600 dark:text-green-400 mb-3">{success}</p>}
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium disabled:opacity-50 mt-4 ${BTN_PRIMARY}`}
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        Save changes
-      </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save changes
+        </button>
+      </div>
     </div>
   )
 }

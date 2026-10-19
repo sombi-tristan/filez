@@ -42,6 +42,8 @@ export default function LubeListPage() {
         </>
       )}
     >
+      {/* The tab's own title. */}
+      <h2 className="text-base font-bold text-content mb-3">{tab === 'sales' ? 'Lube sales' : 'Lube stock'}</h2>
       {tab === 'sales' ? <LubeSalesList orgId={orgId} qs={qs} ready={ready} /> : <LubeStockList orgId={orgId} qs={qs} ready={ready} />}
     </EntryListScreen>
   )

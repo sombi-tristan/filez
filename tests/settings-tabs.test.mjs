@@ -28,6 +28,7 @@ check('a tab label never wraps', /role="tab"[\s\S]*?whitespace-nowrap/.test(page
 check('the page is full width', /return \(\s*<div className="w-full px-4 sm:px-8 py-8">/.test(page) && !page.includes('max-w-lg px-4 sm:px-8 py-8'))
 check('only the chosen section shows', /\{current\}/.test(page))
 check('Save stays under the tabs', page.indexOf('</Tabs>') < page.indexOf('onClick={handleSave}'))
+check('Save sticks to the bottom of the screen', /<div className="sticky bottom-0[^"]*">[\s\S]*?onClick=\{handleSave\}/.test(page))
 
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`}`)
 process.exit(failures === 0 ? 0 : 1)
