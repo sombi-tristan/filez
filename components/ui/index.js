@@ -79,9 +79,10 @@ export const REPORT_TOTAL = `${REPORT_TOTAL_FILL} font-semibold text-content`
 // `bg-primary-50` alone rendered as a near-white band across a dark table.
 export const REPORT_SUBHEAD = 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300'
 
-/** Square mono icon chip. `variant="onColor"` for use on a filled brand surface. */
+/** Round icon chip: mono, `onColor` on a filled brand surface, or `solid` (blue, white icon). */
 export function IconChip({ icon: Icon, className = 'w-8 h-8', iconClass = 'w-4 h-4', variant = 'mono' }) {
-  const styles = variant === 'onColor' ? 'bg-white/20 text-white' : CHIP_MONO
+  // solid: the accent itself with a white icon, in both themes (the station home's Entries).
+  const styles = variant === 'onColor' ? 'bg-white/20 text-white' : variant === 'solid' ? 'bg-primary-500 text-white' : CHIP_MONO
   return (
     <div className={`flex items-center justify-center shrink-0 rounded-full ${styles} ${className}`}>
       <Icon className={iconClass} />
