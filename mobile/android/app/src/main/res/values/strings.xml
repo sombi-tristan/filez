@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">StationMGR</string>
-    <string name="title_activity_main">StationMGR</string>
-    <string name="package_name">com.premeval.stationmgr</string>
-    <string name="custom_url_scheme">com.premeval.stationmgr</string>
-</resources>
