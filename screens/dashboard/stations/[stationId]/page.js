@@ -431,7 +431,8 @@ export default function StationPage() {
   ) : null
 
   return (
-    <div className="min-h-screen bg-canvas">
+    // station-bold: every word on the station home a step bolder (app/globals.css).
+    <div className="station-bold min-h-screen bg-canvas">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-8">
 
         {!isOwner && (
@@ -531,8 +532,9 @@ export default function StationPage() {
         })()}
 
         {/* Entries as widgets in a full-width white panel with its heading inside: pale tiles with
-            no line, 96px tall (112px in the Android app), filling the row in equal columns (at least 9rem each, wrapping on
-            a phone), a soft blue round icon on top, the name and a short description under it. A
+            no line, 96px tall (112px in the Android app), filling the row in equal columns (at
+            least 9rem each, wrapping on a phone), a solid blue round chip with a white icon on top,
+            the name and a short description under it. A
             destination the member cannot open stays on the board, dimmed, and explains itself on
             tap rather than disappearing. */}
         {entryLinks.length > 0 && (
@@ -544,7 +546,7 @@ export default function StationPage() {
                 const cls = `w-full h-28 compact:h-24 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors ${allowed ? 'hover:bg-primary-500/10' : 'opacity-50'}`
                 const inner = (
                   <>
-                    <IconChip icon={link.icon} className="w-10 h-10" iconClass="w-5 h-5" />
+                    <IconChip icon={link.icon} className="w-10 h-10" iconClass="w-5 h-5" variant="solid" />
                     <p className="text-sm font-medium text-content leading-tight">{link.label}</p>
                     <p className="text-xs text-content-muted leading-snug line-clamp-2">{link.desc}</p>
                   </>
@@ -584,7 +586,8 @@ export default function StationPage() {
       <footer className="mt-8 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-content-muted uppercase tracking-wide">Appearance</span>
-          <ThemeControl />
+          {/* One button stepping Light, Dark, System. */}
+          <ThemeControl cycle />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Not for a platform admin: leaving goes through the membership route, so on a
