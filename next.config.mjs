@@ -64,6 +64,17 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // The Android app's pages are on the phone (https://localhost) and call the API across
+        // origins with a bearer token, never cookies (lib/supabaseServer.js), so no credentials.
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: 'https://localhost' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, PATCH, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Authorization, Content-Type' },
+          { key: 'Access-Control-Max-Age', value: '86400' },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
