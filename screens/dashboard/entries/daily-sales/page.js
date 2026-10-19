@@ -17,10 +17,49 @@ import {
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
+import { sortEntries } from '@/lib/salesCalculations'
 
-// A nozzle row: the pump's number, then closing meter (wider), consumption and pour back.
-// minmax(0, …) lets the columns shrink below an input's built-in width, or a phone scrolls sideways.
-const NOZZLE_GRID = 'grid grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'
+// A nozzle row: the pump's number, then closing meter (wider), consumption, pour back and the
+// computed actual sales. minmax(0, …) lets the columns shrink below an input's built-in width,
+// or a phone scrolls sideways.
+const NOZZLE_GRID = 'grid grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]'
+
+/** Litres and naira as the form shows them: thousands separated, at most two decimals. */
+const figure = (n) => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
+
+/**
+ * Each pump's opening meter for the entry in the form: the closing of the saved entry it
+ * follows, in the order the reports put a station's entries (lib/salesCalculations.js
+ * sortEntries: by date, then by meter within a day), so a second shift opens on the first.
+ * With nothing before it, a pump opens on its initial reading. Only the form's date and the
+ * latest date before it can hold that entry, so only those are sorted.
+ */
+function openingMeters(saved, editingIds, formDate, readings, nozzles) {
+  const dateOf = (e) => e.entryDate || e.entry_date || ''
+  const others = (saved || []).filter((e) => !editingIds.includes(e.id) && dateOf(e) <= formDate)
+  const lastBefore = others.reduce((d, e) => (dateOf(e) < formDate && dateOf(e) > d ? dateOf(e) : d), '')
+  const editing = (saved || []).find((e) => editingIds.includes(e.id))
+  const form = {
+    id: '￿',
+    entryDate: formDate,
+    // A new entry is the day's latest; one being edited keeps its place.
+    createdAt: editing?.createdAt || '9999-12-31T23:59:59.999Z',
+    nozzleReadings: readings
+      .filter((r) => r.closing_meter !== '' && r.closing_meter != null)
+      .map((r) => ({ pump_id: r.pump_id, closing_meter: Number(r.closing_meter) })),
+  }
+  const candidates = others
+    .filter((e) => dateOf(e) === formDate || dateOf(e) === lastBefore)
+    .map((e) => ({ ...e, entryDate: dateOf(e) }))
+  const sorted = sortEntries([...candidates, form])
+  const before = sorted[sorted.indexOf(form) - 1]
+  const open = {}
+  for (const n of nozzles) open[n.id] = Number(n.initial_reading || 0)
+  for (const r of before?.nozzleReadings || []) {
+    if (r.pump_id != null) open[r.pump_id] = Number(r.closing_meter || 0)
+  }
+  return open
+}
 
 function blankEntry(nozzles, tanks) {
   return {
@@ -233,6 +272,11 @@ export default function DailySalesFormPage() {
     () => (orgId ? db.dailySales.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate || e.entry_date).filter(Boolean))].sort()) : []),
     [orgId], null
   )
+  // Every saved entry of the station, for the openings the live actual sales start from.
+  const savedSales = useLiveQuery(
+    () => (orgId ? db.dailySales.where('orgId').equals(orgId).toArray() : []),
+    [orgId], []
+  )
 
   const editEntry = (item) => {
     const entry = (dayEntries || []).find((e) => e.id === item.id)
@@ -431,6 +475,20 @@ export default function DailySalesFormPage() {
 
   const current = entries[activeTab]
 
+  // Actual sales as the form is filled in, the reports' way (lib/buildDailyReport.js): the
+  // closing meter (blank: the opening) less the opening, consumption and pour back; per fuel,
+  // its litres at the price entered above.
+  const opening = current ? openingMeters(savedSales, originalIds, formDate, current.nozzleReadings, nozzles) : {}
+  const actualOf = (r) => {
+    const open = opening[r.pump_id] ?? 0
+    const close = r.closing_meter !== '' && r.closing_meter != null ? Number(r.closing_meter) : open
+    return close - open - (Number(r.consumption) || 0) - (Number(r.pour_back) || 0)
+  }
+  const fuelActual = (fuel) => (current?.nozzleReadings || []).filter((r) => r.fuel_type === fuel).reduce((t, r) => t + actualOf(r), 0)
+  const fuelAmount = (fuel) => fuelActual(fuel) * (Number(current?.prices?.[fuel]) || 0)
+  const readingFuels = [...new Set((current?.nozzleReadings || []).map((r) => r.fuel_type))]
+  const dayAmount = readingFuels.reduce((t, f) => t + fuelAmount(f), 0)
+
   const { prev: prevDate, next: nextDate } = adjacentDates(savedDates || allDates, formDate)
   const dayHref = (d) => d && `/dashboard/entries/daily-sales?${qs}&edit_date=${d}`
   const dayCount = (dayEntries || []).length
@@ -506,14 +564,16 @@ export default function DailySalesFormPage() {
               <FieldGroup title="Nozzle readings" aside={<span className="text-[13px] text-content-faint">Blank uses the last closing</span>}>
                 {/* One heading per fuel naming the columns, then a row per pump: its number and the
                     closing meter, consumption and pour back fields, with no label of their own, so
-                    the fields follow one another straight down the fuel. */}
-                {[...new Set(current.nozzleReadings.map(r => r.fuel_type))].map((fuel) => (
+                    the fields follow one another straight down the fuel, and its actual sales,
+                    worked out as they are typed. The fuel's total and amount close it. */}
+                {readingFuels.map((fuel) => (
                   <div key={fuel}>
                     <div className={`${NOZZLE_GRID} border-t border-line text-[13px] font-semibold text-content-muted`}>
                       <span className="px-3 py-1.5 text-content">{fuel}</span>
                       <span className="px-3 py-1.5">Meter</span>
                       <span className="px-3 py-1.5"><span className="sm:hidden">Cons.</span><span className="hidden sm:inline">Consumption (L)</span></span>
                       <span className="px-3 py-1.5"><span className="sm:hidden">P/B</span><span className="hidden sm:inline">Pour back (L)</span></span>
+                      <span className="px-3 py-1.5 text-right">Actual<span className="hidden sm:inline"> (L)</span></span>
                     </div>
                     {current.nozzleReadings.map((r, idx) => {
                       if (r.fuel_type !== fuel) return null
@@ -537,6 +597,12 @@ export default function DailySalesFormPage() {
                             </div>
                             <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'consumption')}</div>
                             <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'pour_back')}</div>
+                            <output
+                              aria-label={`${r.label} actual sales (litres)`}
+                              className={`min-w-0 self-center px-3 text-right text-[15px] font-semibold tabular-nums truncate ${actualOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+                            >
+                              {figure(actualOf(r))}
+                            </output>
                           </div>
                           {(consCustName || pbCustName) && (
                             <div className="px-3 pb-1 flex flex-wrap gap-x-3 text-[13px] text-primary-600 dark:text-primary-400">
@@ -547,8 +613,23 @@ export default function DailySalesFormPage() {
                         </div>
                       )
                     })}
+                    <div className={`${NOZZLE_GRID} border-t border-line bg-subtle/60`}>
+                      <span className="col-span-4 px-3 py-2 text-[13px] font-semibold text-content-muted">
+                        {fuel} total
+                        <span className="block text-content">
+                          {figure(fuelActual(fuel))} L × ₦{figure(current.prices[fuel])} = ₦{figure(fuelAmount(fuel))}
+                        </span>
+                      </span>
+                      <output aria-label={`${fuel} total actual sales (litres)`} className="self-center px-3 text-right text-[15px] font-bold tabular-nums truncate text-content">
+                        {figure(fuelActual(fuel))}
+                      </output>
+                    </div>
                   </div>
                 ))}
+                <div className="flex items-center justify-between border-t border-line px-3 py-2.5">
+                  <span className="text-[15px] font-semibold text-content-muted">Total sales</span>
+                  <output aria-label="Total sales (naira)" className="text-base font-bold tabular-nums text-content">₦{figure(dayAmount)}</output>
+                </div>
               </FieldGroup>
             )}
 
