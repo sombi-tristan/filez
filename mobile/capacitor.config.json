@@ -1,0 +1,11 @@
+{
+  "appId": "com.premeval.stationmgr",
+  "appName": "StationMGR",
+  "webDir": "../out",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#ffffff"
+  }
+}
