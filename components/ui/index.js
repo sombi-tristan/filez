@@ -294,7 +294,7 @@ export const OUTLINE_WITHIN = 'border border-primary-500/30 dark:border-primary-
 export const ENTRY_FILL = 'bg-primary-500/[0.12] focus:bg-primary-500/[0.26] transition-colors'
 /** The same fill for a wrapper-className control (DateInput), which needs focus-within. */
 export const ENTRY_FILL_WITHIN = 'bg-primary-500/[0.12] focus-within:bg-primary-500/[0.26] transition-colors'
-export const ENTRY_INPUT = `w-full px-3 py-[7px] text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`
+export const ENTRY_INPUT = `w-full px-3 py-2.5 compact:py-[7px] text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`
 /** A DateInput inside a cell: the same metrics as ENTRY_INPUT, with the wrapper-safe fill. */
 export const ENTRY_DATE = `w-full px-3 py-2.5 text-base ${ENTRY_FILL_WITHIN} text-content`
 /**

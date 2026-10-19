@@ -77,5 +77,9 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // compact: everywhere but the Android app (html.android-app, app/layout.js), which keeps
+    // the house sizes. The website's smaller boxes use it, as app/globals.css does.
+    ({ addVariant }) => addVariant('compact', 'html:not(.android-app) &'),
+  ],
 };

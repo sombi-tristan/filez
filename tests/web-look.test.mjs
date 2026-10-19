@@ -33,7 +33,7 @@ console.log('\nStation home entry widgets')
 const home = read('screens', 'dashboard', 'stations', '[stationId]', 'page.js')
 const tiles = home.slice(home.indexOf('{entryLinks.length > 0 && ('), home.indexOf('{/* Reports: the ones'))
 check('a white panel, its heading inside, full width', /<section className="w-full bg-surface border-card border-line rounded-house p-3">\s*<h2[^>]*>Entries<\/h2>/.test(tiles))
-check('tiles fill the row in equal columns, 96px tall', tiles.includes('<div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">') && /const cls = `w-full h-24 flex flex-col items-center justify-center[^`]*text-center bg-subtle rounded-house/.test(tiles))
+check('tiles fill the row in equal columns, 96px tall (112px in the Android app)', tiles.includes('<div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">') && /const cls = `w-full h-28 compact:h-24 flex flex-col items-center justify-center[^`]*text-center bg-subtle rounded-house/.test(tiles))
 check('a soft blue round icon, the name under it, a short description', tiles.includes('<IconChip icon={link.icon} className="w-10 h-10"') && /<p className="[^"]*line-clamp-2[^"]*">\{link\.desc\}<\/p>/.test(tiles))
 check('the icon circle shows in dark mode', /export const CHIP_MONO = '[^']*dark:bg-primary-500\/20/.test(read('components', 'ui', 'index.js')))
 
