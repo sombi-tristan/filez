@@ -13,9 +13,10 @@ import { orderedCreatedAt, byCreatedAt } from '@/lib/entryOrder'
 import { ENTRY_INPUT, ENTRY_DATE } from '@/components/ui'
 import {
   EntryScreen, DayBar, EntryCard, Field, FieldRow, NumberInput, SubscribeNotice,
-  SaveBar, EntryLoading, NotConfigured, adjacentDates,
+  SaveBar, EntryLoading, NotConfigured, adjacentDates, Figures, figure,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
+import { dayTotalSales } from '@/lib/salesCalculations'
 
 /** What distinguishes two accounts at the same bank: the POS terminal, or the type. */
 function bankSub(b) {
@@ -122,6 +123,18 @@ export default function LodgementsFormPage() {
   )
   const savedDates = useLiveQuery(
     () => (orgId ? db.lodgements.where('orgId').equals(orgId).toArray().then((all) => [...new Set(all.map((e) => e.entryDate).filter(Boolean))].sort()) : []),
+    [orgId], null
+  )
+  // What a sales date sold and what has been lodged for it, for the figures under each entry.
+  const station = useLiveQuery(
+    async () => (orgId
+      ? {
+          sales: await db.dailySales.where('orgId').equals(orgId).toArray(),
+          nozzles: await db.nozzles.where('orgId').equals(orgId).toArray(),
+          tanks: await db.tanks.where('orgId').equals(orgId).toArray(),
+          lodgements: await db.lodgements.where('orgId').equals(orgId).toArray(),
+        }
+      : null),
     [orgId], null
   )
 
@@ -264,6 +277,30 @@ export default function LodgementsFormPage() {
               <Field label="Sales date">
                 <DateInput value={entry.salesDate} onChange={(v) => updateEntry(idx, 'salesDate', v)} className={ENTRY_DATE} />
               </Field>
+              {station && (() => {
+                // The sales date against what is lodged for it (saved, and this form as typed),
+                // the Daily Sales Report's way: lodgements go by their sales date, and the cash
+                // balance is the sales less POS and transfers.
+                const day = entry.salesDate || formDate
+                const typeOf = (bankId) => banks.find((b) => b.id === bankId)?.lodgement_type
+                const forDay = [
+                  ...station.lodgements.filter((l) => !originalIds.includes(l.id) && (l.salesDate || l.entryDate) === day),
+                  ...entries.filter((e) => (e.salesDate || formDate) === day),
+                ]
+                const lodged = forDay.reduce((t, l) => t + (Number(l.amount) || 0), 0)
+                const posAndTransfer = forDay
+                  .filter((l) => ['pos', 'transfer'].includes(typeOf(l.bankId)))
+                  .reduce((t, l) => t + (Number(l.amount) || 0), 0)
+                const sales = dayTotalSales(station.sales, station.nozzles, station.tanks, day)
+                const cash = sales - posAndTransfer
+                return (
+                  <Figures items={[
+                    { label: 'Sales', value: `₦${figure(sales)}` },
+                    { label: 'Lodged', value: `₦${figure(lodged)}` },
+                    { label: 'Cash balance', value: `₦${figure(cash)}`, bad: cash < 0 },
+                  ]} />
+                )
+              })()}
               <Field label="Notes">
                 <textarea value={entry.notes} onChange={(e) => updateEntry(idx, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
               </Field>
