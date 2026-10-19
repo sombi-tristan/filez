@@ -355,3 +355,24 @@ html ion-button.house-btn:not(.house-btn-icon),
 html ion-buttons ion-button.house-btn.house-btn:not(.house-btn-icon) {
   --border-radius: calc(var(--corner) / 2);
 }
+
+/* Lines in light mode, a step darker than the house's: the grey line (dividers, the top bar's
+   rule, Ionic's own lines) #cfd9de -> #aab8c2, and the blue edges round cards, fields and
+   outlines from 25/30/40% of the accent to 45/50/60%. Dark mode keeps its own (the dark:
+   classes and [data-theme='dark'] above). */
+:root:root:not([data-theme='dark']) {
+  --line: #aab8c2;
+  --line-ch: 170 184 194;
+}
+
+:where(:root:not([data-theme='dark'])) .border-primary-500\/25 {
+  border-color: rgb(var(--primary-500) / 0.45);
+}
+
+:where(:root:not([data-theme='dark'])) .border-primary-500\/30 {
+  border-color: rgb(var(--primary-500) / 0.5);
+}
+
+:where(:root:not([data-theme='dark'])) .border-primary-500\/40 {
+  border-color: rgb(var(--primary-500) / 0.6);
+}
