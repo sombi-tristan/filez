@@ -17,7 +17,7 @@ import {
   SaveBar, EntryLoading, NotConfigured, adjacentDates,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
-import { sortEntries } from '@/lib/salesCalculations'
+import { sortEntries, calculateDateNozzles } from '@/lib/salesCalculations'
 
 // A nozzle row: the pump's number, then closing meter (wider), consumption, pour back and the
 // computed actual sales. minmax(0, …) lets the columns shrink below an input's built-in width,
@@ -59,6 +59,58 @@ function openingMeters(saved, editingIds, formDate, readings, nozzles) {
     if (r.pump_id != null) open[r.pump_id] = Number(r.closing_meter || 0)
   }
   return open
+}
+
+/**
+ * Each tank's day, for the OV/SH beside its closing stock, the Daily Sales Report's way
+ * (lib/buildDailyReport.js): its opening is the last final entry's closing before the day, else
+ * the tank's opening stock; its supply is the day's receipts into it; what it dispensed is the
+ * day's meters on the pumps drawing from it (closing less opening, every shift of the day with
+ * the form among them). OV/SH = closing - opening - supply + dispensed.
+ */
+function tankDay(saved, receipts, editingIds, formDate, readings, nozzles, tanks) {
+  const dateOf = (e) => e.entryDate || e.entry_date || ''
+  const others = (saved || [])
+    .filter((e) => !editingIds.includes(e.id) && dateOf(e) <= formDate)
+    .map((e) => ({ ...e, entryDate: dateOf(e) }))
+
+  const lastFinal = sortEntries(others.filter((e) => e.entryDate < formDate && (e.closeOfBusiness || e.close_of_business))).pop()
+  const opening = {}
+  for (const t of tanks) {
+    const r = (lastFinal?.tankReadings || lastFinal?.tank_readings || []).find((x) => x.tank_id === t.id)
+    opening[t.id] = r ? Number(r.closing_stock || 0) : Number(t.opening_stock || 0)
+  }
+
+  const supply = {}
+  for (const r of receipts || []) {
+    if (r.entryDate === formDate && r.tankId) supply[r.tankId] = (supply[r.tankId] || 0) + Number(r.actualVolume || 0)
+  }
+
+  // The day's shifts and the one before them are all the meters need.
+  const lastBefore = others.reduce((d, e) => (e.entryDate < formDate && e.entryDate > d ? e.entryDate : d), '')
+  const editing = (saved || []).find((e) => editingIds.includes(e.id))
+  const form = {
+    id: '￿',
+    entryDate: formDate,
+    createdAt: editing?.createdAt || '9999-12-31T23:59:59.999Z',
+    nozzleReadings: readings
+      .filter((r) => r.closing_meter !== '' && r.closing_meter != null)
+      .map((r) => ({ pump_id: r.pump_id, closing_meter: Number(r.closing_meter) })),
+  }
+  const day = calculateDateNozzles(
+    [...others.filter((e) => e.entryDate === formDate || e.entryDate === lastBefore), form], nozzles, tanks, formDate,
+  )
+  const tankOf = Object.fromEntries(nozzles.map((n) => [n.id, n.tank_id]))
+  const dispensed = {}
+  for (const entry of day.entries) {
+    for (const ft of day.fuelTypes) {
+      for (const n of entry.fuelGroups[ft].nozzles) {
+        const tid = tankOf[n.pumpId]
+        if (tid) dispensed[tid] = (dispensed[tid] || 0) + n.dispensed
+      }
+    }
+  }
+  return { opening, supply, dispensed }
 }
 
 function blankEntry(nozzles, tanks) {
@@ -277,6 +329,11 @@ export default function DailySalesFormPage() {
     () => (orgId ? db.dailySales.where('orgId').equals(orgId).toArray() : []),
     [orgId], []
   )
+  // The day's product receipts, the supply in each tank's OV/SH.
+  const dayReceipts = useLiveQuery(
+    () => (orgId && formDate ? db.productReceipts.where('orgId').equals(orgId).filter((r) => r.entryDate === formDate).toArray() : []),
+    [orgId, formDate], []
+  )
 
   const editEntry = (item) => {
     const entry = (dayEntries || []).find((e) => e.id === item.id)
@@ -479,6 +536,13 @@ export default function DailySalesFormPage() {
   // closing meter (blank: the opening) less the opening, consumption and pour back; per fuel,
   // its litres at the price entered above.
   const opening = current ? openingMeters(savedSales, originalIds, formDate, current.nozzleReadings, nozzles) : {}
+  // A tank's over (+) or short (-) on the final entry, once its closing stock is typed.
+  const dayTanks = current?.closeOfBusiness ? tankDay(savedSales, dayReceipts, originalIds, formDate, current.nozzleReadings, nozzles, tanks) : null
+  const ovshOf = (r) => {
+    if (!dayTanks || r.closing_stock === '' || r.closing_stock == null) return null
+    const t = r.tank_id
+    return Number(r.closing_stock) - (dayTanks.opening[t] ?? 0) - (dayTanks.supply[t] || 0) + (dayTanks.dispensed[t] || 0)
+  }
   const actualOf = (r) => {
     const open = opening[r.pump_id] ?? 0
     const close = r.closing_meter !== '' && r.closing_meter != null ? Number(r.closing_meter) : open
@@ -633,8 +697,16 @@ export default function DailySalesFormPage() {
               >
                 {current.closeOfBusiness && current.tankReadings.map((r, idx) => (
                   <FieldRow key={r.tank_id} cols={2} keep>
-                    <div className="flex items-center px-3 py-2.5 bg-subtle/50">
+                    <div className="flex flex-col justify-center px-3 py-2.5 bg-subtle/50">
                       <span className="text-[15px] text-content-muted">{r.label}</span>
+                      {ovshOf(r) != null && (
+                        <output
+                          aria-label={`${r.label} over or short (litres)`}
+                          className={`text-[13px] font-semibold tabular-nums ${ovshOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
+                        >
+                          OV/SH {ovshOf(r) > 0 ? '+' : ''}{figure(ovshOf(r))} L
+                        </output>
+                      )}
                     </div>
                     <Field label="Litres">
                       <NumberInput
