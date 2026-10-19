@@ -1,5 +1,7 @@
 'use client'
 
+import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from '@/lib/nav'
 import { IonIcon } from '@ionic/react'
 import {
@@ -16,8 +18,8 @@ export { SubscribeNotice } from '@/components/entries/EntryListParts'
 
 /**
  * The parts every entry screen is built from, so the five entry types work the same way on a
- * phone: the day pinned at the top with arrows to the day before and after, one card per entry
- * with its fields stacked, and Save pinned at the bottom in thumb reach.
+ * phone: Save pinned at the top, the day under it with arrows to the day before and after, and
+ * one card per entry with its fields stacked.
  *
  * These are layout only. Loading, saving and the sync queue stay in each screen and its
  * repository.
@@ -28,16 +30,17 @@ export { adjacentDates }
 /* ── Form screen ──────────────────────────────────────────────────────────── */
 
 /**
- * The page around an entry form. The bottom padding below lg keeps the last field clear of
- * the pinned action bar.
+ * The page around an entry form. On a phone the save bar is pinned at the top and gives the
+ * space there itself.
  */
 export function EntryScreen({ children, wide = false }) {
   // wide: the form with the day's entries beside it on a computer (components/entries/DayEntries.js).
-  return <div className={`${wide ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-8 pt-3 pb-36 lg:pb-10`}>{children}</div>
+  return <div className={`${wide ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-8 lg:pt-3 pb-10`}>{children}</div>
 }
 
 /**
- * The day being entered, pinned to the top of the screen's content so it never scrolls away.
+ * The day being entered. On a computer it is pinned to the top of the screen's content so it
+ * never scrolls away; on a phone it scrolls with the form, under the pinned save bar.
  * The arrows open the saved day before or after in place (the same screen, not a new one on
  * the stack), so a day can be checked without going back to the list.
  *
@@ -48,7 +51,10 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
   const router = useRouter()
   const arrow = 'flex items-center justify-center w-12 shrink-0 text-content-muted hover:bg-subtle hover:text-content disabled:opacity-30 disabled:hover:bg-transparent'
   return (
-    <div className="sticky top-0 z-20 -mx-4 sm:mx-0 mb-4 px-4 sm:px-0 py-2 bg-canvas">
+    <>
+    {/* A phone's place for the form's save bar: first in the form and pinned (SaveBar fills it). */}
+    <div className="entry-savebar-slot lg:hidden sticky top-0 z-30 -mx-4 sm:mx-0 px-4 sm:px-0 py-3 bg-canvas empty:hidden" />
+    <div className="lg:sticky lg:top-0 z-20 -mx-4 sm:mx-0 mb-4 px-4 sm:px-0 py-2 bg-canvas">
       <div className={`flex items-stretch border-card ${ENTRY_LINE} rounded-house bg-canvas`}>
         <button
           type="button"
@@ -74,6 +80,7 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
         </button>
       </div>
     </div>
+    </>
   )
 }
 
@@ -175,8 +182,10 @@ export function AddEntryButton({ onClick, label = 'Add another entry' }) {
 }
 
 /**
- * Save, pinned to the bottom of a phone's screen where the thumb is, and in the flow at the end
- * of the form on a computer. It must sit inside the <form>: the Save button submits it.
+ * Save and the way to the list. It goes last in the <form> (the Save button submits it), and
+ * on a computer it shows there, at the end of the form. On a phone it shows in the slot DayBar
+ * puts first in the same form, pinned to the top of the screen's content while the form
+ * scrolls. A form without a DayBar keeps it at the end on a phone too.
  *
  * `error` is shown as the house toast; `onErrorDone` clears it, so the same message can show
  * again on a second try.
@@ -184,31 +193,36 @@ export function AddEntryButton({ onClick, label = 'Add another entry' }) {
 export function SaveBar({ listHref, saving, saved, isEditing, disabled, error, onErrorDone }) {
   const router = useRouter()
   const label = saved ? 'Saved' : saving ? 'Saving…' : isEditing ? 'Update' : 'Save'
+  const anchor = useRef(null)
+  const [slot, setSlot] = useState(null)
+  useLayoutEffect(() => {
+    setSlot(anchor.current?.closest('form')?.querySelector('.entry-savebar-slot') || null)
+  }, [])
+
+  const bar = (
+    <div className="flex gap-3">
+      <div className="w-1/3 lg:w-40">
+        <Button
+          variant="neutral"
+          size="large"
+          icon={listOutline}
+          onClick={(e) => { e.preventDefault(); router.push(listHref) }}
+        >
+          Entries
+        </Button>
+      </div>
+      <div className="flex-1">
+        <Button type="submit" size="large" disabled={saving || saved || disabled}>
+          {saving ? <span className="mr-2 inline-flex"><Spinner size={20} label="Saving" /></span> : null}
+          {label}
+        </Button>
+      </div>
+    </div>
+  )
   return (
     <>
-      <div
-        className="entry-actionbar fixed lg:static inset-x-0 bottom-0 z-30 lg:mt-4 px-4 lg:px-0 pt-3 lg:pt-0 bg-canvas border-t lg:border-t-0 border-line"
-        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="max-w-3xl mx-auto flex gap-3">
-          <div className="w-1/3 lg:w-40">
-            <Button
-              variant="neutral"
-              size="large"
-              icon={listOutline}
-              onClick={(e) => { e.preventDefault(); router.push(listHref) }}
-            >
-              Entries
-            </Button>
-          </div>
-          <div className="flex-1">
-            <Button type="submit" size="large" disabled={saving || saved || disabled}>
-              {saving ? <span className="mr-2 inline-flex"><Spinner size={20} label="Saving" /></span> : null}
-              {label}
-            </Button>
-          </div>
-        </div>
-      </div>
+      <div ref={anchor} className={`${slot ? 'hidden lg:block' : ''} mt-4`}>{bar}</div>
+      {slot && createPortal(bar, slot)}
       <Toast onDone={onErrorDone}>{error}</Toast>
     </>
   )
