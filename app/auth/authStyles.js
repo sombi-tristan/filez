@@ -21,7 +21,7 @@ export const AUTH_INPUT_PLAIN =
 
 /** The emphasised action (Sign in, Create account). Matches Button's `primary` variant. */
 export const AUTH_SUBMIT =
-  'border border-primary-600 bg-primary-600 text-white rounded-house transition-all hover:bg-primary-700 hover:border-primary-700'
+  'border border-primary-600 bg-primary-600 text-white rounded-house-btn transition-all hover:bg-primary-700 hover:border-primary-700'
 
 /** Inline text link. */
 export const AUTH_LINK = 'text-primary-600 dark:text-primary-300 hover:underline'

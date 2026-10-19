@@ -278,3 +278,80 @@ ion-header.house-header ion-buttons ion-button.house-btn.house-btn-icon::part(na
 :root:not([data-theme='dark']) :is(.text-primary-600, .text-primary-700, .text-primary-800) .lucide:not([class*="text-"]) {
   color: rgb(var(--primary-500));
 }
+
+/* Compact: the house design system's boxes (design/house.css, synced from groo, so not edited
+   here) made tighter for this app, the words in them kept at their size. Buttons 40px, 46px
+   when large, 32px when small; fields 40px, 46px floating (below); rows 46px; tabs 38px. `html` in
+   front of each selector: this file loads before house.css, so it has to outrank it. */
+html ion-button {
+  min-height: 40px;
+}
+
+html ion-button[size='small'] {
+  min-height: 32px;
+}
+
+html ion-button[size='large'] {
+  min-height: 46px;
+}
+
+html ion-button.house-btn {
+  height: 40px;
+}
+
+html ion-button.house-btn-large {
+  height: 46px;
+}
+
+html ion-button.house-btn-small {
+  height: 32px;
+}
+
+html ion-segment-button {
+  min-height: 38px;
+}
+
+html ion-input.sc-ion-input-md-h,
+html ion-input,
+html ion-textarea,
+html ion-select {
+  min-height: 40px;
+}
+
+html ion-item,
+html ion-item.house-row {
+  --min-height: 46px;
+}
+
+/* Ionic's own outline fields hold a 56px floor with two classes (.input-fill-outline.sc-…),
+   and rest the floating label 24px down for that height; [class] outranks it, and the label
+   rests in the middle of the 46px box instead. It still rises into the edge on focus. */
+html ion-input.house-field[class],
+html ion-textarea.house-field[class],
+html ion-select.house-field[class] {
+  min-height: 46px;
+}
+
+html :is(ion-input, ion-textarea).house-field[class]:not(.has-focus):not(.has-value) .label-text-wrapper {
+  transform: translateY(11px);
+}
+
+/* ion-select keeps its label in its shadow, exposed as the `label` part. */
+html ion-select.house-field[class]:not(.has-focus):not(.has-value):not(.select-expanded)::part(label) {
+  transform: translateY(11px);
+}
+
+/* A segment tab's label carries 12px above and below. */
+html ion-segment-button ion-label {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+/* Buttons at half the app's corner (4px of 8px); the round icon buttons stay round. Cards,
+   fields and tiles keep the full corner. The top bar's buttons need Ionic's two-class rule
+   outranked (design/house.css). Link-styled buttons: rounded-house-btn (components/ui). */
+html ion-button:not(.house-btn-icon),
+html ion-button.house-btn:not(.house-btn-icon),
+html ion-buttons ion-button.house-btn.house-btn:not(.house-btn-icon) {
+  --border-radius: calc(var(--corner) / 2);
+}
