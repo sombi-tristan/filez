@@ -13,7 +13,7 @@ import { defaultReportStart, exportAllowed } from '@/lib/reportRange'
 import { tabOffsetFor } from '@/lib/dayTabs'
 import { useLicence, PaidNote } from '@/components/desktop/LicenceGate'
 import AccessGate from '@/components/AccessGate'
-import { OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, CARD_HOVER, CARD, ENTRY_LINE } from '@/components/ui'
+import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, CARD_HOVER, CARD, REPORT_CARD } from '@/components/ui'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -225,15 +225,11 @@ function DailySalesReportContent() {
 
   const qs = `org_id=${orgId}`
 
-  // The meter-reading form's look, read-only (components/entries/EntryParts.js): each table in a
-  // framed card with its title bar (ReportCard below), quiet column heads, rows split by lines,
-  // a line between the figures as between the form's fields, and the totals on the form's total
-  // row. No field fill: nothing here can be typed in.
-  const hdr = 'bg-subtle text-[13px] text-content-muted font-semibold uppercase tracking-wide'
-  const subHdr = 'text-[13px] text-content-muted font-semibold'
-  const totalRow = 'bg-subtle/60 font-bold text-content'
-  const cell = 'border-t border-line px-3 py-[7px] text-[15px]'
-  const cellR = `${cell} border-l text-right tabular-nums`
+  const hdr = REPORT_HEAD
+  const subHdr = REPORT_SUBHEAD
+  const bdr = `border ${REPORT_LINE}`
+  const cell = `${bdr} px-1 py-0.5`
+  const cellR = `${cell} text-right`
 
   const currentDayReport = report?.dateReports.find(r => r.date === viewDate) || null
   const currentDayHasDuplicates = duplicateDates.includes(viewDate)
@@ -294,14 +290,14 @@ function DailySalesReportContent() {
           <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
         </div>
       ) : currentDayReport && (
-        <div className="flex-1 overflow-y-auto overflow-x-auto lg:overflow-x-hidden min-h-0 mb-3">
+        <div className={`flex-1 overflow-y-auto overflow-x-auto lg:overflow-x-hidden min-h-0 mb-3 ${REPORT_CARD}`}>
 
           {/* Two columns side by side on a computer, and no sideways scroll there: a figure too long
               for its cell wraps inside it (a phone, one column, may still scroll the pumps table). */}
-          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 lg:[overflow-wrap:anywhere]">
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 pb-4 lg:[overflow-wrap:anywhere]">
             {/* ===== LEFT: DAILY SALES OPERATION ===== */}
             <div className="min-w-0">
-              <ReportCard title="Pump readings">
+              <div>
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className={subHdr}>
@@ -328,14 +324,14 @@ function DailySalesReportContent() {
                     ))}
                   </tbody>
                 </table>
-              </ReportCard>
+              </div>
             </div>
 
             {/* ===== RIGHT: STOCK & SUMMARY ===== */}
             <div className="min-w-0">
               {/* Tank stock table */}
-              <ReportCard title="Tank stock">
-                <table className="w-full border-collapse text-sm">
+              <div>
+                <table className="w-full border-collapse text-sm mb-4">
                   <thead>
                     <tr className={subHdr}>
                       <th className={`${cell} text-left font-bold whitespace-nowrap lg:whitespace-normal`}>Tank</th>
@@ -349,15 +345,14 @@ function DailySalesReportContent() {
                   </thead>
                   <tbody>
                     {currentDayReport.tankSummaryRows.map((row) => (
-                      <TankRow key={row.fuelType} row={row} cell={cell} cellR={cellR} totalRow={totalRow} />
+                      <TankRow key={row.fuelType} row={row} cell={cell} cellR={cellR} subHdr={subHdr} />
                     ))}
                   </tbody>
                 </table>
-              </ReportCard>
+              </div>
 
               {/* Lodgements table */}
-              <ReportCard title="Lodgements">
-              <table className="w-full border-collapse text-sm">
+              <table className="w-full border-collapse text-sm mb-4">
                 <thead>
                   <tr className={subHdr}>
                     <th className={`${cell} text-left font-bold whitespace-nowrap lg:whitespace-normal`}>Account</th>
@@ -378,14 +373,13 @@ function DailySalesReportContent() {
                     <tr><td colSpan={2} className={`${cell} text-content-faint`}>No lodgements</td></tr>
                   )}
                   {currentDayReport.lodgement.totalAll > 0 && (
-                    <tr className={totalRow}>
+                    <tr className={`${subHdr} font-bold`}>
                       <td className={cell}>Total Lodged</td>
                       <td className={cellR}>{fmt(currentDayReport.lodgement.totalAll)}</td>
                     </tr>
                   )}
                 </tbody>
               </table>
-              </ReportCard>
 
             </div>
           </div>
@@ -400,8 +394,8 @@ function DailySalesReportContent() {
             const pbEntries = currentDayReport.consumption.entries.filter(e => e.isPourBack)
             const section = (title, entries) => entries.length > 0 && (
               <>
-                <tr className={hdr}>
-                  <th className={`${cell} text-left`} colSpan={3}>{title}</th>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`} colSpan={3}>{title}</th>
                 </tr>
                 <tr className={subHdr}>
                   <th className={`${cell} text-left font-bold`}>Account</th>
@@ -428,9 +422,11 @@ function DailySalesReportContent() {
                   right; on a phone it goes. */}
               <div className="min-w-0 empty:hidden lg:empty:block">
               {currentDayReport.balances.rows.length > 0 && (
-                <ReportCard title="Balances">
                   <table className="w-full border-collapse text-sm">
                     <tbody>
+                      <tr className={subHdr}>
+                        <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
+                      </tr>
                       <tr className={subHdr}>
                         <th className={`${cell} text-left font-bold`}>Customer</th>
                         <th className={`${cellR} font-bold`}>Owes station</th>
@@ -443,19 +439,17 @@ function DailySalesReportContent() {
                           <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
                         </tr>
                       ))}
-                      <tr className={totalRow}>
+                      <tr className="font-bold">
                         <td className={cell}>Total</td>
                         <td className={cellR}>{fmt(currentDayReport.balances.totalOwesStation)}</td>
                         <td className={cellR}>{fmt(currentDayReport.balances.totalStationOwes)}</td>
                       </tr>
                     </tbody>
                   </table>
-                </ReportCard>
               )}
               </div>
               {/* The totals table */}
               <div className="min-w-0">
-                <ReportCard title="Totals">
                 <table className="w-full border-collapse text-sm">
                   <tbody>
                     {section('Consumption', consEntries)}
@@ -472,7 +466,7 @@ function DailySalesReportContent() {
                         <td className={cellR}>{fmt(currentDayReport.dayFuelTotals[ft]?.amount)}</td>
                       </tr>
                     ))}
-                    <tr className={totalRow}>
+                    <tr className={`${subHdr} font-bold`}>
                       <td colSpan={2} className={cell}>SALES</td>
                       <td className={cellR}>{fmt(currentDayReport.totalSales)}</td>
                     </tr>
@@ -484,13 +478,12 @@ function DailySalesReportContent() {
                       <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
                       <td className={cellR}>{fmt(currentDayReport.lodgement.totalTransfer)}</td>
                     </tr>
-                    <tr className={totalRow}>
+                    <tr className={`${subHdr} font-bold`}>
                       <td colSpan={2} className={cell}>CASH</td>
                       <td className={cellR}>{fmt(currentDayReport.cashBalance)}</td>
                     </tr>
                   </tbody>
                 </table>
-                </ReportCard>
               </div>
               </div>
               </>
@@ -604,21 +597,6 @@ function DailySalesReportContent() {
   )
 }
 
-/**
- * A section of the report framed as the entry form frames its card (EntryCard): a title bar,
- * then the table, its first row taking no line of its own under the bar.
- */
-function ReportCard({ title, children }) {
-  return (
-    <section className={`bg-surface border-card ${ENTRY_LINE} rounded-house mb-4 overflow-hidden [&_table>*:first-child>tr:first-child>*]:border-t-0`}>
-      <div className="flex items-center min-h-[44px] px-3 bg-subtle border-b border-line">
-        <h2 className="text-[15px] font-semibold text-content">{title}</h2>
-      </div>
-      {children}
-    </section>
-  )
-}
-
 /** Renders all fuel groups for a single entry */
 function EntryGroup({ group, showHeader, cell, cellR, hdr }) {
   return (
@@ -654,7 +632,7 @@ function FuelGroup({ rows, totals, cell, cellR }) {
         </tr>
       ))}
       {/* Subtotal row */}
-      <tr className="bg-subtle/60 font-bold text-content">
+      <tr className="bg-primary-50 dark:bg-primary-950/40 font-bold">
         <td className={cell}></td>
         <td className={cellR}></td>
         <td className={cellR}></td>
@@ -669,7 +647,7 @@ function FuelGroup({ rows, totals, cell, cellR }) {
 }
 
 /** Renders tank summary rows for a fuel type */
-function TankRow({ row, cell, cellR, totalRow }) {
+function TankRow({ row, cell, cellR, subHdr }) {
   const totalOvshColor = row.totalOvsh < 0 ? 'text-red-600 dark:text-red-400' : row.totalOvsh > 0 ? 'text-green-600 dark:text-green-400' : ''
 
   return (
@@ -691,7 +669,7 @@ function TankRow({ row, cell, cellR, totalRow }) {
         )
       })}
       {row.tanks.length > 1 && (
-        <tr className={totalRow}>
+        <tr className={`${subHdr} font-bold`}>
           <td className={cell}>Total</td>
           <td className={cellR}>{fmt(row.totalOpening)}</td>
           <td className={cellR}>{row.totalSupply ? fmt(row.totalSupply) : ''}</td>
