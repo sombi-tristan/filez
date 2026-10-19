@@ -712,7 +712,7 @@ export default function DailySalesFormPage() {
                         placeholder={prevTankClosing[r.tank_id] != null ? String(prevTankClosing[r.tank_id]) : ''}
                       />
                     </Field>
-                    <Field label="OV/SH (L)">
+                    <Field>
                       <output
                         aria-label={`${r.label} over or short (litres)`}
                         className={`block px-3 py-[7px] text-right text-[13px] font-semibold tabular-nums ${ovshOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
