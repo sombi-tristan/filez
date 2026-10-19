@@ -531,7 +531,7 @@ export default function StationPage() {
         })()}
 
         {/* Entries as widgets in a full-width white panel with its heading inside: pale tiles with
-            no line, 112px tall, filling the row in equal columns (at least 9rem each, wrapping on
+            no line, 96px tall (112px in the Android app), filling the row in equal columns (at least 9rem each, wrapping on
             a phone), a soft blue round icon on top, the name and a short description under it. A
             destination the member cannot open stays on the board, dimmed, and explains itself on
             tap rather than disappearing. */}
@@ -541,7 +541,7 @@ export default function StationPage() {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
               {entryLinks.map((link) => {
                 const allowed = canAccess(link.pageKey)
-                const cls = `w-full h-28 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors ${allowed ? 'hover:bg-primary-500/10' : 'opacity-50'}`
+                const cls = `w-full h-28 compact:h-24 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors ${allowed ? 'hover:bg-primary-500/10' : 'opacity-50'}`
                 const inner = (
                   <>
                     <IconChip icon={link.icon} className="w-10 h-10" iconClass="w-5 h-5" />
@@ -786,7 +786,7 @@ export default function StationPage() {
  */
 function Widget({ href, icon, label, desc }) {
   return (
-    <Link href={href} className="w-full h-28 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors hover:bg-primary-500/10">
+    <Link href={href} className="w-full h-28 compact:h-24 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors hover:bg-primary-500/10">
       <IconChip icon={icon} className="w-10 h-10" iconClass="w-5 h-5" />
       <p className="text-sm font-medium text-content leading-tight">{label}</p>
       <p className="text-xs text-content-muted leading-snug line-clamp-2">{desc}</p>

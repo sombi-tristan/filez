@@ -39,9 +39,11 @@ const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t
 export default function RootLayout({ children }) {
   return (
     // data-accent: one accent per app, and this one is blue.
+    // android-app: the Android build (only it sets an API origin, next.config.mjs) keeps the
+    // house sizes; the website gets the compact ones (app/globals.css, the `compact:` variant).
     // suppressHydrationWarning: the script above changes <html> before React hydrates, and
     // the server cannot know the user's stored choice.
-    <html lang="en" data-accent="blue" suppressHydrationWarning>
+    <html lang="en" data-accent="blue" className={process.env.NEXT_PUBLIC_API_ORIGIN ? 'android-app' : undefined} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

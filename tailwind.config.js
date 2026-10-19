@@ -23,6 +23,8 @@ module.exports = {
       // StationMGR's corner (--corner, overridden in app/globals.css).
       borderRadius: {
         house: '8px',
+        // Buttons: half the corner (app/globals.css halves Ionic's buttons the same way).
+        'house-btn': '4px',
       },
       colors: {
         // Semantic neutral tokens (light/dark via CSS vars in app/globals.css). Screens use
@@ -75,5 +77,9 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // compact: everywhere but the Android app (html.android-app, app/layout.js), which keeps
+    // the house sizes. The website's smaller boxes use it, as app/globals.css does.
+    ({ addVariant }) => addVariant('compact', 'html:not(.android-app) &'),
+  ],
 };

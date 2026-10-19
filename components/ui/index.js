@@ -48,9 +48,9 @@ export const OUTLINE = 'border border-primary-500/30 dark:border-primary-400/30 
  * padding, icons and disabled rules, and swapping a class string is a styling change where
  * rewriting them all as <Button> would be a structural one.
  */
-export const BTN_FRAMED = `${OUTLINE} hover:bg-primary-500/25 hover:border-primary-600 dark:hover:border-primary-400`
-export const BTN_PRIMARY = 'border border-primary-600 bg-primary-600 text-white rounded-house transition-all hover:bg-primary-700 hover:border-primary-700'
-export const BTN_DANGER = 'border border-red-600 bg-red-600 text-white rounded-house transition-all hover:bg-red-700 hover:border-red-700'
+export const BTN_FRAMED = `border border-primary-500/30 dark:border-primary-400/30 bg-primary-500/15 text-primary-700 dark:text-primary-200 rounded-house-btn transition-all hover:bg-primary-500/25 hover:border-primary-600 dark:hover:border-primary-400`
+export const BTN_PRIMARY = 'border border-primary-600 bg-primary-600 text-white rounded-house-btn transition-all hover:bg-primary-700 hover:border-primary-700'
+export const BTN_DANGER = 'border border-red-600 bg-red-600 text-white rounded-house-btn transition-all hover:bg-red-700 hover:border-red-700'
 export const BTN_QUIET = 'text-content-muted hover:text-content hover:bg-subtle transition-all'
 
 // ---- Report chrome ----
@@ -294,7 +294,7 @@ export const OUTLINE_WITHIN = 'border border-primary-500/30 dark:border-primary-
 export const ENTRY_FILL = 'bg-primary-500/[0.12] focus:bg-primary-500/[0.26] transition-colors'
 /** The same fill for a wrapper-className control (DateInput), which needs focus-within. */
 export const ENTRY_FILL_WITHIN = 'bg-primary-500/[0.12] focus-within:bg-primary-500/[0.26] transition-colors'
-export const ENTRY_INPUT = `w-full px-3 py-2.5 text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`
+export const ENTRY_INPUT = `w-full px-3 py-2.5 compact:py-[7px] text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`
 /** A DateInput inside a cell: the same metrics as ENTRY_INPUT, with the wrapper-safe fill. */
 export const ENTRY_DATE = `w-full px-3 py-2.5 text-base ${ENTRY_FILL_WITHIN} text-content`
 /**
