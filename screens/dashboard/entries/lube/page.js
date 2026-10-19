@@ -61,6 +61,42 @@ function useDay(table, orgId, formDate) {
   return { dayEntries: dayEntries || [], savedDates: savedDates || [] }
 }
 
+/** Every saved lube sale of the station, for the stock figures below. */
+function useAllSales(orgId) {
+  const all = useLiveQuery(() => (orgId ? db.lubeSales.where('orgId').equals(orgId).toArray() : []), [orgId], [])
+  return all || []
+}
+
+/**
+ * A product's stock at the end of `date`, the Lube report's way
+ * (screens/dashboard/reports/lube-report): its opening stock plus every sale's units
+ * received less units sold up to that day. The entries being edited are left out: the form
+ * holds their new figures.
+ */
+function stockAt(product, sales, date, leaveOut = []) {
+  if (!product) return 0
+  return sales
+    .filter((s) => s.productId === product.id && s.entryDate <= date && !leaveOut.includes(s.id))
+    .reduce((t, s) => t + (Number(s.unitReceived) || 0) - (Number(s.unitSold) || 0), Number(product.opening_stock) || 0)
+}
+
+/** Units and naira as the form shows them: thousands separated, at most two decimals. */
+const figure = (n) => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
+
+/** Read-only figures worked out from an entry as it is typed, in a row under its fields. */
+function Figures({ items }) {
+  return (
+    <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line bg-subtle/60 px-3 py-2">
+      {items.map(({ label, value, bad }) => (
+        <div key={label} className="flex items-baseline gap-2">
+          <span className="text-[13px] font-semibold text-content-muted">{label}</span>
+          <output className={`text-[15px] font-bold tabular-nums ${bad ? 'text-red-600 dark:text-red-400' : 'text-content'}`}>{value}</output>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function LubeFormPage() {
   const searchParams = useSearchParams()
   const orgId = searchParams.get('org_id') || ''
@@ -133,6 +169,7 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   const isEditing = originalIds.length > 0
   const clearForm = () => { setOriginalIds([]); setEntries([blankSalesEntry()]) }
   const { dayEntries, savedDates } = useDay(db.lubeSales, orgId, formDate)
+  const allSales = useAllSales(orgId)
 
   useEffect(() => {
     const load = async () => {
@@ -275,11 +312,35 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
               <NumberInput value={entry.price} onValue={(v) => updateEntry(idx, 'price', v)} placeholder="0.00" />
             </Field>
           </FieldRow>
+          {(() => {
+            // This line's amount, and the product's stock once it is saved (every sale up to
+            // the day, this one as typed). The day's total is under the entries.
+            const product = products.find((p) => p.id === entry.productId)
+            const sold = Number(entry.unitSold) || 0
+            const after = stockAt(product, allSales, formDate, originalIds) + (Number(entry.unitReceived) || 0) - sold
+            return (
+              <Figures items={[
+                { label: 'Amount', value: `₦${figure(sold * (Number(entry.price) || 0))}` },
+                ...(product ? [{ label: 'Stock after', value: `${figure(after)} units`, bad: after < 0 }] : []),
+              ]} />
+            )
+          })()}
           <Field label="Notes">
             <textarea value={entry.notes} onChange={(e) => updateEntry(idx, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
           </Field>
         </EntryCard>
       ))}
+
+      {/* The day's lube sales: what is saved for the day, with the entries in the form as typed. */}
+      <div className="mb-4 flex items-center justify-between border-card border-line rounded-house px-3 py-2.5">
+        <span className="text-[15px] font-semibold text-content-muted">Day&apos;s lube sales</span>
+        <output className="text-base font-bold tabular-nums text-content">
+          ₦{figure(
+            dayEntries.filter((e) => !originalIds.includes(e.id)).reduce((t, e) => t + (Number(e.unitSold) || 0) * (Number(e.price) || 0), 0)
+            + entries.reduce((t, e) => t + (Number(e.unitSold) || 0) * (Number(e.price) || 0), 0)
+          )}
+        </output>
+      </div>
 
       {isEditing && (
         <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
@@ -315,6 +376,7 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   const isEditing = originalIds.length > 0
   const clearForm = () => { setOriginalIds([]); setEntries([blankStockEntry()]) }
   const { dayEntries, savedDates } = useDay(db.lubeStock, orgId, formDate)
+  const allSales = useAllSales(orgId)
 
   useEffect(() => {
     const load = async () => {
@@ -443,6 +505,21 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked }) {
           <Field label="Stock (units)">
             <NumberInput value={entry.stock} onValue={(v) => updateEntry(idx, 'stock', v)} placeholder="0" />
           </Field>
+          {(() => {
+            // What the sales say the product should have at the end of the day, and how the
+            // count typed differs from it (the Lube report's variance).
+            const product = products.find((p) => p.id === entry.productId)
+            if (!product) return null
+            const expected = stockAt(product, allSales, formDate)
+            const counted = entry.stock !== '' && entry.stock != null
+            const variance = (Number(entry.stock) || 0) - expected
+            return (
+              <Figures items={[
+                { label: 'Expected', value: `${figure(expected)} units` },
+                ...(counted ? [{ label: 'Variance', value: `${variance > 0 ? '+' : ''}${figure(variance)} units`, bad: variance !== 0 }] : []),
+              ]} />
+            )
+          })()}
           <Field label="Notes">
             <textarea value={entry.notes} onChange={(e) => updateEntry(idx, 'notes', e.target.value)} rows={2} maxLength={500} className={`${ENTRY_INPUT} resize-none`} />
           </Field>
