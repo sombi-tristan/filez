@@ -6,10 +6,9 @@ import {
   IonBackButton, IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar,
   useIonRouter,
 } from '@ionic/react'
-import { desktopOutline, homeOutline, notificationsOutline } from 'ionicons/icons'
-import { Badge, EmptyState, IconButton, Spinner } from '@/design'
+import { desktopOutline, homeOutline } from 'ionicons/icons'
+import { EmptyState, IconButton, Spinner } from '@/design'
 import { AreaContext, ScreenLocationContext } from '@/lib/nav'
-import useStationUnread from '@/lib/useStationUnread'
 import AdminViewingBanner from '@/components/AdminViewingBanner'
 import Footer from '@/components/Footer'
 import { recordReportPath } from '@/lib/recentReports'
@@ -53,7 +52,6 @@ export default function Screen({ screen }) {
   const ionRouter = useIonRouter()
 
   const stationId = params.stationId || new URLSearchParams(held.search).get('org_id') || ''
-  const { unread } = useStationUnread(area === '/dashboard' ? stationId : null)
 
   // A report notes itself on each visit, for the station home's recently opened reports.
   useEffect(() => {
@@ -75,19 +73,9 @@ export default function Screen({ screen }) {
             </IonButtons>
             <IonTitle>{screen.title || 'StationMGR'}</IonTitle>
             <IonButtons slot="end">
-              {area === '/dashboard' && stationId && (
-                <span className="relative inline-flex">
-                  <IconButton
-                    icon={notificationsOutline}
-                    label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
-                    variant="neutral"
-                    onClick={() => ionRouter.push(`/dashboard/stations/${stationId}/notifications`, 'forward', 'push')}
-                  />
-                  <Badge count={unread} className="absolute -top-1 -right-1 pointer-events-none" />
-                </span>
-              )}
+              {/* No bell here any more: who did what is shown under each entry instead. */}
               {!atHome && (
-                <span className="ml-2 inline-flex">
+                <span className="inline-flex">
                   {/* Home goes back to the root of the stack rather than piling another
                       screen on top of it. */}
                   <IconButton icon={homeOutline} label="Home" variant="neutral" onClick={() => ionRouter.push(home, 'root', 'replace')} />

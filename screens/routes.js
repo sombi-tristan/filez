@@ -43,7 +43,6 @@ export const DASHBOARD_SCREENS = [
   { path: '/dashboard/reports/summary', title: 'Summary', Page: lazy(() => import('@/screens/dashboard/reports/summary/page')), report: true },
   { path: '/dashboard/setup/:stationId', title: 'Setup', Page: lazy(() => import('@/screens/dashboard/setup/[stationId]/page')) },
   { path: '/dashboard/stations/:stationId', title: 'Station', Page: lazy(() => import('@/screens/dashboard/stations/[stationId]/page')) },
-  { path: '/dashboard/stations/:stationId/notifications', title: 'Notifications', Page: lazy(() => import('@/screens/dashboard/stations/[stationId]/notifications/page')) },
   { path: '/dashboard/stations/:stationId/settings', title: 'Settings', Page: lazy(() => import('@/screens/dashboard/stations/[stationId]/settings/page')) },
   { path: '/dashboard/subscribe', title: 'Subscribe', Page: lazy(() => import('@/screens/dashboard/subscribe/page')) },
   { path: '/dashboard/subscribe/pay/:id', title: 'Payment', Page: lazy(() => import('@/screens/dashboard/subscribe/pay/[id]/page')) },

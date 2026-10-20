@@ -22,7 +22,8 @@ async function allRows(supabase, table, orgId) {
 /**
  * The linked station's records, for a desktop computer's Pull: GET with
  * `Authorization: Device <token>`. One request returns every synced table (lib/desktopTables.js)
- * in full, deleted entries included so the computer learns of deletions, and a fresh licence.
+ * in full, deleted entries included so the computer learns of deletions, the names of the people
+ * who added or edited them (people: [{ id, name }]), and a fresh licence.
  *
  * Needs any service running: push and pull are paid features of the desktop. A station with none
  * is answered 403 with a fresh licence, so the computer learns where it stands.
@@ -43,9 +44,14 @@ export async function GET(request) {
     const results = await Promise.all(tables.map((t) => allRows(supabase, t, orgId)))
     const rows = Object.fromEntries(tables.map((t, i) => [t, results[i]]))
 
+    // The names of everyone who added or edited a row, so the computer can say who did an entry
+    // made on a phone (users never syncs: these are names only).
+    const named = [...new Set(Object.values(rows).flat().flatMap((r) => [r?.created_by, r?.updated_by]).filter((v) => typeof v === 'string'))]
+    const people = named.length ? (await supabase.from('users').select('id, name').in('id', named)).data || [] : []
+
     // The group's name, for the workbooks it picks (lib/exportGroup.js): groups do not sync.
     const group = await groupNameOf(supabase, orgId)
-    return NextResponse.json({ station: { id: orgId, name: linked.station.name, group }, rows, serverTime: new Date().toISOString(), licence })
+    return NextResponse.json({ station: { id: orgId, name: linked.station.name, group }, rows, people, serverTime: new Date().toISOString(), licence })
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

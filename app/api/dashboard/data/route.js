@@ -30,7 +30,7 @@ export async function GET(request) {
     // Fetch all subscriptions for this user+org so we can pick the best one:
     // approved > pending_approval > pending_payment > expired > rejected.
     // This prevents an expired renewal attempt from hiding a still-active subscription.
-    const SUB_COLS = 'id, status, start_date, end_date, created_at, reference_code, payment_deadline, proof_url, plan_type, total_amount, org_id'
+    const SUB_COLS = 'id, status, start_date, end_date, created_at, reference_code, payment_deadline, proof_url, plan_type, total_amount, org_id, notes'
     let subQuery = supabase
       .from('subscriptions')
       .select(SUB_COLS)

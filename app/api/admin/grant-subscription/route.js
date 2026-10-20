@@ -20,8 +20,8 @@ import { logAdminActivity } from '@/lib/adminActivity'
  * 3. Duration is in months, not wacart's days. end_date is month arithmetic throughout this
  *    schema, and the `months` column is what the approve path reads.
  *
- * The station is told, through station_messages, which is what its Notifications screen
- * reads. Silently granting access leaves the owner wondering why a locked feature opened.
+ * The grant is recorded in station_messages, the station's activity record. Its Notifications
+ * screen, which showed this to the owner, is gone, so nothing shows the row now.
  */
 export async function POST(request) {
   try {

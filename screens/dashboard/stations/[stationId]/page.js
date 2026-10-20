@@ -13,6 +13,7 @@ import { homeReports } from '@/lib/recentReports'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Modal from '@/components/Modal'
 import { differenceInDays } from 'date-fns'
+import { fmtDate } from '@/lib/formatDate'
 import { db } from '@/lib/db'
 import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
@@ -270,6 +271,9 @@ export default function StationPage() {
   }
 
   const canAccess = (pageKey) => canAccessPage(pageKey, { isOwner, visiblePages })
+  // A subscription the StationMGR team granted (app/api/admin/grant-subscription), which the
+  // owner used to hear about in Notifications.
+  const granted = subscription?.status === 'approved' && subscription?.notes?.startsWith('Granted by')
 
   const entryLinks = ENTRY_LINKS(stationId)
   const reportSections = REPORT_SECTIONS(stationId)
@@ -447,8 +451,7 @@ export default function StationPage() {
           >
             {isPlatformAdmin ? 'All Stations (admin)' : 'All Stations'}
           </Button>
-          {/* Notifications is not here: the sidebar carries the bell, with its unread badge,
-              on every screen. This slot goes to the subscription instead, which is where the
+          {/* This slot goes to the subscription, which is where the
               status block that used to sit at the foot of this page now lives.
 
               Shown to everyone, not just the owner. Hiding it left staff with no explanation
@@ -465,6 +468,12 @@ export default function StationPage() {
             Subscription
           </Button>
         </div>
+
+        {isOwner && granted && (
+          <p className="text-xs text-content-muted -mt-2 mb-4">
+            Subscription granted by StationMGR on {fmtDate(subscription.start_date)}, active until {fmtDate(subscription.end_date)}.
+          </p>
+        )}
 
       {/* Expired subscription notice (non-dismissable) */}
       {isOwner && subscription?.status === 'expired' && subscription?.end_date && (() => {

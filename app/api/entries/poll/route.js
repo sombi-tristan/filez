@@ -32,7 +32,7 @@ export async function GET(request) {
       // Include soft-deleted records so clients can propagate deletions
       const { data } = await supabase
         .from(server)
-        .select('*')
+        .select('*, users:created_by(name), editor:updated_by(name)')
         .eq('org_id', user.org_id)
         .gt('updated_at', since)
         .order('updated_at', { ascending: true })
