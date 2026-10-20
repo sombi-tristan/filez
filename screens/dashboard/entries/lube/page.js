@@ -17,9 +17,14 @@ import {
   SaveBar, EntryLoading, NotConfigured, adjacentDates, Figures, figure,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
+import { isDefaultAccount } from '@/lib/defaultAccounts'
+import { isReceipt } from '@/lib/lubeEntries'
 
 function blankSalesEntry() {
-  return { _key: crypto.randomUUID(), id: null, productId: '', unitSold: '', unitReceived: '', price: '', notes: '' }
+  return {
+    _key: crypto.randomUUID(), id: null, productId: '', unitSold: '', unitReceived: '', price: '', notes: '',
+    customerId: '', supplierId: '', invoiceNo: '', unitCost: '',
+  }
 }
 
 function blankStockEntry() {
@@ -34,6 +39,10 @@ function salesToForm(e) {
     unitReceived: String(e.unitReceived ?? ''),
     price: String(e.price ?? ''),
     notes: e.notes || '',
+    customerId: e.customerId || '',
+    supplierId: e.supplierId || '',
+    invoiceNo: e.invoiceNo || '',
+    unitCost: e.unitCost == null ? '' : String(e.unitCost),
   }
 }
 
@@ -94,6 +103,9 @@ export default function LubeFormPage() {
   const [locked, setLocked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [products, setProducts] = useState([])
+  // The credit accounts (Settings > Accounts, not the default consumption ones): who a sale is
+  // on, and who a receipt came from.
+  const [accounts, setAccounts] = useState([])
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return }
@@ -101,6 +113,8 @@ export default function LubeFormPage() {
       const prods = await db.lubeProducts.where('orgId').equals(orgId).toArray()
       if (prods.length === 0) setLocked(true)
       setProducts(prods)
+      const custs = await db.customers.where('orgId').equals(orgId).toArray()
+      setAccounts(custs.filter((c) => !isDefaultAccount(c)).sort((a, b) => (a.name || '').localeCompare(b.name || '')))
       setLoading(false)
     }
     load()
@@ -110,7 +124,8 @@ export default function LubeFormPage() {
 
   if (locked) return <NotConfigured orgId={orgId} />
 
-  const formProps = { products, qs, orgId, editId, editDate, subBlocked }
+  const formProps = { products, accounts, qs, orgId, editId, editDate, subBlocked }
+  const TITLES = { sales: 'Lube sales', receipt: 'Lube receipt', stock: 'Lube stock' }
 
   return (
     <EntryScreen wide>
@@ -118,7 +133,7 @@ export default function LubeFormPage() {
         <div className="mb-2 border-b border-line">
           <Tabs
             label="Lube entry"
-            items={[{ id: 'sales', label: 'Lube sales' }, { id: 'stock', label: 'Lube stock' }]}
+            items={[{ id: 'sales', label: 'Lube sales' }, { id: 'receipt', label: 'Lube receipt' }, { id: 'stock', label: 'Lube stock' }]}
             value={tab}
             onChange={setTab}
           />
@@ -128,17 +143,22 @@ export default function LubeFormPage() {
       {subBlocked && <SubscribeNotice />}
 
       {/* The tab's own title, also when editing an entry hides the tabs. */}
-      <h2 className="text-base font-bold text-content mb-3">{tab === 'sales' ? 'Lube sales' : 'Lube stock'}</h2>
+      <h2 className="text-base font-bold text-content mb-3">{TITLES[tab] || TITLES.sales}</h2>
 
-      {tab === 'sales'
-        ? <LubeSalesForm {...formProps} />
-        : <LubeStockForm {...formProps} />
+      {tab === 'stock'
+        ? <LubeStockForm {...formProps} />
+        // A receipt is the sales form for units coming in (isReceipt): its own fields and list.
+        : <LubeSalesForm key={tab} {...formProps} receipt={tab === 'receipt'} />
       }
     </EntryScreen>
   )
 }
 
-function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
+/**
+ * Lube sales, or with `receipt` lube receipts: the same lube entries, a sale selling units
+ * (optionally on an account) and a receipt bringing them in from a supplier (isReceipt).
+ */
+function LubeSalesForm({ products, accounts, qs, orgId, editId, editDate, subBlocked, receipt = false }) {
   const { promptPush } = useSavePush()
   const [loading, setLoading] = useState(!!(editId || editDate))
   const [saving, setSaving] = useState(false)
@@ -151,7 +171,10 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
 
   const isEditing = originalIds.length > 0
   const clearForm = () => { setOriginalIds([]); setEntries([blankSalesEntry()]) }
-  const { dayEntries, savedDates } = useDay(db.lubeSales, orgId, formDate)
+  const day = useDay(db.lubeSales, orgId, formDate)
+  // This tab's entries of the day only: the sales, or the receipts.
+  const tabEntries = day.dayEntries.filter((e) => isReceipt(e) === receipt)
+  const { savedDates } = day
   const allSales = useAllSales(orgId)
 
   useEffect(() => {
@@ -181,7 +204,7 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   }
 
   const editEntry = (item) => {
-    const entry = dayEntries.find((e) => e.id === item.id)
+    const entry = tabEntries.find((e) => e.id === item.id)
     if (!entry) return
     setOriginalIds([entry.id])
     setEntries([salesToForm(entry)])
@@ -204,6 +227,8 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
     submittingRef.current = true
     for (let i = 0; i < entries.length; i++) {
       if (!entries[i].productId) { setError('Product is required'); submittingRef.current = false; return }
+      // A receipt with nothing received would not be one (isReceipt), and would vanish from this tab.
+      if (receipt && !(Number(entries[i].unitReceived) > 0)) { setError('Units received is required'); submittingRef.current = false; return }
     }
     setSaving(true)
     setError('')
@@ -226,11 +251,28 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
           orgId,
           entryDate: formDate,
           productId: entry.productId,
-          unitSold: Number(entry.unitSold) || 0,
           unitReceived: Number(entry.unitReceived) || 0,
-          price: Number(entry.price) || 0,
           notes: entry.notes,
           updatedAt: now,
+          ...(receipt
+            // Nothing sold: the units come in, from a supplier, at a cost.
+            ? {
+                unitSold: 0,
+                price: 0,
+                customerId: null,
+                supplierId: entry.supplierId || null,
+                invoiceNo: entry.invoiceNo?.trim() || null,
+                unitCost: entry.unitCost === '' ? null : Number(entry.unitCost) || 0,
+              }
+            // Sold, and on an account when one is picked (lib/accountBalance.js counts it).
+            : {
+                unitSold: Number(entry.unitSold) || 0,
+                price: Number(entry.price) || 0,
+                customerId: entry.customerId || null,
+                supplierId: null,
+                invoiceNo: null,
+                unitCost: null,
+              }),
         }
 
         if (entry.id) {
@@ -260,16 +302,27 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   if (loading) return <EntryLoading />
 
   const { prev: prevDate, next: nextDate } = adjacentDates(savedDates, formDate)
-  const dayHref = (d) => d && `/dashboard/entries/lube?${qs}&edit_date=${d}&type=sales`
+  const dayHref = (d) => d && `/dashboard/entries/lube?${qs}&edit_date=${d}&type=${receipt ? 'receipt' : 'sales'}`
   const productName = (id) => products.find((p) => p.id === id)?.product_name || 'No product'
-  const listItems = dayEntries.map((e) => ({
+  const accountName = (id) => accounts.find((c) => c.id === id)?.name
+  const listItems = tabEntries.map((e) => ({
     id: e.id,
     primary: productName(e.productId),
-    secondary: `Sold ${Number(e.unitSold || 0).toLocaleString()} · Received ${Number(e.unitReceived || 0).toLocaleString()} · ₦${Number(e.price || 0).toLocaleString()}`,
+    secondary: receipt
+      ? [
+          `Received ${Number(e.unitReceived || 0).toLocaleString()}`,
+          e.unitCost != null && `₦${Number(e.unitCost).toLocaleString()} each`,
+          accountName(e.supplierId),
+          e.invoiceNo && `Inv. ${e.invoiceNo}`,
+        ].filter(Boolean).join(' · ')
+      : [
+          `Sold ${Number(e.unitSold || 0).toLocaleString()} · Received ${Number(e.unitReceived || 0).toLocaleString()} · ₦${Number(e.price || 0).toLocaleString()}`,
+          accountName(e.customerId),
+        ].filter(Boolean).join(' · '),
   }))
 
   return (
-    <EntryWithDayList list={<DayEntries title="Lube sales this day" items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>
+    <EntryWithDayList list={<DayEntries title={receipt ? 'Lube receipts this day' : 'Lube sales this day'} items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>
     <form onSubmit={handleSubmit}>
       <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
@@ -284,18 +337,69 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
               className={ENTRY_SELECT}
             />
           </Field>
-          <FieldRow cols={3} keep>
-            <Field label="Units sold">
-              <NumberInput value={entry.unitSold} onValue={(v) => updateEntry(idx, 'unitSold', v)} placeholder="0" />
-            </Field>
-            <Field label="Units received">
-              <NumberInput value={entry.unitReceived} onValue={(v) => updateEntry(idx, 'unitReceived', v)} placeholder="0" />
-            </Field>
-            <Field label="Price (₦)">
-              <NumberInput value={entry.price} onValue={(v) => updateEntry(idx, 'price', v)} placeholder="0.00" />
-            </Field>
-          </FieldRow>
-          {(() => {
+          {receipt ? (
+            <>
+              <FieldRow cols={2} keep>
+                <Field label="Units received">
+                  <NumberInput value={entry.unitReceived} onValue={(v) => updateEntry(idx, 'unitReceived', v)} placeholder="0" />
+                </Field>
+                <Field label="Unit cost (₦)">
+                  <NumberInput value={entry.unitCost} onValue={(v) => updateEntry(idx, 'unitCost', v)} placeholder="0.00" />
+                </Field>
+              </FieldRow>
+              <FieldRow cols={2}>
+                <Field label="Supplier">
+                  <SearchableSelect
+                    value={entry.supplierId}
+                    onChange={(val) => updateEntry(idx, 'supplierId', val)}
+                    options={accounts.map((c) => ({ value: c.id, label: c.name, sub: c.phone || '' }))}
+                    placeholder="Select supplier"
+                    className={ENTRY_SELECT}
+                  />
+                </Field>
+                <Field label="Invoice / waybill no.">
+                  <input value={entry.invoiceNo} onChange={(e) => updateEntry(idx, 'invoiceNo', e.target.value)} maxLength={60} className={ENTRY_INPUT} />
+                </Field>
+              </FieldRow>
+            </>
+          ) : (
+            <>
+              <FieldRow cols={3} keep>
+                <Field label="Units sold">
+                  <NumberInput value={entry.unitSold} onValue={(v) => updateEntry(idx, 'unitSold', v)} placeholder="0" />
+                </Field>
+                <Field label="Units received">
+                  <NumberInput value={entry.unitReceived} onValue={(v) => updateEntry(idx, 'unitReceived', v)} placeholder="0" />
+                </Field>
+                <Field label="Price (₦)">
+                  <NumberInput value={entry.price} onValue={(v) => updateEntry(idx, 'price', v)} placeholder="0.00" />
+                </Field>
+              </FieldRow>
+              <Field label="Account">
+                <SearchableSelect
+                  value={entry.customerId}
+                  onChange={(val) => updateEntry(idx, 'customerId', val)}
+                  options={[{ value: '', label: 'No account (cash)' }, ...accounts.map((c) => ({ value: c.id, label: c.name, sub: c.phone || '' }))]}
+                  placeholder="No account (cash)"
+                  className={ENTRY_SELECT}
+                />
+              </Field>
+            </>
+          )}
+          {receipt ? (
+            // What this delivery cost, and the product's stock once it is in.
+            (() => {
+              const product = products.find((p) => p.id === entry.productId)
+              const units = Number(entry.unitReceived) || 0
+              const after = stockAt(product, allSales, formDate, originalIds) + units
+              return (
+                <Figures items={[
+                  { label: 'Total cost', value: `₦${figure(units * (Number(entry.unitCost) || 0))}` },
+                  ...(product ? [{ label: 'Stock after', value: `${figure(after)} units` }] : []),
+                ]} />
+              )
+            })()
+          ) : (() => {
             // This line's amount, and the product's stock once it is saved (every sale up to
             // the day, this one as typed). The day's total is under the entries.
             const product = products.find((p) => p.id === entry.productId)
@@ -314,16 +418,21 @@ function LubeSalesForm({ products, qs, orgId, editId, editDate, subBlocked }) {
         </EntryCard>
       ))}
 
-      {/* The day's lube sales: what is saved for the day, with the entries in the form as typed. */}
-      <div className="mb-4 flex items-center justify-between border-card border-line rounded-house px-3 py-2.5">
-        <span className="text-[13px] font-semibold text-content-muted">Day&apos;s lube sales</span>
-        <output className="text-[13px] font-semibold tabular-nums text-content">
-          ₦{figure(
-            dayEntries.filter((e) => !originalIds.includes(e.id)).reduce((t, e) => t + (Number(e.unitSold) || 0) * (Number(e.price) || 0), 0)
-            + entries.reduce((t, e) => t + (Number(e.unitSold) || 0) * (Number(e.price) || 0), 0)
-          )}
-        </output>
-      </div>
+      {/* The day's lube sales, or what the day's receipts cost: what is saved for the day, with
+          the entries in the form as typed. */}
+      {(() => {
+        const worth = (e) => (receipt
+          ? (Number(e.unitReceived) || 0) * (Number(e.unitCost) || 0)
+          : (Number(e.unitSold) || 0) * (Number(e.price) || 0))
+        const total = tabEntries.filter((e) => !originalIds.includes(e.id)).reduce((t, e) => t + worth(e), 0)
+          + entries.reduce((t, e) => t + worth(e), 0)
+        return (
+          <div className="mb-4 flex items-center justify-between border-card border-line rounded-house px-3 py-2.5">
+            <span className="text-[13px] font-semibold text-content-muted">{receipt ? 'Day’s lube receipts' : 'Day’s lube sales'}</span>
+            <output className="text-[13px] font-semibold tabular-nums text-content">₦{figure(total)}</output>
+          </div>
+        )
+      })()}
 
       {isEditing && (
         <button type="button" onClick={clearForm} className="mb-2 text-sm font-medium text-content-muted hover:text-content">
