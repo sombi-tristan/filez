@@ -56,6 +56,8 @@ check('with the stations they own', me.stations.some((s) => s.id === 'kubwa' && 
 check('and those they were invited to, with their pages', me.stations.some((s) => s.id === 'wuse' && s.role === 'staff' && s.visiblePages?.[0] === 'daily-sales'))
 const ada = await accountFor(db, 'u2')
 check('a pending invite gives nothing', !ada.stations.some((s) => s.id === 'kubwa'))
+check('but is listed as an invite to accept on the web', ada.invites?.length === 1 && ada.invites[0].stationId === 'kubwa' && ada.invites[0].stationName === 'Kubwa')
+check('someone with none has an empty list', Array.isArray(me.invites) && me.invites.length === 0)
 check('no account for the sign-in is refused', (await accountFor(db, 'nobody')).error !== undefined)
 
 console.log('\nCreating an account')

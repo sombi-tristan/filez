@@ -9,7 +9,8 @@ import { accountFor } from '@/lib/desktopAccount'
  * every computer, no PINs (lib/desktopAccount.js).
  *
  * POST { email, password } → { user: { id, name, email }, stations: [{ id, name, location, role,
- * visiblePages }] }. The password is checked against Supabase Auth and never stored here; the
+ * visiblePages }], invites: [{ id, stationId, stationName, location }] } (pending invites, to
+ * accept on the web). The password is checked against Supabase Auth and never stored here; the
  * computer keeps its own check of it so the next sign-in works offline.
  */
 export async function POST(request) {
