@@ -347,12 +347,21 @@ html ion-segment-button ion-label {
   margin-bottom: 8px;
 }
 
-/* Buttons at half the app's corner (4px of 8px); the round icon buttons stay round. Cards,
-   fields and tiles keep the full corner. The top bar's buttons need Ionic's two-class rule
+/* Buttons at half the app's corner (4px of 8px); the round icon buttons stay round. Cards
+   and tiles keep the full corner. The top bar's buttons need Ionic's two-class rule
    outranked (design/house.css). Link-styled buttons: rounded-house-btn (components/ui). */
 html ion-button:not(.house-btn-icon),
 html ion-button.house-btn:not(.house-btn-icon),
 html ion-buttons ion-button.house-btn.house-btn:not(.house-btn-icon) {
+  --border-radius: calc(var(--corner) / 2);
+}
+
+/* Fields at half the corner as well, the house floating fields among them (house.css gives
+   them the full corner with one class). Tailwind-styled fields: rounded-house-field. */
+html ion-input,
+html ion-textarea,
+html ion-select,
+html :is(ion-input, ion-textarea, ion-select).house-field[class] {
   --border-radius: calc(var(--corner) / 2);
 }
 
