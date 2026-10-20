@@ -269,30 +269,36 @@ export default function StationSettingsPage() {
       return { fuel_type: fuelType, nozzle_pump_number: Number(pumpNum), tank_number: Number(tankNum) }
     }).filter((m) => m.tank_number > 0)
 
-    const res = await fetch('/api/onboarding', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        org_id: stationId,
-        location,
-        nozzles,
-        tanks,
-        mappings: mappingArr,
-        lodgements,
-        lube_products: lubeProducts,
-        customers,
-      }),
-    })
+    // A request that fails before the server answers used to leave Save disabled with no message.
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org_id: stationId,
+          location,
+          nozzles,
+          tanks,
+          mappings: mappingArr,
+          lodgements,
+          lube_products: lubeProducts,
+          customers,
+        }),
+      })
 
-    if (res.ok) {
-      setSuccess('Settings saved')
-      setTimeout(() => setSuccess(''), 3000)
-    } else {
-      const data = await res.json()
-      setError(data.error || 'Failed to save')
+      if (res.ok) {
+        setSuccess('Settings saved')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || `Failed to save (HTTP ${res.status})`)
+      }
+    } catch (err) {
+      setError(`Could not save: ${err.message}`)
+    } finally {
+      setSaving(false)
+      submittingRef.current = false
     }
-    setSaving(false)
-    submittingRef.current = false
   }
 
   if (loading) {
