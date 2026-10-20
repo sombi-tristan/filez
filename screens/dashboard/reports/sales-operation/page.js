@@ -237,7 +237,8 @@ function SalesOperationContent() {
             </div>
           ) : (
             <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 ${REPORT_CARD}`}>
-              <div className="px-4 sm:px-8 py-4">
+              {/* 70% of the report box on a computer, centred; the whole width on a phone. */}
+              <div className="px-4 sm:px-8 py-4 lg:w-[70%] lg:mx-auto">
                 {/* The whole day on one page, its parts in the form's order, in the app's report
                     styling; the day is chosen in the tabs below. */}
                 <h2 className="mb-3 text-base font-bold text-content">{stationName ? `${stationName}: ` : ''}{activeSheet.sheetName}</h2>
