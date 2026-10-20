@@ -44,7 +44,7 @@ globalThis.window = {
         return { ok: true, status: 200, body: { user: { id: 'u1', name: 'Destiny', email: 'destiny@example.com' }, stations: [
           { id: 'kubwa', name: 'Kubwa', role: 'owner' },
           { id: 'wuse', name: 'Wuse', role: 'staff', visiblePages: ['daily-sales'] },
-        ] } }
+        ], ...(globalThis.webInvites !== undefined ? { invites: globalThis.webInvites } : {}) } }
       }
       return { ok: false, status: 404, body: {} }
     },
@@ -102,11 +102,28 @@ await store.org_invites.put({ id: 'i9', org_id: 'kubwa', email: 'cashier@example
 await store.users.put({ id: 'fresh', email: 'new@example.com', name: 'New', web_account: true })
 check('an owner may add stations', await accounts.canAddStations('u1'))
 check('a new account with no stations may too', await accounts.canAddStations('fresh'))
-check('staff may not', !(await accounts.canAddStations('staff1')))
+check('staff may too, as on the web', await accounts.canAddStations('staff1'))
+check('someone not signed in here may not', !(await accounts.canAddStations('nobody')))
 await store.organizations.put({ id: 'old', name: 'Old place', owner_id: 'old-pin' })
 const unowned = (await accounts.stationsWithNoOwnerHere()).map((s) => s.id)
 check('a station owned by an old PIN account has no owner here', unowned.includes('old'))
 check('one owned by a web account here has', !unowned.includes('kubwa'))
+
+console.log('\nInvites waiting on the web')
+online = true
+globalThis.webInvites = [{ id: 'inv1', stationId: 'garki', stationName: 'Garki', location: 'Abuja' }]
+await accounts.signIn({ email: 'destiny@example.com', password: 'new-one' })
+let destiny = await store.users.get('u1')
+check('a pending invite is kept with the person', destiny.pending_invites?.length === 1 && destiny.pending_invites[0].stationName === 'Garki')
+check('and opens no station here', !(await store.org_invites.filter((i) => i.org_id === 'garki').count()))
+delete globalThis.webInvites
+await accounts.signIn({ email: 'destiny@example.com', password: 'new-one' })
+destiny = await store.users.get('u1')
+check('a web that does not send invites yet leaves the list as it was', destiny.pending_invites?.length === 1)
+globalThis.webInvites = []
+await accounts.signIn({ email: 'destiny@example.com', password: 'new-one' })
+destiny = await store.users.get('u1')
+check('once accepted on the web, it is gone at the next sign-in', destiny.pending_invites?.length === 0)
 
 console.log(failures === 0 ? '\nAll passed' : `\n${failures} failed`)
 process.exit(failures === 0 ? 0 : 1)
