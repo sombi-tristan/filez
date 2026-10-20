@@ -307,6 +307,7 @@ function LubeSalesForm({ products, accounts, qs, orgId, editId, editDate, subBlo
   const accountName = (id) => accounts.find((c) => c.id === id)?.name
   const listItems = tabEntries.map((e) => ({
     id: e.id,
+    entry: e,
     primary: productName(e.productId),
     secondary: receipt
       ? [
@@ -576,7 +577,7 @@ function LubeStockForm({ products, qs, orgId, editId, editDate, subBlocked }) {
   const { prev: prevDate, next: nextDate } = adjacentDates(savedDates, formDate)
   const dayHref = (d) => d && `/dashboard/entries/lube?${qs}&edit_date=${d}&type=stock`
   const productName = (id) => products.find((p) => p.id === id)?.product_name || 'No product'
-  const listItems = dayEntries.map((e) => ({ id: e.id, primary: productName(e.productId), secondary: `Stock ${Number(e.stock || 0).toLocaleString()} units` }))
+  const listItems = dayEntries.map((e) => ({ id: e.id, entry: e, primary: productName(e.productId), secondary: `Stock ${Number(e.stock || 0).toLocaleString()} units` }))
 
   return (
     <EntryWithDayList list={<DayEntries title="Lube stock this day" items={listItems} editingId={originalIds[0]} onEdit={editEntry} onDelete={deleteEntry} />}>

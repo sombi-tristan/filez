@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { HardDrive, Loader2, ArrowUpFromLine, ArrowDownToLine, CloudUpload, Clock } from 'lucide-react'
-import { getLink } from '@/lib/local/link'
+import { getLink, getCurrentStationId } from '@/lib/local/link'
+import { lastConsolidated } from '@/lib/local/consolidate'
 import { useLicence, PaidNote, UnlockActions } from '@/components/desktop/LicenceGate'
 import PendingChanges from '@/components/desktop/PendingChanges'
 
@@ -40,6 +41,8 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
     return () => window.removeEventListener('stationmgr:link', update)
   }, [])
   const paid = Boolean(useLicence()?.paid)
+  // A station on this computer only consolidates its old entries here (lib/local/consolidate.js).
+  const consolidated = lastConsolidated(getCurrentStationId())
   // Before linking there is no web station to be behind: the count would mean nothing yet.
   const upToDate = !link || pendingCount === 0
   // On the blue: Push and Pull are round white buttons; the band's chips are white-on-blue.
@@ -93,6 +96,13 @@ export default function StationWallet({ station, pendingCount = 0, syncing, refr
           ) : (
             <span className={chip}>Not linked to a station on the web</span>
           )}
+          {!link && consolidated && (consolidated.error ? (
+            <span className={chip}>Consolidation failed: {consolidated.error}</span>
+          ) : (
+            <span className={chip} title={`Entries before ${consolidated.cutoff} were rolled into the opening balances, then removed`}>
+              <Clock className="w-3.5 h-3.5" />Old entries consolidated {when(consolidated.at)}
+            </span>
+          ))}
           {!upToDate && (
             <button onClick={() => setReviewing(true)} disabled={syncing} className={`${chip} hover:bg-white/30 disabled:opacity-40`}>Review</button>
           )}

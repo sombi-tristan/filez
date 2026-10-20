@@ -205,6 +205,7 @@ export default function CustomerPaymentsFormPage() {
   const customerName = (id) => customers.find((c) => c.id === id)?.name || 'No account'
   const listItems = (dayEntries || []).map((e) => ({
     id: e.id,
+    entry: e,
     primary: `${customerName(e.customerId)}`,
     secondary: `Paid ₦${Number(e.amountPaid || 0).toLocaleString()} · Sales ₦${Number(e.salesAmount || 0).toLocaleString()}`,
   }))

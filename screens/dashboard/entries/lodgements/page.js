@@ -236,7 +236,7 @@ export default function LodgementsFormPage() {
 
   const { prev: prevDate, next: nextDate } = adjacentDates(savedDates || allDates, formDate)
   const bankName = (id) => { const b = banks.find((x) => x.id === id); return b ? `${b.bank_name}${bankSub(b) ? ` · ${bankSub(b)}` : ''}` : 'No account' }
-  const listItems = (dayEntries || []).map((e) => ({ id: e.id, primary: `₦${Number(e.amount || 0).toLocaleString()}`, secondary: bankName(e.bankId) }))
+  const listItems = (dayEntries || []).map((e) => ({ id: e.id, entry: e, primary: `₦${Number(e.amount || 0).toLocaleString()}`, secondary: bankName(e.bankId) }))
   const dayHref = (d) => d && `/dashboard/entries/lodgements?${qs}&edit_date=${d}`
 
   return (

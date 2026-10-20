@@ -5,6 +5,7 @@ import { IonIcon } from '@ionic/react'
 import { trashOutline } from 'ionicons/icons'
 import Modal from '@/components/Modal'
 import { BTN_DANGER, BTN_FRAMED } from '@/components/ui'
+import EntryHistory from '@/components/EntryHistory'
 
 /**
  * An entry screen with one form and the day's entries: the form, then the list beneath it on a
@@ -26,7 +27,8 @@ export function EntryWithDayList({ list, children }) {
  * The entries saved for the day in the date bar, each with Edit (loads it into the form) and
  * Delete (asks first). The one being edited is marked.
  *
- *   items      [{ id, primary, secondary }] in the order they were made
+ *   items      [{ id, primary, secondary, entry }] in the order they were made; `entry` gives the
+ *              line saying who added and who last edited it (components/EntryHistory.js)
  *   editingId  the entry in the form, if any
  */
 export function DayEntries({ title = 'Entries this day', items = [], editingId, onEdit, onDelete }) {
@@ -58,6 +60,7 @@ export function DayEntries({ title = 'Entries this day', items = [], editingId, 
               <span className="flex-1 min-w-0">
                 <span className="block truncate text-sm font-semibold text-content">{item.primary}</span>
                 {item.secondary ? <span className="block truncate text-xs text-content-muted">{item.secondary}</span> : null}
+                {item.entry ? <EntryHistory entry={item.entry} /> : null}
                 {item.id === editingId ? <span className="block text-xs font-semibold text-accent">Editing</span> : null}
               </span>
               <button type="button" onClick={() => onEdit?.(item)} aria-label={`Edit entry ${i + 1}`} className={`h-10 px-3 text-sm font-medium ${BTN_FRAMED}`}>
