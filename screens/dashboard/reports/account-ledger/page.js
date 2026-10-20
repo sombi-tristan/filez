@@ -12,6 +12,7 @@ import {
   BottomSheet, Button, ConfirmDialog, Dialog, EmptyState, IconButton, Pager, SheetAction, Stat, StatGrid,
 } from '@/design'
 import { db } from '@/lib/db'
+import { lubeOnAccount } from '@/lib/accountBalance'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
 import DateInput from '@/components/DateInput'
 import SearchableSelect from '@/components/SearchableSelect'
@@ -72,8 +73,14 @@ function AccountLedgerContent() {
     () => orgId ? db.customers.where('orgId').equals(orgId).toArray() : [],
     [orgId], []
   )
+  // The accounts' own entries, with their lube sales on credit (lib/accountBalance.js).
   const allPayments = useLiveQuery(
-    () => orgId ? db.customerPayments.where('orgId').equals(orgId).toArray() : [],
+    async () => orgId
+      ? [
+          ...await db.customerPayments.where('orgId').equals(orgId).toArray(),
+          ...lubeOnAccount(await db.lubeSales.where('orgId').equals(orgId).toArray(), await db.lubeProducts.where('orgId').equals(orgId).toArray()),
+        ]
+      : [],
     [orgId], []
   )
 
