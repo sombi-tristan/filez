@@ -52,5 +52,11 @@ for (const name of ['daily-sales', 'product-receipt', 'lodgements', 'lube-sales'
   check(`${name}: the list and a save's reply`, lists === 4 && !src.includes('.select()'))
 }
 
+console.log('\nDevices that stored entries before the names')
+const initial = read('../lib/initialSync.js')
+const version = Number(initial.match(/export const SYNC_VERSION = (\d+)/)?.[1])
+check('download every entry again, once (SYNC_VERSION 4 or later)', version >= 4)
+check('and the reason is written beside it', /4: entries gain who added and who last edited them/.test(initial))
+
 console.log(failures ? `\n${failures} failed` : '\nAll passed')
 process.exit(failures ? 1 : 0)
