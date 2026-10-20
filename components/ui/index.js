@@ -246,7 +246,7 @@ export function EmptyState({ icon: Icon, title, children, action, className = ''
  * leave `w-full` and `w-20` both in the class list, and which one wins is decided by their
  * order in the generated stylesheet rather than in the string.
  */
-export const INPUT_BASE = `border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 focus:bg-primary-500/15 px-2 py-2 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint`
+export const INPUT_BASE = `border border-primary-500/30 dark:border-primary-400/30 rounded-house-field bg-primary-500/10 focus:bg-primary-500/15 px-2 py-2 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint`
 export const INPUT = `w-full ${INPUT_BASE}`
 /**
  * The underline with no padding at all, for a field whose insets are set by an adornment — a
@@ -254,7 +254,7 @@ export const INPUT = `w-full ${INPUT_BASE}`
  * would leave `px-2` and `pl-10` both in the class list, and which one wins is decided by their
  * order in the generated stylesheet rather than in the string.
  */
-export const INPUT_BARE = 'border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 focus:bg-primary-500/15 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint'
+export const INPUT_BARE = 'border border-primary-500/30 dark:border-primary-400/30 rounded-house-field bg-primary-500/10 focus:bg-primary-500/15 text-sm text-content transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:outline-none disabled:opacity-50 placeholder:text-content-faint'
 export const LABEL = 'block text-sm font-semibold text-content mb-1.5'
 
 /**
@@ -266,7 +266,7 @@ export const LABEL = 'block text-sm font-semibold text-content mb-1.5'
  * is never the element that takes focus. Carries no padding, since the control inside brings
  * its own and doubling them makes a field visibly taller than its neighbours.
  */
-export const FIELD = 'w-full border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 transition-colors focus-within:border-primary-600 dark:focus-within:border-primary-400'
+export const FIELD = 'w-full border border-primary-500/30 dark:border-primary-400/30 rounded-house-field bg-primary-500/10 transition-colors focus-within:border-primary-600 dark:focus-within:border-primary-400'
 
 /**
  * The OUTLINE box for a control whose className lands on a WRAPPER rather than on the input
@@ -276,7 +276,7 @@ export const FIELD = 'w-full border border-primary-500/30 dark:border-primary-40
  *
  * Mirrors the box store-portal/components/ReportControls.js:37 wraps its own DateInput in.
  */
-export const OUTLINE_WITHIN = 'border border-primary-500/30 dark:border-primary-400/30 rounded-house bg-primary-500/10 text-primary-700 dark:text-primary-300 focus-within:border-primary-600 dark:focus-within:border-primary-400 transition-colors'
+export const OUTLINE_WITHIN = 'border border-primary-500/30 dark:border-primary-400/30 rounded-house-field bg-primary-500/10 text-primary-700 dark:text-primary-300 focus-within:border-primary-600 dark:focus-within:border-primary-400 transition-colors'
 
 // ---- Entry-form chrome ----
 /**
