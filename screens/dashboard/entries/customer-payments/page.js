@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useSearchParams } from '@/lib/nav'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
+import { lubeOnAccount } from '@/lib/accountBalance'
 import { customerPaymentsRepo } from '@/lib/repositories/customerPayments'
 import SearchableSelect from '@/components/SearchableSelect'
 import { useSavePush } from '@/components/SavePushProvider'
@@ -106,8 +107,14 @@ export default function CustomerPaymentsFormPage() {
     [orgId], []
   )
   // Every saved transaction of the station, for each account's balance under its entry.
+  // Lube sales on an account count in its balance as well (lib/accountBalance.js).
   const allPayments = useLiveQuery(
-    () => (orgId ? db.customerPayments.where('orgId').equals(orgId).toArray() : []),
+    async () => (orgId
+      ? [
+          ...await db.customerPayments.where('orgId').equals(orgId).toArray(),
+          ...lubeOnAccount(await db.lubeSales.where('orgId').equals(orgId).toArray(), await db.lubeProducts.where('orgId').equals(orgId).toArray()),
+        ]
+      : []),
     [orgId], []
   )
 

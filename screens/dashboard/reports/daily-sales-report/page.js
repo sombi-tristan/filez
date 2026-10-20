@@ -6,6 +6,7 @@ import Link from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Loader2, ChevronLeft, ChevronRight, ChevronDown, Download, Pencil, X } from 'lucide-react'
 import { db } from '@/lib/db'
+import { lubeOnAccount } from '@/lib/accountBalance'
 import { buildDailyReport } from '@/lib/buildDailyReport'
 import { exportDailyReportExcel } from '@/lib/exportDailyReportExcel'
 import DateRange from '@/components/reports/DateRange'
@@ -113,8 +114,14 @@ function DailySalesReportContent() {
     () => orgId ? db.customers.where('orgId').equals(orgId).toArray() : [],
     [orgId]
   )
+  // The accounts' own entries, with their lube sales on credit (lib/accountBalance.js).
   const livePayments = useLiveQuery(
-    () => orgId ? db.customerPayments.where('orgId').equals(orgId).toArray() : [],
+    async () => orgId
+      ? [
+          ...await db.customerPayments.where('orgId').equals(orgId).toArray(),
+          ...lubeOnAccount(await db.lubeSales.where('orgId').equals(orgId).toArray(), await db.lubeProducts.where('orgId').equals(orgId).toArray()),
+        ]
+      : [],
     [orgId]
   )
   const customerMap = useMemo(() => {
