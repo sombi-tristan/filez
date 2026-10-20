@@ -7,6 +7,7 @@ import { getCurrentStationId, getLink, updateLink } from '@/lib/local/link'
 import { pendingCount } from '@/lib/local/outbox'
 import { checkLicence, paidNow } from '@/lib/local/licence'
 import { pull, push, refreshLicence } from '@/lib/local/webSync'
+import { consolidateIfDue } from '@/lib/local/consolidate'
 
 /**
  * Desktop build: keeps the station being worked in and its web station in step without anyone
@@ -66,6 +67,22 @@ export default function AutoSync() {
       clearInterval(timer)
       window.removeEventListener('online', round)
     }
+  }, [])
+
+  // A station on this computer only has no web job to consolidate its old entries: it is done
+  // here once a week (lib/local/consolidate.js), on opening and on the timer. A linked one gets
+  // it through its pull. A failure leaves the station as it was and is tried again next round.
+  useEffect(() => {
+    const tidy = async () => {
+      const stationId = getCurrentStationId()
+      if (!stationId) return
+      try {
+        if (!getLink(stationId)) await consolidateIfDue(stationId)
+      } catch {}
+    }
+    tidy()
+    const timer = setInterval(tidy, PULL_EVERY)
+    return () => clearInterval(timer)
   }, [])
 
   // Push a minute after the last change made here, for each station that has changes waiting.

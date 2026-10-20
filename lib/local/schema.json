@@ -390,7 +390,8 @@
       "tank_readings",
       "prices",
       "close_of_business",
-      "deleted_at"
+      "deleted_at",
+      "updated_by"
     ],
     "defaults": {
       "id": {
@@ -465,7 +466,8 @@
       "high_vol_3",
       "low_vol_1",
       "low_vol_2",
-      "low_vol_3"
+      "low_vol_3",
+      "updated_by"
     ],
     "defaults": {
       "id": {
@@ -530,7 +532,8 @@
       "created_at",
       "updated_at",
       "bank_id",
-      "deleted_at"
+      "deleted_at",
+      "updated_by"
     ],
     "defaults": {
       "id": {
@@ -563,7 +566,8 @@
       "customer_id",
       "supplier_id",
       "invoice_no",
-      "unit_cost"
+      "unit_cost",
+      "updated_by"
     ],
     "defaults": {
       "id": {
@@ -592,7 +596,8 @@
       "created_at",
       "updated_at",
       "product_id",
-      "deleted_at"
+      "deleted_at",
+      "updated_by"
     ],
     "defaults": {
       "id": {
@@ -620,7 +625,8 @@
       "created_at",
       "updated_at",
       "customer_id",
-      "deleted_at"
+      "deleted_at",
+      "updated_by"
     ],
     "defaults": {
       "id": {
@@ -679,7 +685,8 @@
       "created_by",
       "created_at",
       "updated_at",
-      "deleted_at"
+      "deleted_at",
+      "updated_by"
     ],
     "defaults": {
       "id": {

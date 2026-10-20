@@ -37,7 +37,10 @@ export default function StationSwitch({ stationId }) {
         {stations.map((s) => (
           <button key={s.id} onClick={() => open(s)} className={`w-full text-left flex items-center gap-3 p-3 ${CARD} ${s.id === stationId ? '' : CARD_HOVER}`} aria-current={s.id === stationId ? 'true' : undefined}>
             <Fuel className="w-4 h-4 text-accent shrink-0" />
-            <span className="flex-1 min-w-0 truncate text-sm font-semibold text-content">{s.name}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block truncate text-sm font-semibold text-content">{s.name}</span>
+              {s.location && <span className="block truncate text-xs text-content-muted">{s.location}</span>}
+            </span>
             {s.id === stationId ? <Check className="w-4 h-4 text-accent" /> : <ChevronRight className="w-4 h-4 text-content-faint" />}
           </button>
         ))}

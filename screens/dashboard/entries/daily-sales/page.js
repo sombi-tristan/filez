@@ -560,6 +560,7 @@ export default function DailySalesFormPage() {
     const p = e.prices || {}
     return {
       id: e.id,
+      entry: e,
       primary: (e.closeOfBusiness || e.close_of_business) ? 'Final entry (close of business)' : 'Entry',
       secondary: ['PMS', 'AGO', 'DPK'].filter((f) => Number(p[f]) > 0).map((f) => `${f} ₦${Number(p[f]).toLocaleString()}`).join(' · ') || 'No prices',
     }

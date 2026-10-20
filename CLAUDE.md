@@ -13,8 +13,8 @@ no PINs (lib/local/accounts.js; app/api/desktop/sign-in and sign-up on main). Th
 a computer needs the internet; the computer keeps the person (users.web_account) and a bcrypt
 check of the password (pin_hash) so later sign-ins work offline, and a password the web refuses
 is refused here too. Staff are invited by email (an accepted org_invites row) and sign in with
-their own web account. Who may add stations: anyone who is not only someone's staff
-(canAddStations); a station whose owner is not a web account here (an old PIN account) is offered
+their own web account. Who may add stations: anyone signed in here, staff included, as on the
+web (canAddStations); a station whose owner is not a web account here (an old PIN account) is offered
 to be taken over (stationsWithNoOwnerHere).
 
 A computer holds several stations side by side (lib/local/link.js): sign in, then
