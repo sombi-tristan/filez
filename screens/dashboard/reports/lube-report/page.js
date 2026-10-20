@@ -280,8 +280,9 @@ function LubeReportContent() {
             <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
         ) : (
-          // 70% of the report box on a computer, centred; the whole width on a phone.
-          <div className="lg:w-[70%] lg:mx-auto">
+          // 70% of the report box on a computer, centred; the whole width on a phone. min-w-fit:
+          // a table wider than 70% widens it instead of spilling out on the right, so it stays centred.
+          <div className="lg:w-[70%] lg:min-w-fit lg:mx-auto">
             {activeTab === 'daily-log'
               ? <DailyLogTable data={dailyLog} cell={cell} cellR={cellR} hdr={hdr} />
               : <SummaryTable data={summary} cell={cell} cellR={cellR} hdr={hdr} />}
