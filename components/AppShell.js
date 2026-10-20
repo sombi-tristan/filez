@@ -5,6 +5,7 @@ import '@/lib/appFetch'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { IS_APP } from '@/lib/platform'
+import AppErrorBanner from '@/components/AppErrorBanner'
 
 export default function AppShell({ children }) {
   // The Android app has no middleware.js, so it checks here what the website's middleware does:
@@ -55,5 +56,10 @@ export default function AppShell({ children }) {
 
   // The dashboard and the admin area draw their own top bar, menu and screens as Ionic apps
   // (components/shell/IonicShell.js). Everything else (home, auth, offline) is a plain page.
-  return <>{ready ? children : null}</>
+  return (
+    <>
+      <AppErrorBanner />
+      {ready ? children : null}
+    </>
+  )
 }
