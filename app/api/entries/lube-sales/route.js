@@ -40,7 +40,7 @@ export async function POST(request) {
     const { subscribed, error: subError } = await requireService(user, SERVICE_KEY)
     if (!subscribed) return subError
 
-    const { id, entry_date, product_id, unit_sold, unit_received, price, notes } = await request.json()
+    const { id, entry_date, product_id, unit_sold, unit_received, price, notes, customer_id, supplier_id, invoice_no, unit_cost } = await request.json()
 
     if (!entry_date) return NextResponse.json({ error: 'Date is required' }, { status: 400 })
     if (!product_id) return NextResponse.json({ error: 'Product is required' }, { status: 400 })
@@ -57,6 +57,11 @@ export async function POST(request) {
         unit_received: Number(unit_received) || 0,
         price: Number(price) || 0,
         notes: notes?.trim() || null,
+        // A sale on an account; a receipt's supplier (an account), invoice and unit cost.
+        customer_id: customer_id || null,
+        supplier_id: supplier_id || null,
+        invoice_no: invoice_no?.trim() || null,
+        unit_cost: unit_cost === '' || unit_cost == null ? null : Number(unit_cost) || 0,
         created_by: user.id,
       })
       .select()
@@ -80,7 +85,7 @@ export async function PATCH(request) {
     const { subscribed, error: subError } = await requireService(user, SERVICE_KEY)
     if (!subscribed) return subError
 
-    const { id, entry_date, product_id, unit_sold, unit_received, price, notes } = await request.json()
+    const { id, entry_date, product_id, unit_sold, unit_received, price, notes, customer_id, supplier_id, invoice_no, unit_cost } = await request.json()
     if (!id) return NextResponse.json({ error: 'Entry id required' }, { status: 400 })
 
     const updates = { updated_at: new Date().toISOString() }
@@ -90,6 +95,10 @@ export async function PATCH(request) {
     if (unit_received !== undefined) updates.unit_received = Number(unit_received) || 0
     if (price !== undefined) updates.price = Number(price) || 0
     if (notes !== undefined) updates.notes = notes?.trim() || null
+    if (customer_id !== undefined) updates.customer_id = customer_id || null
+    if (supplier_id !== undefined) updates.supplier_id = supplier_id || null
+    if (invoice_no !== undefined) updates.invoice_no = invoice_no?.trim() || null
+    if (unit_cost !== undefined) updates.unit_cost = unit_cost === '' || unit_cost == null ? null : Number(unit_cost) || 0
 
     const supabase = getServiceClient()
     const { data, error: dbError } = await supabase

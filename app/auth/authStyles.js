@@ -13,11 +13,11 @@
 
 /** Filled field sized for a left icon. */
 export const AUTH_INPUT =
-  'w-full pl-10 pr-4 py-2.5 text-sm bg-primary-500/10 border border-primary-500/30 dark:border-primary-400/30 rounded-house text-content placeholder:text-content-faint transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:bg-primary-500/15 focus:outline-none'
+  'w-full pl-10 pr-4 py-2.5 text-sm bg-primary-500/10 border border-primary-500/30 dark:border-primary-400/30 rounded-house-field text-content placeholder:text-content-faint transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:bg-primary-500/15 focus:outline-none'
 
 /** The same field with no icon. */
 export const AUTH_INPUT_PLAIN =
-  'w-full px-4 py-2.5 text-sm bg-primary-500/10 border border-primary-500/30 dark:border-primary-400/30 rounded-house text-content placeholder:text-content-faint transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:bg-primary-500/15 focus:outline-none'
+  'w-full px-4 py-2.5 text-sm bg-primary-500/10 border border-primary-500/30 dark:border-primary-400/30 rounded-house-field text-content placeholder:text-content-faint transition-colors focus:border-primary-600 dark:focus:border-primary-400 focus:bg-primary-500/15 focus:outline-none'
 
 /** The emphasised action (Sign in, Create account). Matches Button's `primary` variant. */
 export const AUTH_SUBMIT =

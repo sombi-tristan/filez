@@ -55,7 +55,7 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
     {/* A phone's place for the form's save bar: first in the form and pinned (SaveBar fills it). */}
     <div className="entry-savebar-slot lg:hidden sticky top-0 z-30 -mx-4 sm:mx-0 px-4 sm:px-0 py-3 compact:py-2 bg-canvas empty:hidden" />
     <div className="lg:sticky lg:top-0 z-20 -mx-4 sm:mx-0 mb-4 px-4 sm:px-0 py-2 bg-canvas">
-      <div className={`flex items-stretch border-card ${ENTRY_LINE} rounded-house bg-canvas`}>
+      <div className={`flex items-stretch border-card ${ENTRY_LINE} rounded-house-field bg-canvas`}>
         <button
           type="button"
           onClick={() => prevHref && router.replace(prevHref)}

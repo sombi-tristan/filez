@@ -612,7 +612,7 @@ export default function StationSettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
+          className={`ml-auto w-fit flex items-center gap-2 px-5 py-2.5 text-sm font-medium disabled:opacity-50 ${BTN_PRIMARY}`}
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save changes

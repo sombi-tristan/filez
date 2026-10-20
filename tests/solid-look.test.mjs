@@ -42,7 +42,8 @@ for (const name of NAMES) {
   const s = style(name)
   check(`${name}: no 2px outline, house corners`, s && !/\bborder(-b|-t)?-2\b/.test(s) && s.includes('rounded-house'))
 }
-check('buttons have half corners (4px), the rest the full 8px',
+check('fields have half corners (4px)', ['INPUT_BASE', 'INPUT_BARE', 'FIELD', 'OUTLINE_WITHIN'].every((n) => style(n).includes('rounded-house-field')) && /'house-field':\s*'4px'/.test(tw))
+check('buttons have half corners (4px), cards the full 8px',
   ['BTN_FRAMED', 'BTN_PRIMARY', 'BTN_DANGER'].every((n) => style(n).includes('rounded-house-btn')) &&
   NAMES.filter((n) => !n.startsWith('BTN_')).every((n) => !style(n).includes('rounded-house-btn')) &&
   /'house-btn':\s*'4px'/.test(tw))
