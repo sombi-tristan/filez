@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { authenticateUser, getServiceClient, paginationParams, requireService, logActivity } from '@/lib/entryHelpers'
+import { consolidatedEntryError } from '@/lib/consolidation'
 import { cobDuplicateMessage } from '@/lib/dailySalesGuards'
 
 const TABLE = 'daily_sales_entries'
@@ -16,13 +17,13 @@ export async function GET(request) {
     // Single entry by ID
     const id = searchParams.get('id')
     if (id) {
-      const { data } = await supabase.from(TABLE).select('*, users:created_by(name)').eq('id', id).eq('org_id', user.org_id).is('deleted_at', null).single()
+      const { data } = await supabase.from(TABLE).select('*, users:created_by(name), editor:updated_by(name)').eq('id', id).eq('org_id', user.org_id).is('deleted_at', null).single()
       return NextResponse.json({ entry: data })
     }
 
     const { data, count } = await supabase
       .from(TABLE)
-      .select('*, users:created_by(name)', { count: 'exact' })
+      .select('*, users:created_by(name), editor:updated_by(name)', { count: 'exact' })
       .eq('org_id', user.org_id)
       .is('deleted_at', null)
       .order('entry_date', { ascending: false })
@@ -51,6 +52,8 @@ export async function POST(request) {
     if (!entry_date) {
       return NextResponse.json({ error: 'Date is required' }, { status: 400 })
     }
+    const old = consolidatedEntryError(TABLE, entry_date)
+    if (old) return NextResponse.json({ error: old }, { status: 409 })
     if (!Array.isArray(nozzle_readings) || nozzle_readings.length === 0) {
       return NextResponse.json({ error: 'Nozzle readings are required' }, { status: 400 })
     }
@@ -98,7 +101,7 @@ export async function POST(request) {
         close_of_business: !!close_of_business,
         created_by: user.id,
       })
-      .select()
+      .select('*, users:created_by(name), editor:updated_by(name)')
       .single()
 
     if (dbError) {
@@ -129,7 +132,9 @@ export async function PATCH(request) {
 
     const supabase = getServiceClient()
 
-    const updates = { updated_at: new Date().toISOString() }
+    const updates = { updated_at: new Date().toISOString(), updated_by: user.id }
+    const old = consolidatedEntryError(TABLE, entry_date)
+    if (old) return NextResponse.json({ error: old }, { status: 409 })
     if (entry_date) updates.entry_date = entry_date
     if (nozzle_readings) updates.nozzle_readings = nozzle_readings
     if (tank_readings !== undefined) {
@@ -170,7 +175,7 @@ export async function PATCH(request) {
       .update(updates)
       .eq('id', id)
       .eq('org_id', user.org_id)
-      .select()
+      .select('*, users:created_by(name), editor:updated_by(name)')
       .single()
 
     if (dbError) {
@@ -199,7 +204,7 @@ export async function DELETE(request) {
 
     const supabase = getServiceClient()
     const now = new Date().toISOString()
-    await supabase.from(TABLE).update({ deleted_at: now, updated_at: now }).eq('id', id).eq('org_id', user.org_id)
+    await supabase.from(TABLE).update({ deleted_at: now, updated_at: now, updated_by: user.id }).eq('id', id).eq('org_id', user.org_id)
 
     return NextResponse.json({ ok: true })
   } catch {

@@ -15,6 +15,7 @@ import {
   SaveBar, EntryLoading, NotConfigured, adjacentDates, Figures, figure,
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
+import { combineHistory } from '@/components/EntryHistory'
 
 function blankEntry(tanks) {
   return {
@@ -306,6 +307,7 @@ export default function ProductReceiptFormPage() {
   const tankLabel = (id) => { const t = tanks.find((x) => x.id === id); return t ? `${t.fuel_type} tank ${t.tank_number}` : 'Tank' }
   const listItems = dayReceipts.map((r) => ({
     id: r._key,
+    entry: combineHistory((dayRecords || []).filter((x) => r.ids.includes(x.id))),
     primary: [r.truckNumber, r.waybillNumber && `Waybill ${r.waybillNumber}`].filter(Boolean).join(' · ') || 'Receipt',
     secondary: Object.entries(r.tankVolumes).filter(([, v]) => Number(v) > 0).map(([id, v]) => `${tankLabel(id)} ${Number(v).toLocaleString()} L`).join(', '),
   }))

@@ -208,8 +208,7 @@ export default function StationSidebar({ stationId }) {
         ))}
 
         <SidebarSection value={STATION_GROUP} label="Station">
-          {/* No Notifications row: the header's bell shows at every width and carries the
-              unread count. */}
+          {/* No Notifications row: who did what is shown under each entry instead. */}
           <SidebarNavRow href={`${home}/settings`} label="Settings" icon={settingsOutline} active={pathname === `${home}/settings`} onClick={go(`${home}/settings`)} />
           <SidebarNavRow
             label={signingOut ? 'Signing out…' : 'Sign out'}
