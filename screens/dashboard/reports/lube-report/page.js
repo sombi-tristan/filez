@@ -9,7 +9,8 @@ import DateRange from '@/components/reports/DateRange'
 import { defaultReportStart } from '@/lib/reportRange'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
-import { REPORT_HEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
+import { REPORT_HEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD, INPUT_BASE } from '@/components/ui'
+import { isDefaultAccount } from '@/lib/defaultAccounts'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -45,6 +46,8 @@ function LubeReportContent() {
   const [reportStart, setReportStart] = useState(monthStartStr)
   const [reportEnd, setReportEnd] = useState(todayStr)
   const [activeTab, setActiveTab] = useState('daily-log')
+  // One account's lube sales in the daily log ('' is every sale, with the lodgements).
+  const [accountId, setAccountId] = useState('')
 
   const [products, setProducts] = useState([])
 
@@ -76,6 +79,15 @@ function LubeReportContent() {
     [orgId]
   )
 
+  // The credit accounts a lube sale can be on (Settings > Accounts), for the account filter.
+  const accounts = useLiveQuery(
+    () => orgId
+      ? db.customers.where('orgId').equals(orgId).toArray()
+        .then((all) => all.filter((c) => !isDefaultAccount(c)).sort((a, b) => (a.name || '').localeCompare(b.name || '')))
+      : [],
+    [orgId], []
+  )
+
   // Product lookup
   const productMap = useMemo(() => {
     return Object.fromEntries(products.map(p => [p.id, p]))
@@ -86,11 +98,16 @@ function LubeReportContent() {
     if (!generated || !reportStart || !reportEnd) return null
     if (loading || !orgId || !liveLubeSales || !liveLodgements) return null
 
+    // With an account picked: only its lube sales, and no lodgements, which are not on an
+    // account; the balance is then what the account has had in lube.
+    const accountSales = accountId ? liveLubeSales.filter(s => s.customerId === accountId) : liveLubeSales
+    const lodgementsShown = accountId ? [] : liveLodgements
+
     // Filter lube sales in range
-    const salesInRange = liveLubeSales.filter(s => s.entryDate >= reportStart && s.entryDate <= reportEnd)
+    const salesInRange = accountSales.filter(s => s.entryDate >= reportStart && s.entryDate <= reportEnd)
 
     // Filter lube lodgements in range
-    const lubeLodgements = liveLodgements.filter(l =>
+    const lubeLodgements = lodgementsShown.filter(l =>
       l.lodgementType === 'lube-deposit' && l.entryDate >= reportStart && l.entryDate <= reportEnd
     )
 
@@ -114,8 +131,8 @@ function LubeReportContent() {
     const rows = []
 
     // Get sales before range for opening balance
-    const salesBefore = liveLubeSales.filter(s => s.entryDate < reportStart)
-    const lodgementsBefore = liveLodgements.filter(l =>
+    const salesBefore = accountSales.filter(s => s.entryDate < reportStart)
+    const lodgementsBefore = lodgementsShown.filter(l =>
       l.lodgementType === 'lube-deposit' && l.entryDate < reportStart
     )
     const totalSalesBefore = salesBefore.reduce((sum, s) => sum + ((Number(s.unitSold) || 0) * (Number(s.price) || 0)), 0)
@@ -172,7 +189,7 @@ function LubeReportContent() {
     const totalLodgement = rows.reduce((sum, r) => sum + r.lodgement, 0)
 
     return { rows, openingBalance: totalSalesBefore - totalLodgementsBefore, totalAmount, totalLodgement, closingBalance: runningBalance }
-  }, [generated, reportStart, reportEnd, loading, orgId, liveLubeSales, liveLodgements, productMap])
+  }, [generated, reportStart, reportEnd, loading, orgId, liveLubeSales, liveLodgements, productMap, accountId])
 
   // Build monthly summary data
   const summary = useMemo(() => {
@@ -262,6 +279,18 @@ function LubeReportContent() {
       <div className="flex items-center justify-between py-3 shrink-0">
         <h1 className="text-lg font-bold text-content">Lube Report</h1>
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* The daily log for one account's lube sales, or all of them. */}
+          {activeTab === 'daily-log' && (
+            <select
+              aria-label="Account"
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className={`${INPUT_BASE} py-1.5`}
+            >
+              <option value="">All accounts</option>
+              {(accounts || []).map((c) => <option key={c.id} value={c.id}>{c.name || 'Unnamed'}</option>)}
+            </select>
+          )}
           <DateRange
             start={startDate}
             end={endDate}
@@ -279,10 +308,14 @@ function LubeReportContent() {
           <div className="flex items-center justify-center py-20">
             <p className="text-content-faint text-sm">Select a date range and click Load.</p>
           </div>
-        ) : activeTab === 'daily-log' ? (
-          <DailyLogTable data={dailyLog} cell={cell} cellR={cellR} hdr={hdr} />
         ) : (
-          <SummaryTable data={summary} cell={cell} cellR={cellR} hdr={hdr} />
+          // 70% of the report box on a computer, centred; the whole width on a phone. min-w-fit:
+          // a table wider than 70% widens it instead of spilling out on the right, so it stays centred.
+          <div className="lg:w-[70%] lg:min-w-fit lg:mx-auto">
+            {activeTab === 'daily-log'
+              ? <DailyLogTable data={dailyLog} cell={cell} cellR={cellR} hdr={hdr} />
+              : <SummaryTable data={summary} cell={cell} cellR={cellR} hdr={hdr} />}
+          </div>
         )}
       </div>
 

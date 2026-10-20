@@ -559,7 +559,11 @@
       "created_at",
       "updated_at",
       "product_id",
-      "deleted_at"
+      "deleted_at",
+      "customer_id",
+      "supplier_id",
+      "invoice_no",
+      "unit_cost"
     ],
     "defaults": {
       "id": {

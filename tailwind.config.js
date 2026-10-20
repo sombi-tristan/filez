@@ -25,6 +25,8 @@ module.exports = {
         house: '8px',
         // Buttons: half the corner (app/globals.css halves Ionic's buttons the same way).
         'house-btn': '4px',
+        // Fields: half the corner too (app/globals.css halves Ionic's fields the same way).
+        'house-field': '4px',
       },
       colors: {
         // Semantic neutral tokens (light/dark via CSS vars in app/globals.css). Screens use

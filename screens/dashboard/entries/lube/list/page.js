@@ -6,6 +6,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/lib/db'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { Tabs } from '@/design'
+import { isReceipt } from '@/lib/lubeEntries'
 import {
   EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager, SubscribeNotice,
 } from '@/components/entries/EntryListParts'
@@ -34,7 +35,7 @@ export default function LubeListPage() {
           <div className="mb-4 border-b border-line">
             <Tabs
               label="Lube entries"
-              items={[{ id: 'sales', label: 'Lube sales' }, { id: 'stock', label: 'Lube stock' }]}
+              items={[{ id: 'sales', label: 'Lube sales' }, { id: 'receipt', label: 'Lube receipt' }, { id: 'stock', label: 'Lube stock' }]}
               value={tab}
               onChange={setTab}
             />
@@ -43,13 +44,16 @@ export default function LubeListPage() {
       )}
     >
       {/* The tab's own title. */}
-      <h2 className="text-base font-bold text-content mb-3">{tab === 'sales' ? 'Lube sales' : 'Lube stock'}</h2>
-      {tab === 'sales' ? <LubeSalesList orgId={orgId} qs={qs} ready={ready} /> : <LubeStockList orgId={orgId} qs={qs} ready={ready} />}
+      <h2 className="text-base font-bold text-content mb-3">{{ sales: 'Lube sales', receipt: 'Lube receipt', stock: 'Lube stock' }[tab]}</h2>
+      {tab === 'stock'
+        ? <LubeStockList orgId={orgId} qs={qs} ready={ready} />
+        : <LubeSalesList key={tab} orgId={orgId} qs={qs} ready={ready} receipt={tab === 'receipt'} />}
     </EntryListScreen>
   )
 }
 
-function LubeSalesList({ orgId, qs, ready }) {
+/** The lube sales, or with `receipt` the lube receipts (lib/lubeEntries.js isReceipt), by day. */
+function LubeSalesList({ orgId, qs, ready, receipt = false }) {
   const [page, setPage] = useState(1)
   const limit = 10
 
@@ -77,18 +81,19 @@ function LubeSalesList({ orgId, qs, ready }) {
   const groupedEntries = useMemo(() => {
     const groups = {}
     for (const entry of allEntries) {
+      if (isReceipt(entry) !== receipt) continue
       const date = entry.entryDate || 'no-date'
       if (!groups[date]) groups[date] = []
       groups[date].push(entry)
     }
     return Object.entries(groups).map(([date, entries]) => ({ date, entries }))
-  }, [allEntries])
+  }, [allEntries, receipt])
 
   const total = groupedEntries.length
   const totalPages = Math.ceil(total / limit)
   const pageGroups = groupedEntries.slice((page - 1) * limit, page * limit)
 
-  if (pageGroups.length === 0) return <EntryListEmpty what="sales entries" />
+  if (pageGroups.length === 0) return <EntryListEmpty what={receipt ? 'lube receipts' : 'sales entries'} />
 
   return (
     <>
@@ -96,10 +101,12 @@ function LubeSalesList({ orgId, qs, ready }) {
         {pageGroups.map((group) => (
           <DayRow
             key={group.date}
-            href={`/dashboard/entries/lube?${qs}&type=sales&edit_date=${group.date}`}
+            href={`/dashboard/entries/lube?${qs}&type=${receipt ? 'receipt' : 'sales'}&edit_date=${group.date}`}
             date={group.date}
             count={group.entries.length}
-            detail={group.entries.map((e) => `${productsMap[e.productId] || 'Unknown'}: ${e.unitSold} sold, ${e.unitReceived} received`).join(' · ')}
+            detail={group.entries.map((e) => (receipt
+              ? `${productsMap[e.productId] || 'Unknown'}: ${e.unitReceived} received${e.invoiceNo ? ` (inv. ${e.invoiceNo})` : ''}`
+              : `${productsMap[e.productId] || 'Unknown'}: ${e.unitSold} sold, ${e.unitReceived} received`)).join(' · ')}
             pending={group.entries.some(e => pendingIds.has(e.id))}
           />
         ))}
