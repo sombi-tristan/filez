@@ -396,3 +396,15 @@ html :is(ion-input, ion-textarea, ion-select).house-field[class] {
 .station-bold :is(.font-medium, .font-semibold) {
   font-weight: 700;
 }
+
+/* A saved entry open for editing (EntryCard data-editing): its fields turn house orange (#f57d00)
+   instead of the blue fill, so it is plain that a saved entry is being changed. */
+[data-editing] .entry-fill,
+[data-editing] .entry-fill-within {
+  background-color: rgb(245 125 0 / 0.12);
+}
+[data-editing] .entry-fill:focus,
+[data-editing] button.entry-fill:hover,
+[data-editing] .entry-fill-within:focus-within {
+  background-color: rgb(245 125 0 / 0.26);
+}

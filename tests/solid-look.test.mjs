@@ -85,7 +85,7 @@ for (const p of screenFiles) {
   check(`${p.slice(-2).join('/')}: no 2px lines`, !TWO_PX.test(src))
   check(`${p.slice(-2).join('/')}: no 2px inner corners`, !OLD_CORNER.test(src))
 }
-check('an entry card is filled', /<section className=\{`bg-subtle border-card/.test(read('components', 'entries', 'EntryParts.js')))
+check('an entry card is filled', /<section [^>]*className=\{`bg-subtle border-card/.test(read('components', 'entries', 'EntryParts.js')))
 const auth = read('app', 'auth', 'authStyles.js')
 check('sign-in fields are filled boxes with 8px corners', (auth.match(/AUTH_INPUT(_PLAIN)? =\s*'[^']*\bborder\b[^']*rounded-house/g) || []).length === 2)
 check('the sign-in button is solid blue with white text', /AUTH_SUBMIT =\s*'[^']*bg-primary-600[^']*text-white[^']*rounded-house/.test(auth))

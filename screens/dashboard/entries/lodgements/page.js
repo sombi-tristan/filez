@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useSearchParams } from '@/lib/nav'
-import { Check, ChevronDown, X } from 'lucide-react'
+import { Check, ChevronDown, ClipboardPaste, X } from 'lucide-react'
 import { db } from '@/lib/db'
 import { lodgementsRepo } from '@/lib/repositories/lodgements'
 import DateInput from '@/components/DateInput'
@@ -16,11 +16,13 @@ import {
 } from '@/components/entries/EntryParts'
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 import { dayTotalSales } from '@/lib/salesCalculations'
+import { readPosLines } from '@/lib/posPaste'
 
-/** What distinguishes two accounts at the same bank: the POS terminal, or the type. */
+/** What distinguishes two accounts at the same bank: the POS terminal, or the type (with its terminal, if it has one). */
 function bankSub(b) {
   if (!b) return ''
   if (b.lodgement_type === 'pos') return b.terminal_id || 'POS'
+  if (b.lodgement_type === 'transfer' && b.terminal_id) return `transfer · ${b.terminal_id}`
   return b.lodgement_type || ''
 }
 
@@ -48,6 +50,8 @@ export default function LodgementsFormPage() {
   // Which entry's account picker is open, as an index. Same bottom sheet as the daily-sales
   // consumption picker: chosen one-handed on a phone, so the options belong in thumb reach.
   const [bankSheet, setBankSheet] = useState(null)
+  // The Paste POS lines sheet: what was pasted (Bedbug copies one line per slip amount), or null when closed.
+  const [pasted, setPasted] = useState(null)
   const [originalIds, setOriginalIds] = useState([])
   const [allDates, setAllDates] = useState([])
   const submittingRef = useRef(false)
@@ -245,6 +249,12 @@ export default function LodgementsFormPage() {
       <form onSubmit={handleSubmit}>
         <DayBar label="Entry date" value={formDate} onChange={handleDateChange} prevHref={dayHref(prevDate)} nextHref={dayHref(nextDate)} />
 
+        {!isEditing && (
+          <button type="button" onClick={() => setPasted('')} className="mb-3 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-500/[0.12] hover:bg-primary-500/[0.2]">
+            <ClipboardPaste className="w-4 h-4" /> Paste POS lines
+          </button>
+        )}
+
         {entries.map((entry, idx) => {
           const chosen = banks.find((b) => b.id === entry.bankId)
           return (
@@ -253,7 +263,7 @@ export default function LodgementsFormPage() {
                 <button
                   type="button"
                   onClick={() => setBankSheet(idx)}
-                  className="w-full flex items-center gap-2 px-3 py-3 text-left text-base bg-primary-500/[0.12] hover:bg-primary-500/[0.2]"
+                  className="entry-fill w-full flex items-center gap-2 px-3 py-3 text-left text-base bg-primary-500/[0.12] hover:bg-primary-500/[0.2]"
                 >
                   <span className={`flex-1 truncate ${chosen ? 'text-content' : 'text-content-faint'}`}>
                     {chosen ? chosen.bank_name : 'Select account'}
@@ -320,6 +330,56 @@ export default function LodgementsFormPage() {
         />
       </form>
       </EntryWithDayList>
+
+      {/* Paste POS lines: one entry card per line whose terminal and type match an account; the
+          rest stay listed here in red with the reason. Cards already filled in are kept. */}
+      {pasted !== null && (() => {
+        const { entries: found, problems } = readPosLines(pasted, banks)
+        const fill = () => {
+          const kept = entries.filter((e) => e.amount || e.bankId)
+          setEntries([...kept, ...found.map((f) => ({ ...blankEntry(), ...f }))])
+          setPasted(null)
+        }
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setPasted(null)}>
+            <div className="bg-surface w-full sm:max-w-md max-h-[80vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-line flex-shrink-0">
+                <div>
+                  <h3 className="text-sm font-semibold text-content">Paste POS lines</h3>
+                  <p className="text-xs text-content-muted">From Bedbug: date, POS or TRANSFER, terminal, amount</p>
+                </div>
+                <button type="button" onClick={() => setPasted(null)} aria-label="Close" className="text-content-faint hover:text-content-muted p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="overflow-y-auto px-4 py-3 flex flex-col gap-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+                <textarea
+                  aria-label="POS lines"
+                  value={pasted}
+                  onChange={(e) => setPasted(e.target.value)}
+                  rows={6}
+                  autoFocus
+                  placeholder={'2026-10-25	POS	2039DDE3	471980.00'}
+                  className={`${ENTRY_INPUT} font-mono text-sm`}
+                />
+                {problems.length > 0 && (
+                  <ul className="flex flex-col gap-1 text-sm text-red-600 dark:text-red-400">
+                    {problems.map((p, i) => (
+                      <li key={i} className="flex gap-1.5">
+                        <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span><span className="font-mono">{p.line}</span>: {p.reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button type="button" disabled={found.length === 0} onClick={fill} className="px-4 py-2.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40">
+                  {`Fill ${found.length} ${found.length === 1 ? 'entry' : 'entries'}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Account / terminal sheet — the same picker as the daily-sales consumption account.
           A station has a handful of accounts and several POS terminals at the same bank, so

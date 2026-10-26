@@ -492,7 +492,7 @@ export default function StationPage() {
         <section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">
           <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Reports</h2>
           <div className="grid grid-cols-2 gap-3">
-            {homeReports(reportLinks, stationId, canAccess).map((link) => (
+            {homeReports(reportLinks, stationId, canAccess, 2).map((link) => (
               <Widget key={link.href} href={link.href} icon={link.icon} label={link.label} desc={link.desc} />
             ))}
             <Link href={`/dashboard/stations/${stationId}/reports`} className="col-span-2 flex items-center gap-3 p-3 bg-subtle rounded-house transition-colors hover:bg-primary-500/10">
@@ -672,10 +672,14 @@ export default function StationPage() {
  * A report widget on the station home: half the panel wide (two a row), pale, a soft blue round
  * icon, the name and a short description under it, like the Entries widgets above it.
  */
-function Widget({ href, icon, label, desc }) {
+// A report on the station home: an orange tile with an orange round chip (house orange #f57d00),
+// the reports' colour there, apart from the blue Entries.
+function Widget({ href, icon: Icon, label, desc }) {
   return (
-    <Link href={href} className="w-full h-24 flex flex-col items-center justify-center gap-1 p-2 text-center bg-subtle rounded-house transition-colors hover:bg-primary-500/10">
-      <IconChip icon={icon} className="w-10 h-10" iconClass="w-5 h-5" />
+    <Link href={href} className="w-full h-24 flex flex-col items-center justify-center gap-1 p-2 text-center bg-[rgb(245_125_0/0.12)] rounded-house transition-colors hover:bg-[rgb(245_125_0/0.2)]">
+      <div className="flex items-center justify-center shrink-0 rounded-full w-10 h-10 bg-[rgb(245_125_0/0.2)] text-[#d86e00] dark:text-[#f68a1a]">
+        <Icon className="w-5 h-5" />
+      </div>
       <p className="text-sm font-medium text-content leading-tight">{label}</p>
       <p className="text-xs text-content-muted leading-snug line-clamp-2">{desc}</p>
     </Link>

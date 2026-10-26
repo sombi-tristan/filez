@@ -292,9 +292,11 @@ export const OUTLINE_WITHIN = 'border border-primary-500/30 dark:border-primary-
  * Deliberately NOT the tinted-underline INPUT: underlines suit a settings page with a handful of
  * fields, a grid suits a form someone fills in every day at speed. The two never share a screen.
  */
-export const ENTRY_FILL = 'bg-primary-500/[0.12] focus:bg-primary-500/[0.26] transition-colors'
+// entry-fill / entry-fill-within mark the fill so a saved entry open for editing can turn it
+// orange (app/globals.css, [data-editing] on EntryCard).
+export const ENTRY_FILL = 'entry-fill bg-primary-500/[0.12] focus:bg-primary-500/[0.26] transition-colors'
 /** The same fill for a wrapper-className control (DateInput), which needs focus-within. */
-export const ENTRY_FILL_WITHIN = 'bg-primary-500/[0.12] focus-within:bg-primary-500/[0.26] transition-colors'
+export const ENTRY_FILL_WITHIN = 'entry-fill-within bg-primary-500/[0.12] focus-within:bg-primary-500/[0.26] transition-colors'
 export const ENTRY_INPUT = `w-full px-3 py-[7px] text-base ${ENTRY_FILL} text-content placeholder:text-content-faint focus:outline-none`
 /** A DateInput inside a cell: the same metrics as ENTRY_INPUT, with the wrapper-safe fill. */
 export const ENTRY_DATE = `w-full px-3 py-2.5 text-base ${ENTRY_FILL_WITHIN} text-content`

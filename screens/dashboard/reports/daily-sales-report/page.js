@@ -367,7 +367,8 @@ function DailySalesReportContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentDayReport.lodgement.bankRows.filter(r => r.deposited > 0).map(row => (
+                  {/* Every account, nothing lodged as 0, A to Z (sortBanks). */}
+                  {currentDayReport.lodgement.bankRows.map(row => (
                     <tr key={row.bankId}>
                       <td className={`${cell} whitespace-nowrap lg:whitespace-normal`}>
                         <span className="font-bold">{row.bankName}{row.terminalId ? ` - ${row.terminalId}` : ''}</span>
@@ -376,10 +377,10 @@ function DailySalesReportContent() {
                       <td className={cellR}>{fmt(row.deposited)}</td>
                     </tr>
                   ))}
-                  {currentDayReport.lodgement.totalAll === 0 && (
+                  {currentDayReport.lodgement.bankRows.length === 0 && (
                     <tr><td colSpan={2} className={`${cell} text-content-faint`}>No lodgements</td></tr>
                   )}
-                  {currentDayReport.lodgement.totalAll > 0 && (
+                  {currentDayReport.lodgement.bankRows.length > 0 && (
                     <tr className={`${subHdr} font-bold`}>
                       <td className={cell}>Total Lodged</td>
                       <td className={cellR}>{fmt(currentDayReport.lodgement.totalAll)}</td>
