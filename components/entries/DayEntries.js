@@ -55,12 +55,11 @@ export function DayEntries({ title = 'Entries this day', items = [], editingId, 
       ) : (
         <ul className="divide-y divide-line">
           {items.map((item, i) => (
-            <li key={item.id} className={`flex items-center gap-2 px-3 py-2 ${item.id === editingId ? 'bg-primary-500/10' : ''}`}>
+            <li key={item.id} className={`flex flex-wrap items-center gap-x-2 px-3 py-2 ${item.id === editingId ? 'bg-primary-500/10' : ''}`}>
               <span className="w-6 shrink-0 text-sm text-content-faint">{i + 1}</span>
               <span className="flex-1 min-w-0">
                 <span className="block truncate text-sm font-semibold text-content">{item.primary}</span>
                 {item.secondary ? <span className="block truncate text-xs text-content-muted">{item.secondary}</span> : null}
-                {item.entry ? <EntryHistory entry={item.entry} /> : null}
                 {item.id === editingId ? <span className="block text-xs font-semibold text-accent">Editing</span> : null}
               </span>
               <button type="button" onClick={() => onEdit?.(item)} aria-label={`Edit entry ${i + 1}`} className={`h-10 px-3 text-sm font-medium ${BTN_FRAMED}`}>
@@ -69,6 +68,11 @@ export function DayEntries({ title = 'Entries this day', items = [], editingId, 
               <button type="button" onClick={() => setDoomed(item)} aria-label={`Delete entry ${i + 1}`} className="h-10 w-10 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-500/10">
                 <IonIcon icon={trashOutline} aria-hidden="true" />
               </button>
+              {/* Who added and edited it, and when: its own line under the whole row (under Edit
+                  and Delete too), so on a phone it fits on one line uncut. */}
+              <span className="basis-full min-w-0 pl-8">
+                {item.entry ? <EntryHistory entry={item.entry} /> : null}
+              </span>
             </li>
           ))}
         </ul>

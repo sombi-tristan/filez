@@ -471,7 +471,8 @@ export default function StationSettingsPage() {
                   onChange={(e) => updateLodgement(i, 'bank_name', e.target.value)}
                   className={`flex-1 min-w-[100px] ${INPUT_BASE}`}
                 />
-                {l.lodgement_type === 'pos' && (
+                {/* POS and transfer accounts: pasted POS lines find their account by this ID. */}
+                {['pos', 'transfer'].includes(l.lodgement_type) && (
                   <input
                     type="text"
                     placeholder="Terminal ID"

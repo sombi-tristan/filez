@@ -33,7 +33,7 @@ export function combineHistory(rows = []) {
 export default function EntryHistory({ entry }) {
   if (!entry) return null
   if (!entry.createdAt) {
-    return <span className="block text-xs text-content-faint">Not on the server yet</span>
+    return <span className="block text-[11px] text-content-faint">Not on the server yet</span>
   }
 
   const added = entry.createdByName ? `Added by ${entry.createdByName}` : 'Added'
@@ -41,5 +41,6 @@ export default function EntryHistory({ entry }) {
   const edited = entry.updatedAt && Date.parse(entry.updatedAt) - Date.parse(entry.createdAt) > EDITED_AFTER
   if (edited) parts.push(`Edited ${when(entry.updatedAt)}${entry.updatedByName ? ` by ${entry.updatedByName}` : ''}`)
 
-  return <span className="block truncate text-xs text-content-faint">{parts.join(' · ')}</span>
+  // One line, never cut: if a narrow phone can't fit it, it scrolls sideways rather than end in ….
+  return <span className="block whitespace-nowrap overflow-x-auto text-[11px] text-content-faint">{parts.join(' · ')}</span>
 }

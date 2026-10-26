@@ -89,8 +89,10 @@ export function DayBar({ label = 'Date', value, onChange, prevHref, nextHref }) 
  * clip its contents, so a date field's calendar can open over the card below.
  */
 export function EntryCard({ title, onRemove, children }) {
+  // A saved entry open for editing ("Editing entry", "Editing receipt"): its fields turn orange.
+  const editing = /^Editing\b/.test(title || '')
   return (
-    <section className={`bg-subtle border-card ${ENTRY_LINE} rounded-house mb-4`}>
+    <section data-editing={editing || undefined} className={`bg-subtle border-card ${ENTRY_LINE} rounded-house mb-4`}>
       <div className="flex items-center justify-between min-h-[44px] pl-3 bg-subtle border-b border-line rounded-t-[7px]">
         <h2 className="text-[15px] font-semibold text-content">{title}</h2>
         {onRemove && (
