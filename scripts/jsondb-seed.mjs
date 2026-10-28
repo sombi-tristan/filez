@@ -1,7 +1,7 @@
 /**
  * Test data for the JSON datastore (lib/jsondb): `npm run jsondb:seed` wipes jsondb/data and
- * writes one station with six weeks of trading, dated back from today so it never falls behind
- * the 90-day consolidation cutoff (lib/consolidation.js).
+ * writes one station with a month of trading up to yesterday, dated back from today so it never
+ * falls behind the 90-day consolidation cutoff (lib/consolidation.js).
  *
  * Sign in with:
  *   owner@test.local / password123   station owner (the dashboard; phone or tablet width)
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = process.env.JSONDB_DIR || join(root, 'jsondb', 'data')
-const DAYS = 42
+const DAYS = 30 // one month of trading, up to yesterday
 const PASSWORD = 'password123'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -176,11 +176,23 @@ lubes.forEach((l, i) => {
   })
 })
 
+/**
+ * Accounts (the Account Ledger). A balance above zero is owed TO the station, below zero is owed
+ * BY it: a debit (sales_amount) moves it up, a credit (amount_paid) moves it down.
+ *
+ *   debtor    buys fuel on credit and pays some of it off: ends owing the station
+ *   prepaid   paid a deposit up front and draws fuel against it: the station owes them
+ *   supplier  delivers on credit and the station pays them down: the station owes them
+ */
 const customers = [
-  { name: 'Lekki Logistics Ltd', phone: '08091110001', opening: 450000, buys: [80000, 220000] },
-  { name: 'Chevron Estate Shuttle', phone: '08091110002', opening: 0, buys: [40000, 120000] },
-  { name: 'Ajah Haulage Co.', phone: '08091110003', opening: 125000, buys: [90000, 300000] },
-  { name: 'Mrs. Adeyemi (Generator)', phone: '08091110004', opening: 0, buys: [15000, 45000] },
+  { kind: 'debtor', name: 'Lekki Logistics Ltd', phone: '08091110001', opening: 450000, buys: [80000, 220000], pays: 0.12 },
+  { kind: 'debtor', name: 'Ajah Haulage Co.', phone: '08091110003', opening: 125000, buys: [90000, 300000], pays: 0.1 },
+  { kind: 'debtor', name: 'Chevron Estate Shuttle', phone: '08091110002', opening: 0, buys: [40000, 120000], pays: 0.2 },
+  { kind: 'debtor', name: 'Mrs. Adeyemi (Generator)', phone: '08091110004', opening: 38000, buys: [15000, 45000], pays: 0.08 },
+  { kind: 'prepaid', name: 'Dangote Fleet Services (Prepaid)', phone: '08091110005', opening: -2500000, buys: [120000, 260000], topUp: 1500000 },
+  { kind: 'prepaid', name: 'Lagos State Ministry Pool (Prepaid)', phone: '08091110006', opening: -900000, buys: [30000, 90000], topUp: 600000 },
+  { kind: 'supplier', name: 'Mega Lubes Distributors', phone: '08091110009', opening: -480000, supply: [150000, 320000] },
+  { kind: 'supplier', name: 'Bright Generators & Repairs', phone: '08091110010', opening: -95000, supply: [25000, 70000] },
 ]
 customers.forEach((c, i) => {
   c.id = uuid(`customer:${c.name}`)
@@ -190,11 +202,23 @@ customers.forEach((c, i) => {
     opening_date: START, sort_order: i, created_at: created, station_value_tracked: false,
   })
 })
-const SUPPLIER = uuid('customer:supplier')
-add('station_customers', {
-  id: SUPPLIER, org_id: STATION, name: 'Mega Lubes Distributors', phone: '08091110009', opening_balance: 0,
-  opening_date: START, sort_order: customers.length, created_at: created, station_value_tracked: false,
-})
+const SUPPLIER = customers.find((c) => c.name === 'Mega Lubes Distributors').id
+
+// The fixed consumption and pour-back accounts every station gets at onboarding (lib/defaultAccounts.js).
+const DEFAULT_ACCOUNTS = [
+  'Police', 'Manager Car', 'DSS OFFICIALS', 'Army', 'EDSTMA', 'Weight and Measures', 'Vigilante',
+  'Security Agents', 'Regional Manager Car', 'Area Manager Car', 'LOGISTICS', 'Pour Back After Pump Repairs',
+  'Generator', 'MDS Logistics Truck', 'Logistics Truck', 'Police/Army', 'DPR', 'Others', 'Pour Back',
+]
+const defaultAccount = Object.fromEntries(DEFAULT_ACCOUNTS.map((name, i) => {
+  const id = uuid(`default-account:${name}`)
+  add('station_customers', {
+    id, org_id: STATION, name, phone: 'DEFAULT', opening_balance: 0, opening_date: START,
+    sort_order: 1000 + i, created_at: created, station_value_tracked: false,
+  })
+  return [name, id]
+}))
+const CONSUMERS = ['Generator', 'Manager Car', 'Police', 'LOGISTICS', 'Area Manager Car']
 
 // ── Trading days ─────────────────────────────────────────────────────────────
 
@@ -263,7 +287,11 @@ for (let offset = -DAYS + 1; offset <= -1; offset++) {
     meters[n.id] += sold
     stock[tank.id] -= sold - pourBack
     salesValue += (sold - consumption - pourBack) * prices[n.fuel]
-    return { pump_id: n.id, nozzle_label: n.label, closing_meter: meters[n.id], consumption, pour_back: pourBack }
+    return {
+      pump_id: n.id, nozzle_label: n.label, closing_meter: meters[n.id], consumption, pour_back: pourBack,
+      consumption_customer_id: consumption ? defaultAccount[pick(CONSUMERS)] : null,
+      pour_back_customer_id: pourBack ? defaultAccount[pick(['Pour Back', 'Pour Back After Pump Repairs'])] : null,
+    }
   })
   const tankReadings = tanks.map((t) => {
     // The dip is never exact: a few litres either way.
@@ -310,17 +338,37 @@ for (let offset = -DAYS + 1; offset <= -1; offset++) {
     for (const l of lubes) entry('lube_stock_entries', date, { stock: lubeStock[l.id], notes: 'Weekly count', product_id: l.id }, by)
   }
 
-  // Credit customers: they buy on account and settle every week or so.
+  // Accounts. Debit (sales_amount) raises what the account owes the station; credit
+  // (amount_paid) lowers it. Each kind is kept on its own side of zero.
+  const debit = (c, amount, notes) => { c.balance += amount; entry('customer_payment_entries', date, { amount_paid: 0, sales_amount: amount, notes, customer_id: c.id }, by) }
+  const credit = (c, amount, notes) => { c.balance -= amount; entry('customer_payment_entries', date, { amount_paid: amount, sales_amount: 0, notes, customer_id: c.id }, by) }
   for (const c of customers) {
-    if (random() < 0.35) {
-      const amount = between(...c.buys)
-      c.balance += amount
-      entry('customer_payment_entries', date, { amount_paid: 0, sales_amount: amount, notes: 'Fuel on credit', customer_id: c.id }, by)
+    if (c.kind === 'debtor') {
+      if (random() < 0.35) debit(c, between(...c.buys), 'Fuel on credit')
+      // They pay part of what they owe, never all of it, so they stay in debt.
+      if (c.balance > 0 && random() < c.pays) credit(c, Math.round(c.balance * (0.3 + random() * 0.4) / 1000) * 1000, 'Transfer received')
+    } else if (c.kind === 'prepaid') {
+      const drawn = Math.min(between(...c.buys), Math.max(0, -c.balance - 50000))
+      if (drawn > 0 && random() < 0.4) debit(c, drawn, 'Fuel drawn against deposit')
+      // Topped up when the deposit runs low, so the station always holds their money.
+      if (-c.balance < c.topUp / 3) credit(c, c.topUp, 'Deposit top-up (transfer)')
+    } else {
+      // Suppliers: a credit is a delivery the station has not paid for yet; a debit pays it down.
+      if (random() < 0.12) credit(c, between(...c.supply), c.name.startsWith('Mega') ? 'Lube supply on credit' : 'Generator servicing on credit')
+      if (-c.balance > 100000 && random() < 0.1) debit(c, Math.round(-c.balance * (0.3 + random() * 0.3) / 1000) * 1000, 'Payment to supplier')
     }
-    if (c.balance > 0 && random() < 0.15) {
-      const amount = Math.min(c.balance, Math.round(c.balance * (0.5 + random() * 0.5) / 1000) * 1000)
-      c.balance -= amount
-      entry('customer_payment_entries', date, { amount_paid: amount, sales_amount: 0, notes: 'Transfer received', customer_id: c.id }, by)
+  }
+  // Now and then a debtor takes lubes on account too (lib/accountBalance.js counts these).
+  if (random() < 0.25) {
+    const c = pick(customers.filter((x) => x.kind === 'debtor'))
+    const l = pick(lubes)
+    if (lubeStock[l.id] > 2) {
+      lubeStock[l.id] -= 2
+      c.balance += 2 * l.price
+      entry('lube_sales_entries', date, {
+        unit_sold: 2, unit_received: 0, price: l.price, notes: 'On account', product_id: l.id,
+        customer_id: c.id, supplier_id: null, invoice_no: null, unit_cost: null,
+      }, by)
     }
   }
 }
