@@ -309,7 +309,7 @@ for (let offset = -DAYS + 1; offset <= -1; offset++) {
     stock[tank.id] -= sold - pourBack
     salesValue += (sold - consumption - pourBack) * prices[n.fuel]
     return {
-      pump_id: n.id, nozzle_label: n.label, closing_meter: meters[n.id], consumption, pour_back: pourBack,
+      pump_id: n.id, nozzle_label: n.label, fuel_type: n.fuel, closing_meter: meters[n.id], consumption, pour_back: pourBack,
       consumption_customer_id: consumption ? defaultAccount[pick(CONSUMERS)] : null,
       pour_back_customer_id: pourBack ? defaultAccount[pick(['Pour Back', 'Pour Back After Pump Repairs'])] : null,
     }
