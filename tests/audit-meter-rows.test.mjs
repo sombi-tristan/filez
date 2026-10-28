@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
-const XLSX = require('xlsx')
+const ExcelJS = require('exceljs')
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const srcPath = resolve(__dirname, '..', 'lib', 'buildAuditReport.js')
@@ -36,7 +36,23 @@ const buildFuelMeterRows = new Function('return ' + extractFunction(src, fnStart
 // ═══════════════════════════════════════════════════
 // Extract REAL data from Excel
 // ═══════════════════════════════════════════════════
-const wb = XLSX.readFile(xlsxPath)
+const wb = new ExcelJS.Workbook()
+await wb.xlsx.readFile(xlsxPath)
+
+// A sheet as rows of cell values, both from 0 (row 1 is data[0], column A is row[0]); a formula
+// cell gives its saved result, and is empty when the file saved none.
+function sheetRows(sheet) {
+  const data = []
+  sheet.eachRow({ includeEmpty: true }, (row, r) => {
+    const values = []
+    row.eachCell({ includeEmpty: true }, (cell, c) => {
+      const v = cell.value
+      values[c - 1] = v && typeof v === 'object' && !(v instanceof Date) ? v.result : v
+    })
+    data[r - 1] = values
+  })
+  return data
+}
 
 // PMS has 8 pumps: rows 2-9 in each entry block
 // Entry 1: rows 2-9 (pumps), row 10 (summary with price)
@@ -68,7 +84,7 @@ function readEntry(data, pumpStartRow, summaryRow) {
 }
 
 // Get initial openings from Day 1 Entry 1 opening column
-const day1 = XLSX.utils.sheet_to_json(wb.Sheets['1'], { header: 1 })
+const day1 = sheetRows(wb.getWorksheet('1'))
 const openings = {}
 for (let i = 0; i < PMS_PUMP_COUNT; i++) {
   const row = day1[2 + i]
@@ -83,9 +99,9 @@ let excelTotalConsumed = 0
 let excelConsumptionAmount = 0
 
 for (let day = 1; day <= 15; day++) {
-  const sheet = wb.Sheets[String(day)]
+  const sheet = wb.getWorksheet(String(day))
   if (!sheet) continue
-  const data = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+  const data = sheetRows(sheet)
 
   // Entry 1: pumps at rows 2-9, summary at row 10
   const e1 = readEntry(data, 2, 10)
