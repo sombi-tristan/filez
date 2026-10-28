@@ -161,12 +161,33 @@ banks.forEach((b, i) => {
   })
 })
 
+/**
+ * The default lube products every station gets at onboarding (lib/defaultAccounts.js
+ * DEFAULT_LUBE_PRODUCTS), in that order. `daily` is how many sell on a usual day, as a range;
+ * `restockAt` is the count at which a carton is ordered and `carton` how many come in it.
+ */
 const lubes = [
-  { name: 'Total Quartz 5W-30 (4L)', price: 18500, cost: 15800, stock: 24 },
-  { name: 'Mobil Super 20W-50 (4L)', price: 14000, cost: 11900, stock: 30 },
-  { name: 'Oando Engine Oil (1L)', price: 4200, cost: 3400, stock: 48 },
-  { name: 'Brake Fluid DOT 4 (500ml)', price: 3500, cost: 2700, stock: 20 },
-  { name: 'Coolant (4L)', price: 7800, cost: 6300, stock: 16 },
+  { name: 'RAINOIL SUPREME 4L', price: 16500, cost: 14200, stock: 36, daily: [1, 4], restockAt: 8, carton: 24 },
+  { name: 'RAINOIL UNIVERSAL SAE 40 4L', price: 13500, cost: 11600, stock: 40, daily: [1, 5], restockAt: 10, carton: 24 },
+  { name: 'RAINOIL UNIVERSAL SAE 40 25L', price: 78000, cost: 69500, stock: 6, daily: [0, 1], restockAt: 2, carton: 4 },
+  { name: 'MAGNATEC 10W-40 4L', price: 24500, cost: 21300, stock: 18, daily: [0, 2], restockAt: 5, carton: 12 },
+  { name: 'INJECTOR CLEANER', price: 4500, cost: 3500, stock: 30, daily: [0, 3], restockAt: 8, carton: 24 },
+  { name: 'MAGNATEC 5W-30 1L', price: 8200, cost: 6900, stock: 24, daily: [0, 3], restockAt: 6, carton: 12 },
+  { name: 'MAGNATEC 5W-30 4L', price: 29500, cost: 25800, stock: 16, daily: [0, 2], restockAt: 4, carton: 12 },
+  { name: 'MAGNATEC 5W-30 A5', price: 36000, cost: 31500, stock: 10, daily: [0, 1], restockAt: 3, carton: 6 },
+  { name: 'RAINOIL SUPREME 1L', price: 4600, cost: 3800, stock: 48, daily: [1, 5], restockAt: 12, carton: 24 },
+  { name: 'RADICOOL', price: 5200, cost: 4100, stock: 30, daily: [0, 3], restockAt: 8, carton: 24 },
+  { name: 'BRAKE FLUID DOT 4 0.2L', price: 1800, cost: 1300, stock: 40, daily: [0, 3], restockAt: 10, carton: 48 },
+  { name: 'BRAKE FLUID DOT 4 0.5L', price: 3600, cost: 2800, stock: 24, daily: [0, 2], restockAt: 6, carton: 24 },
+  { name: 'GT X ESSENTIAL 20W-50 1L', price: 6800, cost: 5700, stock: 24, daily: [0, 3], restockAt: 6, carton: 12 },
+  { name: 'GT X ESSENTIAL 20W-50 4L', price: 24000, cost: 20800, stock: 18, daily: [0, 2], restockAt: 5, carton: 12 },
+  { name: 'POWER RACING 40 10W-50', price: 9500, cost: 7900, stock: 20, daily: [0, 2], restockAt: 5, carton: 12 },
+  { name: 'MOTOR OIL SAE 40', price: 11500, cost: 9600, stock: 30, daily: [1, 4], restockAt: 8, carton: 24 },
+  { name: 'EDGE PROFESSIONAL', price: 42000, cost: 36800, stock: 8, daily: [0, 1], restockAt: 2, carton: 6 },
+  { name: 'GT X ESSENTIAL 15W-40 4L', price: 23000, cost: 19900, stock: 18, daily: [0, 2], restockAt: 5, carton: 12 },
+  { name: 'GT X ESSENTIAL 15W-40 5L', price: 28500, cost: 24700, stock: 12, daily: [0, 1], restockAt: 3, carton: 8 },
+  { name: 'POWER MAX HD-40 (RETAIL OIL)', price: 3200, cost: 2500, stock: 60, daily: [2, 8], restockAt: 15, carton: 48 },
+  { name: 'ATF DEX II', price: 7500, cost: 6100, stock: 20, daily: [0, 2], restockAt: 5, carton: 12 },
 ]
 lubes.forEach((l, i) => {
   l.id = uuid(`lube:${l.name}`)
@@ -314,11 +335,11 @@ for (let offset = -DAYS + 1; offset <= -1; offset++) {
     }, by)
   })
 
-  // Lubes: a few sales a day, a restock when anything runs short.
-  for (let k = 0; k < between(2, 5); k++) {
-    const l = pick(lubes)
-    if (lubeStock[l.id] <= 0) continue
-    const units = Math.min(between(1, 3), lubeStock[l.id])
+  // Lubes: each product sells its usual few a day, never more than is on the shelf; a carton
+  // comes in from the distributor once one runs down to its reorder level.
+  for (const l of lubes) {
+    const units = Math.min(between(...l.daily), lubeStock[l.id])
+    if (units <= 0) continue
     lubeStock[l.id] -= units
     entry('lube_sales_entries', date, {
       unit_sold: units, unit_received: 0, price: l.price, notes: null, product_id: l.id,
@@ -326,8 +347,8 @@ for (let offset = -DAYS + 1; offset <= -1; offset++) {
     }, by)
   }
   for (const l of lubes) {
-    if (lubeStock[l.id] > 6) continue
-    const units = between(18, 30)
+    if (lubeStock[l.id] > l.restockAt) continue
+    const units = l.carton * between(1, 2)
     lubeStock[l.id] += units
     entry('lube_sales_entries', date, {
       unit_sold: 0, unit_received: units, price: l.price, notes: 'Restock', product_id: l.id,
