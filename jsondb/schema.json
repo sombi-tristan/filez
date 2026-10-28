@@ -1,0 +1,1550 @@
+{
+  "source": "supabase/deploy/02_schema.sql",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": {
+          "type": "uuid"
+        },
+        "email": {
+          "type": "text"
+        },
+        "name": {
+          "type": "text"
+        },
+        "phone": {
+          "type": "text"
+        },
+        "role": {
+          "type": "text",
+          "default": "user"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "pin_hash": {
+          "type": "text"
+        },
+        "password_hash": {
+          "type": "text"
+        },
+        "must_change_password": {
+          "type": "boolean",
+          "default": false
+        },
+        "email_verified": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "fks": {
+        "id": "auth_users",
+        "org_id": "organizations"
+      }
+    },
+    "subscriptions": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "user_id": {
+          "type": "uuid"
+        },
+        "status": {
+          "type": "text",
+          "default": "pending"
+        },
+        "payment_reference": {
+          "type": "text"
+        },
+        "proof_url": {
+          "type": "text"
+        },
+        "start_date": {
+          "type": "date"
+        },
+        "end_date": {
+          "type": "date"
+        },
+        "renewed_at": {
+          "type": "timestamptz"
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "plan_type": {
+          "type": "text"
+        },
+        "total_amount": {
+          "type": "numeric(12,2)"
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "reference_code": {
+          "type": "text"
+        },
+        "payment_deadline": {
+          "type": "timestamptz"
+        },
+        "months": {
+          "type": "integer",
+          "default": 1
+        },
+        "verification_suffix": {
+          "type": "smallint"
+        },
+        "verification_confidence": {
+          "type": "decimal(3,2)"
+        },
+        "verified_by": {
+          "type": "varchar(20)"
+        }
+      },
+      "fks": {
+        "user_id": "users",
+        "org_id": "organizations"
+      }
+    },
+    "user_files": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "user_id": {
+          "type": "uuid"
+        },
+        "file_name": {
+          "type": "text"
+        },
+        "share_link": {
+          "type": "text"
+        },
+        "description": {
+          "type": "text"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "user_id": "users"
+      }
+    },
+    "feedback": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "user_id": {
+          "type": "uuid"
+        },
+        "message": {
+          "type": "text"
+        },
+        "rating": {
+          "type": "int"
+        },
+        "submitted_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "user_id": "users"
+      }
+    },
+    "organizations": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "name": {
+          "type": "text"
+        },
+        "slug": {
+          "type": "text"
+        },
+        "owner_id": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "plan_type": {
+          "type": "text",
+          "default": "recurring"
+        },
+        "location": {
+          "type": "text"
+        },
+        "onboarding_complete": {
+          "type": "boolean",
+          "default": false
+        },
+        "station_group": {
+          "type": "text"
+        },
+        "station_group_id": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "owner_id": "users",
+        "station_group_id": "station_groups"
+      }
+    },
+    "org_custom_fields": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "field_name": {
+          "type": "text"
+        },
+        "field_type": {
+          "type": "text",
+          "default": "text"
+        },
+        "options": {
+          "type": "jsonb"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "user_field_values": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "user_id": {
+          "type": "uuid"
+        },
+        "field_id": {
+          "type": "uuid"
+        },
+        "value": {
+          "type": "text"
+        }
+      },
+      "fks": {
+        "user_id": "users",
+        "field_id": "org_custom_fields"
+      }
+    },
+    "org_services": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "name": {
+          "type": "text"
+        },
+        "description": {
+          "type": "text"
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "price": {
+          "type": "numeric(12,2)",
+          "default": 0
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "subscription_items": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "subscription_id": {
+          "type": "uuid"
+        },
+        "service_id": {
+          "type": "uuid"
+        },
+        "service_name": {
+          "type": "text"
+        },
+        "price": {
+          "type": "numeric(12,2)",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "subscription_id": "subscriptions",
+        "service_id": "services"
+      }
+    },
+    "station_pumps": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "fuel_type": {
+          "type": "text"
+        },
+        "pump_number": {
+          "type": "int"
+        },
+        "initial_reading": {
+          "type": "numeric",
+          "default": 0
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "nozzle_label": {
+          "type": "text"
+        },
+        "tank_id": {
+          "type": "uuid"
+        },
+        "opening_date": {
+          "type": "date",
+          "default": {
+            "fn": "today"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "tank_id": "station_tanks"
+      }
+    },
+    "station_tanks": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "fuel_type": {
+          "type": "text"
+        },
+        "tank_number": {
+          "type": "int"
+        },
+        "capacity": {
+          "type": "numeric",
+          "default": 0
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "opening_stock": {
+          "type": "numeric",
+          "default": 0
+        },
+        "opening_date": {
+          "type": "date",
+          "default": {
+            "fn": "today"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "station_banks": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "bank_name": {
+          "type": "text"
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "lodgement_type": {
+          "type": "text",
+          "default": "bank_deposit"
+        },
+        "terminal_id": {
+          "type": "text"
+        },
+        "opening_balance": {
+          "type": "numeric",
+          "default": 0
+        },
+        "opening_date": {
+          "type": "date",
+          "default": {
+            "fn": "today"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "station_lube_products": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "product_name": {
+          "type": "text"
+        },
+        "unit_price": {
+          "type": "numeric",
+          "default": 0
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "opening_stock": {
+          "type": "numeric",
+          "default": 0
+        },
+        "opening_date": {
+          "type": "date",
+          "default": {
+            "fn": "today"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "station_consumption_categories": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "fuel_type": {
+          "type": "text"
+        },
+        "category_name": {
+          "type": "text"
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "org_invites": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "email": {
+          "type": "text"
+        },
+        "status": {
+          "type": "text",
+          "default": "pending"
+        },
+        "invited_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "responded_at": {
+          "type": "timestamptz"
+        },
+        "visible_pages": {
+          "type": "jsonb",
+          "default": [
+            "daily-sales",
+            "product-receipt",
+            "lodgements",
+            "lube",
+            "customer-payments",
+            "consumption",
+            "report-summary",
+            "report-daily-sales",
+            "report-audit",
+            "report-account-ledger",
+            "report-product-received"
+          ]
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "services": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "key": {
+          "type": "text"
+        },
+        "name": {
+          "type": "text"
+        },
+        "description": {
+          "type": "text"
+        },
+        "price": {
+          "type": "numeric(12,2)",
+          "default": 0
+        },
+        "is_active": {
+          "type": "boolean",
+          "default": true
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {}
+    },
+    "daily_sales_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "nozzle_readings": {
+          "type": "jsonb",
+          "default": []
+        },
+        "ugt_closing_stock": {
+          "type": "numeric",
+          "default": 0
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "tank_readings": {
+          "type": "jsonb",
+          "default": []
+        },
+        "prices": {
+          "type": "jsonb",
+          "default": {}
+        },
+        "close_of_business": {
+          "type": "boolean",
+          "default": false
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users",
+        "updated_by": "users"
+      }
+    },
+    "product_receipt_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "loaded_date": {
+          "type": "date"
+        },
+        "driver_name": {
+          "type": "text"
+        },
+        "waybill_number": {
+          "type": "text"
+        },
+        "ticket_number": {
+          "type": "text"
+        },
+        "truck_number": {
+          "type": "text"
+        },
+        "chart_ullage": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_liquid_height": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_ullage": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_liquid_height": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_ullage": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_liquid_height": {
+          "type": "numeric",
+          "default": 0
+        },
+        "first_compartment": {
+          "type": "numeric",
+          "default": 0
+        },
+        "second_compartment": {
+          "type": "numeric",
+          "default": 0
+        },
+        "third_compartment": {
+          "type": "numeric",
+          "default": 0
+        },
+        "actual_volume": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_name": {
+          "type": "text"
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "tank_id": {
+          "type": "uuid"
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "arrival_time": {
+          "type": "text"
+        },
+        "exit_time": {
+          "type": "text"
+        },
+        "chart_high_ullage_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_high_ullage_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_high_ullage_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_low_ullage_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_low_ullage_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_low_ullage_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_liquid_height_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_liquid_height_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "chart_liquid_height_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_ullage_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_ullage_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_ullage_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_liquid_height_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_liquid_height_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "depot_liquid_height_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_ullage_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_ullage_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_ullage_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_liquid_height_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_liquid_height_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "station_liquid_height_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "high_vol_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "high_vol_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "high_vol_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "low_vol_1": {
+          "type": "numeric",
+          "default": 0
+        },
+        "low_vol_2": {
+          "type": "numeric",
+          "default": 0
+        },
+        "low_vol_3": {
+          "type": "numeric",
+          "default": 0
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users",
+        "tank_id": "station_tanks",
+        "updated_by": "users"
+      }
+    },
+    "lodgement_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "amount": {
+          "type": "numeric",
+          "default": 0
+        },
+        "lodgement_type": {
+          "type": "text"
+        },
+        "sales_date": {
+          "type": "date"
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "bank_id": {
+          "type": "uuid"
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users",
+        "bank_id": "station_banks",
+        "updated_by": "users"
+      }
+    },
+    "lube_sales_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "unit_sold": {
+          "type": "numeric",
+          "default": 0
+        },
+        "unit_received": {
+          "type": "numeric",
+          "default": 0
+        },
+        "price": {
+          "type": "numeric",
+          "default": 0
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "product_id": {
+          "type": "uuid"
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "customer_id": {
+          "type": "uuid"
+        },
+        "supplier_id": {
+          "type": "uuid"
+        },
+        "invoice_no": {
+          "type": "text"
+        },
+        "unit_cost": {
+          "type": "numeric"
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users",
+        "product_id": "station_lube_products",
+        "customer_id": "station_customers",
+        "supplier_id": "station_customers",
+        "updated_by": "users"
+      }
+    },
+    "lube_stock_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "stock": {
+          "type": "numeric",
+          "default": 0
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "product_id": {
+          "type": "uuid"
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users",
+        "product_id": "station_lube_products",
+        "updated_by": "users"
+      }
+    },
+    "customer_payment_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "amount_paid": {
+          "type": "numeric",
+          "default": 0
+        },
+        "sales_amount": {
+          "type": "numeric",
+          "default": 0
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "customer_id": {
+          "type": "uuid"
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users",
+        "customer_id": "station_customers",
+        "updated_by": "users"
+      }
+    },
+    "station_customers": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "name": {
+          "type": "text"
+        },
+        "phone": {
+          "type": "text"
+        },
+        "opening_balance": {
+          "type": "numeric",
+          "default": 0
+        },
+        "opening_date": {
+          "type": "date",
+          "default": {
+            "fn": "today"
+          }
+        },
+        "sort_order": {
+          "type": "int",
+          "default": 0
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "station_value_tracked": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "fks": {
+        "org_id": "organizations"
+      }
+    },
+    "station_groups": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "owner_id": {
+          "type": "uuid"
+        },
+        "name": {
+          "type": "text"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "owner_id": "users"
+      }
+    },
+    "excel_templates": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "name": {
+          "type": "text"
+        },
+        "description": {
+          "type": "text"
+        },
+        "file_path": {
+          "type": "text"
+        },
+        "file_name": {
+          "type": "text"
+        },
+        "file_size": {
+          "type": "bigint",
+          "default": 0
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "created_by": "auth_users"
+      }
+    },
+    "station_messages": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "user_id": {
+          "type": "uuid"
+        },
+        "user_name": {
+          "type": "text"
+        },
+        "type": {
+          "type": "text",
+          "default": "message"
+        },
+        "content": {
+          "type": "text"
+        },
+        "action_type": {
+          "type": "text"
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "user_id": "users"
+      }
+    },
+    "imprest_periods": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "month": {
+          "type": "smallint"
+        },
+        "year": {
+          "type": "smallint"
+        },
+        "imprest_amount": {
+          "type": "numeric(12,2)",
+          "default": 0
+        },
+        "custodian_name": {
+          "type": "text"
+        },
+        "form_number": {
+          "type": "text"
+        },
+        "notes": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "created_by": "users"
+      }
+    },
+    "imprest_entries": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "imprest_period_id": {
+          "type": "uuid"
+        },
+        "entry_date": {
+          "type": "date"
+        },
+        "beneficiary": {
+          "type": "text"
+        },
+        "transaction_details": {
+          "type": "text"
+        },
+        "amount": {
+          "type": "numeric(12,2)",
+          "default": 0
+        },
+        "account_code": {
+          "type": "text"
+        },
+        "pcv_number": {
+          "type": "text"
+        },
+        "receipt_image_url": {
+          "type": "text"
+        },
+        "created_by": {
+          "type": "uuid"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "updated_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "deleted_at": {
+          "type": "timestamptz"
+        },
+        "updated_by": {
+          "type": "uuid"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "imprest_period_id": "imprest_periods",
+        "created_by": "users",
+        "updated_by": "users"
+      }
+    },
+    "admin_activity_logs": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "admin_id": {
+          "type": "uuid"
+        },
+        "admin_name": {
+          "type": "text",
+          "default": ""
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "org_name": {
+          "type": "text",
+          "default": ""
+        },
+        "action_type": {
+          "type": "text",
+          "default": ""
+        },
+        "target_type": {
+          "type": "text",
+          "default": ""
+        },
+        "target_id": {
+          "type": "text"
+        },
+        "content": {
+          "type": "text"
+        },
+        "details": {
+          "type": "jsonb"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        }
+      },
+      "fks": {}
+    },
+    "desktop_devices": {
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "default": {
+            "fn": "uuid"
+          }
+        },
+        "org_id": {
+          "type": "uuid"
+        },
+        "user_id": {
+          "type": "uuid"
+        },
+        "name": {
+          "type": "text",
+          "default": ""
+        },
+        "token_hash": {
+          "type": "text"
+        },
+        "created_at": {
+          "type": "timestamptz",
+          "default": {
+            "fn": "now"
+          }
+        },
+        "last_seen_at": {
+          "type": "timestamptz"
+        },
+        "revoked_at": {
+          "type": "timestamptz"
+        }
+      },
+      "fks": {
+        "org_id": "organizations",
+        "user_id": "users"
+      }
+    }
+  }
+}

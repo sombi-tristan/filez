@@ -1,4 +1,42 @@
 import withPWAInit from '@ducanh2912/next-pwa'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = dirname(fileURLToPath(import.meta.url))
+
+/**
+ * DATA_SOURCE=json (`npm run dev:json`): Supabase stood in for by .json files in jsondb/data,
+ * for running locally with the test data in jsondb/seed. Both Supabase packages are pointed at
+ * lib/jsondb: the Node build runs queries in-process, the browser and the Edge middleware post
+ * them to app/api/jsondb. Nothing else in the app changes, and no other build is affected.
+ */
+const jsonDatastore = process.env.DATA_SOURCE === 'json'
+
+function withJsonDatastore(config) {
+  if (!jsonDatastore) return config
+  const port = process.env.PORT || 3000
+  return {
+    ...config,
+    // Its own build folder, so a cached Supabase build in .next is never reused with this one.
+    distDir: '.next-json',
+    env: {
+      ...config.env,
+      JSONDB_ORIGIN: process.env.JSONDB_ORIGIN || `http://localhost:${port}`,
+      // lib/supabaseClient.js makes no client without these; the datastore ignores them.
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://jsondb.local',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'jsondb',
+    },
+    webpack(webpackConfig, options) {
+      const target = join(here, 'lib', 'jsondb', options.nextRuntime === 'nodejs' ? 'node.js' : 'remote.js')
+      webpackConfig.resolve.alias = {
+        ...webpackConfig.resolve.alias,
+        '@supabase/supabase-js$': target,
+        '@supabase/ssr$': target,
+      }
+      return config.webpack ? config.webpack(webpackConfig, options) : webpackConfig
+    },
+  }
+}
 
 const withPWA = withPWAInit({
   dest: 'public',
@@ -104,4 +142,4 @@ const androidConfig = {
   env: { NEXT_PUBLIC_API_ORIGIN: 'https://www.stationmgr.site' },
 }
 
-export default process.env.STATIONMGR_TARGET === 'android' ? androidConfig : withPWA(nextConfig)
+export default process.env.STATIONMGR_TARGET === 'android' ? androidConfig : withJsonDatastore(withPWA(nextConfig))

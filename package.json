@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:json": "node scripts/dev-json.mjs",
+    "jsondb:seed": "node scripts/jsondb-seed.mjs",
+    "jsondb:schema": "node scripts/jsondb-schema.mjs",
     "build": "next build",
     "build:android": "node scripts/build-android.mjs",
     "start": "next start",
