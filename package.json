@@ -9,6 +9,7 @@
     "jsondb:schema": "node scripts/jsondb-schema.mjs",
     "build": "next build",
     "build:android": "node scripts/build-android.mjs",
+    "build:android:json": "node scripts/build-android-json.mjs",
     "start": "next start",
     "lint": "next lint"
   },

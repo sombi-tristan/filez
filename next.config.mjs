@@ -6,21 +6,31 @@ const here = dirname(fileURLToPath(import.meta.url))
 
 /**
  * DATA_SOURCE=json (`npm run dev:json`): Supabase stood in for by .json files in jsondb/data,
- * for running locally with the test data in jsondb/seed. Both Supabase packages are pointed at
- * lib/jsondb: the Node build runs queries in-process, the browser and the Edge middleware post
- * them to app/api/jsondb. Nothing else in the app changes, and no other build is affected.
+ * for running locally with the test data from scripts/jsondb-seed.mjs. Both Supabase packages
+ * are pointed at lib/jsondb: the Node build runs queries in-process, the browser and the Edge
+ * middleware post them to app/api/jsondb. Nothing else in the app changes, and no other build
+ * is affected.
+ *
+ * The Android test build (`npm run build:android:json`) is the same, with the API on the PC
+ * running dev:json (JSONDB_API_ORIGIN) instead of the site.
  */
 const jsonDatastore = process.env.DATA_SOURCE === 'json'
 
-function withJsonDatastore(config) {
+function withJsonDatastore(config, { android = false } = {}) {
   if (!jsonDatastore) return config
   const port = process.env.PORT || 3000
+  if (android && !process.env.JSONDB_API_ORIGIN) {
+    throw new Error('JSONDB_API_ORIGIN must name the PC running `npm run dev:json`, e.g. http://192.168.1.20:3000')
+  }
   return {
     ...config,
-    // Its own build folder, so a cached Supabase build in .next is never reused with this one.
-    distDir: '.next-json',
+    // Its own build folder, so a cached Supabase build in .next is never reused with it. Not for
+    // the Android build: with output 'export', a distDir is also where the export lands, and
+    // scripts/build-android.mjs reads it from out/.
+    ...(android ? {} : { distDir: '.next-json' }),
     env: {
       ...config.env,
+      ...(android ? { NEXT_PUBLIC_API_ORIGIN: process.env.JSONDB_API_ORIGIN } : {}),
       JSONDB_ORIGIN: process.env.JSONDB_ORIGIN || `http://localhost:${port}`,
       // lib/supabaseClient.js makes no client without these; the datastore ignores them.
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://jsondb.local',
@@ -142,4 +152,6 @@ const androidConfig = {
   env: { NEXT_PUBLIC_API_ORIGIN: 'https://www.stationmgr.site' },
 }
 
-export default process.env.STATIONMGR_TARGET === 'android' ? androidConfig : withJsonDatastore(withPWA(nextConfig))
+export default process.env.STATIONMGR_TARGET === 'android'
+  ? withJsonDatastore(androidConfig, { android: true })
+  : withJsonDatastore(withPWA(nextConfig))
