@@ -7,12 +7,13 @@ import {
   useIonRouter,
 } from '@ionic/react'
 import { desktopOutline, homeOutline } from 'ionicons/icons'
-import { EmptyState, IconButton, Spinner } from '@/design'
+import { EmptyState, IconButton } from '@/design'
 import { AreaContext, ScreenLocationContext } from '@/lib/nav'
 import AdminViewingBanner from '@/components/AdminViewingBanner'
 import Footer from '@/components/Footer'
 import { recordReportPath } from '@/lib/recentReports'
 import AccessGate from '@/components/AccessGate'
+import { ReportSkeleton, ListSkeleton, FormSkeleton, PageSkeleton } from '@/components/Skeletons'
 
 /**
  * One screen of the Ionic app: an IonPage with the house top bar and the screen's content in
@@ -96,10 +97,10 @@ export default function Screen({ screen }) {
               {/* Entries and reports: every word bold, labels blue, bold figures orange
                   (app/globals.css .screen-ink), as in the desktop build. */}
               <div className={screen.report || screen.path.startsWith('/dashboard/entries') ? 'screen-ink' : undefined}>
-                <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
+                <Suspense fallback={screen.report ? <ReportSkeleton /> : screen.path.endsWith('/list') ? <ListSkeleton /> : screen.path.startsWith('/dashboard/entries/') ? <FormSkeleton /> : <PageSkeleton />}>
                   {screen.desktopOnly ? <DesktopOnly /> : screen.pageKey ? (
                     // An entry: only for the owner, or staff the owner gave this page.
-                    <AccessGate orgId={stationId} pageKey={screen.pageKey}><Page key={held.key} /></AccessGate>
+                    <AccessGate orgId={stationId} pageKey={screen.pageKey} skeleton={screen.path.endsWith('/list') ? <ListSkeleton /> : undefined}><Page key={held.key} /></AccessGate>
                   ) : <Page key={held.key} />}
                 </Suspense>
               </div>

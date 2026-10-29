@@ -3,7 +3,6 @@
 import { Suspense, useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildDailyReport } from '@/lib/buildDailyReport'
 import DateRange from '@/components/reports/DateRange'
@@ -11,6 +10,7 @@ import DayNav, { DayTitle } from '@/components/reports/DayNav'
 import { useReportDays, pickDay } from '@/components/reports/useReportDays'
 import AccessGate from '@/components/AccessGate'
 import { REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, REPORT_CARD } from '@/components/ui'
+import { ReportSkeleton, ReportTablesSkeleton } from '@/components/Skeletons'
 
 /**
  * Consumption & Fuel Stock: one day at a time, Prev / Next as on the Summary report.
@@ -28,7 +28,7 @@ function fmt(n) {
 
 export default function ConsumptionFuelStockPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>}>
+    <Suspense fallback={<ReportSkeleton />}>
       <ConsumptionFuelStockContent />
     </Suspense>
   )
@@ -85,7 +85,7 @@ function ConsumptionFuelStockContent() {
   const { index, total, day, goPrev, goNext } = pickDay(report?.dateReports, days.viewDate, days.setViewDate)
 
   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+    return <ReportSkeleton />
   }
 
   if (!orgId) {
@@ -174,18 +174,15 @@ function ConsumptionFuelStockContent() {
         </div>
       </div>
 
-      {report && <DayTitle date={day?.date} />}
-
       {!report ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-        </div>
+        <div className="flex-1 min-h-0 overflow-hidden"><ReportTablesSkeleton tables={2} /></div>
       ) : !day ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-content-faint text-sm">No data for this period.</p>
         </div>
       ) : (
         <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 px-1 sm:px-[15%] ${REPORT_CARD}`}>
+          <DayTitle date={day.date} />
           {/* 1. Consumption and pour back */}
           {entries.length === 0 ? (
             <table className="w-full border-collapse text-sm mb-4">

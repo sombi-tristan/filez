@@ -11,8 +11,6 @@ import {
 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Modal from '@/components/Modal'
-import { differenceInDays } from 'date-fns'
-import { fmtDate } from '@/lib/formatDate'
 import { db } from '@/lib/db'
 import { processQueue, clearQueue } from '@/lib/sync'
 import { initialSync } from '@/lib/initialSync'
@@ -28,6 +26,7 @@ import {
   ENTRY_PERMISSION_OPTIONS as ENTRY_PAGE_OPTIONS,
   REPORT_PERMISSION_OPTIONS as REPORT_PAGE_OPTIONS,
 } from '@/lib/stationNav'
+import { HomeSkeleton } from '@/components/Skeletons'
 
 /** The station home's report widgets, in this order. */
 const HOME_REPORTS = ['report-summary', 'report-audit-consumption', 'report-account-ledger', 'report-lube']
@@ -63,7 +62,6 @@ export default function StationPage() {
   const [ownerOnlyModal, setOwnerOnlyModal] = useState(false)
 
   // Subscription (owner only)
-  const [subscription, setSubscription] = useState(null)
 
   // Manage station accordion
 
@@ -176,17 +174,10 @@ export default function StationPage() {
       setIsPlatformAdmin(!owned && me?.role === 'admin')
 
       if (owned) {
-        const [invRes, dashRes] = await Promise.all([
-          fetch(`/api/invites/list?org_id=${stationId}`),
-          fetch(`/api/dashboard/data?org_id=${stationId}`),
-        ])
+        const invRes = await fetch(`/api/invites/list?org_id=${stationId}`)
         if (invRes.ok) {
           const invData = await invRes.json()
           setInvites(invData.invites || [])
-        }
-        if (dashRes.ok) {
-          const dashData = await dashRes.json()
-          setSubscription(dashData.subscription || null)
         }
       } else {
         // Staff — fetch their visible_pages. No answer opens nothing, as the screens
@@ -263,18 +254,9 @@ export default function StationPage() {
     router.push('/')
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-      </div>
-    )
-  }
+  if (loading) return <HomeSkeleton />
 
   const canAccess = (pageKey) => canAccessPage(pageKey, { isOwner, visiblePages })
-  // A subscription the StationMGR team granted (app/api/admin/grant-subscription), which the
-  // owner used to hear about in Notifications.
-  const granted = subscription?.status === 'approved' && subscription?.notes?.startsWith('Granted by')
 
   const entryLinks = ENTRY_LINKS(stationId)
   const reportSections = REPORT_SECTIONS(stationId)
@@ -470,61 +452,8 @@ export default function StationPage() {
           </Button>
         </div>
 
-        {isOwner && granted && (
-          <p className="text-xs text-content-muted -mt-2 mb-4">
-            Subscription granted by StationMGR on {fmtDate(subscription.start_date)}, active until {fmtDate(subscription.end_date)}.
-          </p>
-        )}
-
-      {/* Expired subscription notice (non-dismissable) */}
-      {isOwner && subscription?.status === 'expired' && subscription?.end_date && (() => {
-        const daysSinceExpiry = differenceInDays(new Date(), new Date(subscription.end_date))
-        const graceRemaining = 7 - daysSinceExpiry
-        return (
-          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-4 py-3 mb-6 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              {graceRemaining > 0 ? (
-                <>
-                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">Your subscription has expired</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{graceRemaining} day{graceRemaining !== 1 ? 's' : ''} of grace period remaining. Subscribe now to continue adding entries.</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">Subscription &amp; grace period expired</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">You can no longer add entries. Subscribe now to resume.</p>
-                </>
-              )}
-            </div>
-            <Link href={`/dashboard/subscribe?org_id=${stationId}`} className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_DANGER}`}>Subscribe</Link>
-          </div>
-        )
-      })()}
-
-        {/* Expired subscription notice (non-dismissable) */}
-        {isOwner && subscription?.status === 'expired' && subscription?.end_date && (() => {
-          const daysSinceExpiry = differenceInDays(new Date(), new Date(subscription.end_date))
-          const graceRemaining = 7 - daysSinceExpiry
-          return (
-            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-4 py-3 mb-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                {graceRemaining > 0 ? (
-                  <>
-                    <p className="text-sm text-red-800 dark:text-red-200 font-medium">Your subscription has expired</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{graceRemaining} day{graceRemaining !== 1 ? 's' : ''} of grace period remaining. Subscribe now to continue adding entries.</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-red-800 dark:text-red-200 font-medium">Subscription &amp; grace period expired</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">You can no longer add entries. Subscribe now to resume.</p>
-                  </>
-                )}
-              </div>
-              <Link href={`/dashboard/subscribe?org_id=${stationId}`} className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium ${BTN_DANGER}`}>Subscribe</Link>
-            </div>
-          )
-        })()}
+        {/* The subscription's countdown, the granted note and the expired / grace-period warning
+            are on the Subscription page (the button above). */}
 
         {/* Entries as widgets in a full-width white panel with its heading inside: pale tiles with
             no line, 96px tall (112px in the Android app), filling the row in equal columns (at

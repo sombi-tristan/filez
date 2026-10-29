@@ -46,12 +46,16 @@ check('a fuel with one tank: no number, no total', page.includes('label: f.tanks
 console.log('\nThe date big and bold at the top, Prev / Next at the bottom')
 const summary = read('screens/dashboard/reports/summary/page.js')
 for (const [name, src] of [['Consumption & Fuel Stock', page], ['Summary', summary]]) {
-  check(`${name}: the date above the report card`, src.includes('<DayTitle') && src.indexOf('<DayTitle') < src.indexOf('${REPORT_CARD}'))
+  check(`${name}: the date at the top of the scrolling report card`, src.includes('<DayTitle') && src.indexOf('<DayTitle') > src.indexOf('${REPORT_CARD}') && src.indexOf('<DayTitle') - src.indexOf('${REPORT_CARD}') < 300)
   check(`${name}: Prev / Next after it`, src.includes('<DayNav') && src.indexOf('<DayNav') > src.indexOf('${REPORT_CARD}'))
 }
 const dayNav = read('components/reports/DayNav.js')
 check('the date in bigger, bold text', /text-lg font-bold[^>]*>\s*\{fmtDate\(date\)\}/.test(dayNav))
-check('Summary shows each fuel\'s price', summary.includes('>Price</th>') && summary.includes('dayFuelTotals[ft]?.price'))
+check('Summary\'s meter rows read sales @ price (amount)', summary.includes('= {fmt(actual)} @{fmtPrice(dayTotals.price)} ({fmt(dayTotals.amount)})') && !summary.includes('>Price</th>'))
+check('Prev / Next are blue like Load', dayNav.includes('${BTN_PRIMARY}') && !dayNav.includes('BTN_FRAMED'))
+check('Summary lodgements: POS, transfer, deposit, then A to Z', summary.includes('const LODGEMENT_ORDER = { pos: 0, transfer: 1, bank_deposit: 2 }') && summary.includes('[...dayReport.lodgement.bankRows].sort(byLodgementType)'))
+check('Summary balances in a sheet linking to the ledger', read('components/reports/BalancesSheet.js').includes('/dashboard/reports/account-ledger?org_id=${orgId}&account=${id}&to=${date}'))
+check('five taps on the date open the AGO sheet', summary.includes('<DayTitle date={dayReport.date} onClick={tapDate} />') && summary.includes('if (taps.current.n >= 5)') && summary.includes('<AgoSheet '))
 
 console.log('\nThe Android app')
 check('Lube Report is one of the reports the app keeps', nav.REPORT_LINKS('x').some((l) => l.pageKey === 'report-lube') && !(routes.split('\n').find((l) => l.includes("path: '/dashboard/reports/lube-report'")) || '').includes('desktopOnly'))

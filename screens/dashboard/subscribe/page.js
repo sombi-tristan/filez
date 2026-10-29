@@ -2,16 +2,17 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from '@/lib/nav'
-import { Loader2, ShoppingCart, ArrowRight, Fuel, Calendar, Clock } from 'lucide-react'
+import { Loader2, ShoppingCart, ArrowRight, Fuel, Calendar, Clock, AlertTriangle } from 'lucide-react'
 import { differenceInDays } from 'date-fns'
 import SearchableSelect from '@/components/SearchableSelect'
 import SubscriptionBadge from '@/components/SubscriptionBadge'
 import { fmtDate } from '@/lib/formatDate'
 import { INPUT_BASE, BTN_PRIMARY, CARD } from '@/components/ui'
+import { PageSkeleton } from '@/components/Skeletons'
 
 export default function SubscribePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>}>
+    <Suspense fallback={<PageSkeleton />}>
       <SubscribeContent />
     </Suspense>
   )
@@ -136,9 +137,7 @@ function SubscribeContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-      </div>
+      <PageSkeleton />
     )
   }
 
@@ -182,7 +181,8 @@ function SubscribeContent() {
           the station hub; it belongs on the page the Subscription button now opens.
           No "Subscribe now" call to action, unlike the hub's version: the form below IS that
           action. No pending_payment branch either, because that status redirects to the pay
-          page above before this renders. */}
+          page above before this renders. The countdown, the granted note and the expired /
+          grace-period warning live here only, not on the station home. */}
       {subscription && (
         <section className={`p-4 mb-6 ${CARD}`}>
           <div className="flex items-center justify-between mb-2">
@@ -190,14 +190,49 @@ function SubscribeContent() {
             <SubscriptionBadge status={subscription.status} />
           </div>
           {hasApproved ? (
-            <div className="flex items-center gap-2 text-sm text-content-muted">
-              <Clock className="w-4 h-4" />
-              Expires {fmtDate(subscription.end_date)}
+            <>
+              {/* The countdown, every day, turning orange in the last week. */}
+              <div className="flex items-center gap-2 text-sm text-content-muted">
+                <Clock className="w-4 h-4" />
+                Expires {fmtDate(subscription.end_date)}
+                {daysLeft !== null && (
+                  <span className={daysLeft <= 7 ? 'text-orange-500 dark:text-orange-300 font-medium' : 'font-medium'}>
+                    ({daysLeft} day{daysLeft === 1 ? '' : 's'} left)
+                  </span>
+                )}
+              </div>
               {daysLeft !== null && daysLeft <= 7 && (
-                <span className="text-orange-500 dark:text-orange-300 font-medium">({daysLeft} days left)</span>
+                <p className="mt-2 text-sm text-orange-600 dark:text-orange-300">Renew below before it runs out to keep adding entries.</p>
               )}
-            </div>
-          ) : hasPendingApproval ? (
+              {/* A subscription the StationMGR team granted (app/api/admin/grant-subscription). */}
+              {subscription.notes?.startsWith('Granted by') && (
+                <p className="mt-2 text-xs text-content-muted">
+                  Granted by StationMGR on {fmtDate(subscription.start_date)}, active until {fmtDate(subscription.end_date)}.
+                </p>
+              )}
+            </>
+          ) : subscription.status === 'expired' && subscription.end_date ? (() => {
+            // Seven days of grace after it expires, then no new entries.
+            const graceRemaining = 7 - differenceInDays(new Date(), new Date(subscription.end_date))
+            return (
+              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-3 py-3 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  {graceRemaining > 0 ? (
+                    <>
+                      <p className="text-sm text-red-800 dark:text-red-200 font-medium">Your subscription has expired</p>
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{graceRemaining} day{graceRemaining !== 1 ? 's' : ''} of grace period remaining. Subscribe below to keep adding entries.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-red-800 dark:text-red-200 font-medium">Subscription &amp; grace period expired</p>
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">You can no longer add entries. Subscribe below to resume.</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })() : hasPendingApproval ? (
             <p className="text-sm text-content-muted">
               Your payment proof is being reviewed. You&apos;ll be notified once approved.
             </p>

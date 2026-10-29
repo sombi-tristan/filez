@@ -3,7 +3,7 @@
 import { Suspense, useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   checkmarkCircleOutline, createOutline, ellipseOutline, ellipsisHorizontal, peopleOutline,
   personAddOutline, readerOutline, trashOutline,
@@ -19,6 +19,7 @@ import SearchableSelect from '@/components/SearchableSelect'
 import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_LINE, REPORT_RULE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, INPUT, BTN_PRIMARY, CARD_LINE, REPORT_CARD } from '@/components/ui'
+import { ReportSkeleton } from '@/components/Skeletons'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -36,7 +37,7 @@ const PAGE_SIZE = 15
 
 export default function AccountLedgerPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>}>
+    <Suspense fallback={<ReportSkeleton />}>
       <AccountLedgerContent />
     </Suspense>
   )
@@ -51,9 +52,13 @@ function AccountLedgerContent() {
   const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
   const monthStartStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`
 
-  const [startDate, setStartDate] = useState(monthStartStr)
-  const [endDate, setEndDate] = useState(todayStr)
-  const [selectedAccounts, setSelectedAccounts] = useState([])
+  // Opened from the Summary's Balances sheet: ?account= picks that customer and ?to= ends the
+  // range on the Summary's day, so the closing figure is the balance that was tapped.
+  const linkedAccount = searchParams.get('account')
+  const linkedTo = searchParams.get('to')
+  const [startDate, setStartDate] = useState(linkedTo && linkedTo < monthStartStr ? `${linkedTo.slice(0, 8)}01` : monthStartStr)
+  const [endDate, setEndDate] = useState(linkedTo || todayStr)
+  const [selectedAccounts, setSelectedAccounts] = useState(linkedAccount ? [linkedAccount] : [])
   const [page, setPage] = useState(0)
 
   // Account form (shared for create and edit)

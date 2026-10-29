@@ -3,14 +3,22 @@
 import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildDailyReport } from '@/lib/buildDailyReport'
 import { lubeOnAccount } from '@/lib/accountBalance'
 import DateRange from '@/components/reports/DateRange'
 import DayNav, { DayTitle } from '@/components/reports/DayNav'
 import AccessGate from '@/components/AccessGate'
+import BalancesSheet from '@/components/reports/BalancesSheet'
+import AgoSheet from '@/components/reports/AgoSheet'
 import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
+import { ReportSkeleton, ReportTablesSkeleton } from '@/components/Skeletons'
+
+// Lodgements: POS, then transfer, then deposit, then anything else, A to Z within each.
+const LODGEMENT_ORDER = { pos: 0, transfer: 1, bank_deposit: 2 }
+const byLodgementType = (a, b) => (LODGEMENT_ORDER[a.lodgementType] ?? 9) - (LODGEMENT_ORDER[b.lodgementType] ?? 9)
+  || String(a.bankName || '').localeCompare(String(b.bankName || ''))
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -19,7 +27,7 @@ function fmt(n) {
 
 export default function SummaryPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>}>
+    <Suspense fallback={<ReportSkeleton />}>
       <SummaryContent />
     </Suspense>
   )
@@ -46,6 +54,16 @@ function SummaryContent() {
   const [generating, setGenerating] = useState(false)
   const [reportStart, setReportStart] = useState(monthStartStr)
   const [reportEnd, setReportEnd] = useState(todayStr)
+
+  const [balancesOpen, setBalancesOpen] = useState(false)
+  const [agoOpen, setAgoOpen] = useState(false)
+  // Five taps on the date, each within a second and a half of the last, open the AGO sheet.
+  const taps = useRef({ n: 0, at: 0 })
+  const tapDate = () => {
+    const now = Date.now()
+    taps.current = { n: now - taps.current.at < 1500 ? taps.current.n + 1 : 1, at: now }
+    if (taps.current.n >= 5) { taps.current = { n: 0, at: 0 }; setAgoOpen(true) }
+  }
 
   // Config
   const [nozzles, setNozzles] = useState([])
@@ -166,7 +184,7 @@ function SummaryContent() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+    return <ReportSkeleton />
   }
 
   if (!orgId) {
@@ -198,24 +216,22 @@ function SummaryContent() {
         </div>
       </div>
 
-      {/* The day on screen, above its tables; Prev / Next are under them */}
-      {report && <DayTitle date={dayReport?.date} />}
-
       {/* Content */}
       {!generated ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-content-faint text-sm">Select a date range and click Load.</p>
         </div>
       ) : !report ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-        </div>
+        <div className="flex-1 min-h-0 overflow-hidden"><ReportTablesSkeleton /></div>
       ) : !dayReport ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-content-faint text-sm">No data for this period.</p>
         </div>
       ) : (
         <div className={`flex-1 overflow-y-auto overflow-x-auto min-h-0 mb-3 px-1 sm:px-[15%] ${REPORT_CARD}`}>
+          {/* The day, at the top of its tables (five taps: the AGO sheet); Prev / Next are under them. */}
+          <DayTitle date={dayReport.date} onClick={tapDate} />
+
           {/* 1. Closing Meter Readings per entry */}
           {dayReport.entryGroups.map((group, groupIdx) => (
             <div key={group.entryIndex} className="mb-4">
@@ -319,8 +335,8 @@ function SummaryContent() {
               </tr>
             </thead>
             <tbody>
-              {/* Every account, nothing lodged as 0, A to Z (sortBanks). */}
-              {dayReport.lodgement.bankRows.map(row => (
+              {/* Every account, nothing lodged as 0: POS, transfer, deposit, A to Z within each. */}
+              {[...dayReport.lodgement.bankRows].sort(byLodgementType).map(row => (
                 <tr key={row.bankId}>
                   <td className={cell}>
                     <span className="font-bold">{row.bankName}{row.terminalId ? ` - ${row.terminalId}` : ''}</span>
@@ -341,33 +357,20 @@ function SummaryContent() {
             </tbody>
           </table>
 
-          {/* Credit customers' balances at the end of the day, the ones not at zero, as in the
-              daily sales report. */}
+          {/* Credit customers' balances at the end of the day, the ones not at zero: a full-width
+              card with the totals; the customers are in a bottom sheet (BalancesSheet). */}
           {dayReport.balances.rows.length > 0 && (
-            <table className="w-full border-collapse text-sm mb-4">
-              <tbody>
-                <tr className={subHdr}>
-                  <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
-                </tr>
-                <tr className={subHdr}>
-                  <th className={`${cell} text-left font-bold`}>Customer</th>
-                  <th className={`${cellR} font-bold`}>Owes station</th>
-                  <th className={`${cellR} font-bold`}>Station owes</th>
-                </tr>
-                {dayReport.balances.rows.map((b) => (
-                  <tr key={b.customerId}>
-                    <td className={cell}>{b.name}</td>
-                    <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
-                    <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
-                  </tr>
-                ))}
-                <tr className="font-bold">
-                  <td className={cell}>Total</td>
-                  <td className={cellR}>{fmt(dayReport.balances.totalOwesStation)}</td>
-                  <td className={cellR}>{fmt(dayReport.balances.totalStationOwes)}</td>
-                </tr>
-              </tbody>
-            </table>
+            <button
+              type="button"
+              onClick={() => setBalancesOpen(true)}
+              className={`w-full mb-4 flex items-center gap-3 px-3 py-3 text-left ${REPORT_TOTAL_FILL} border ${REPORT_LINE}`}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold">Balances · {dayReport.balances.rows.length} account{dayReport.balances.rows.length === 1 ? '' : 's'}</p>
+                <p className="text-xs mt-0.5">Owes station {fmt(dayReport.balances.totalOwesStation)} · Station owes {fmt(dayReport.balances.totalStationOwes)}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 flex-shrink-0" />
+            </button>
           )}
 
           {/* 4. Product Received */}
@@ -394,39 +397,23 @@ function SummaryContent() {
             </table>
           )}
 
-          {/* 5. Sales */}
+          {/* 5. The day's totals (each fuel's sales, price and amount are in its meter table). */}
           <table className="w-full border-collapse text-sm mb-4">
-            <thead>
-              <tr className={subHdr}>
-                <th className={`${cell} text-left font-bold`}></th>
-                <th className={`${cellR} font-bold`}>Sales</th>
-                <th className={`${cellR} font-bold`}>Price</th>
-                <th className={`${cellR} font-bold`}>Amount</th>
-              </tr>
-            </thead>
             <tbody>
-              {report.fuelTypes.map(ft => (
-                <tr key={ft}>
-                  <td className={`${cell} font-bold`}>{ft}</td>
-                  <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.actual)}</td>
-                  <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.price)}</td>
-                  <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.amount)}</td>
-                </tr>
-              ))}
               <tr className={`${subHdr} font-bold`}>
-                <td colSpan={3} className={cell}>SALES</td>
+                <td className={cell}>SALES</td>
                 <td className={cellR}>{fmt(dayReport.totalSales)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={3} className={cell}>TOTAL POS</td>
+                <td className={cell}>TOTAL POS</td>
                 <td className={cellR}>{fmt(dayReport.lodgement.totalPOS)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={3} className={cell}>TOTAL TRANSFER</td>
+                <td className={cell}>TOTAL TRANSFER</td>
                 <td className={cellR}>{fmt(dayReport.lodgement.totalTransfer)}</td>
               </tr>
               <tr className={`${subHdr} font-bold`}>
-                <td colSpan={3} className={cell}>CASH</td>
+                <td className={cell}>CASH</td>
                 <td className={cellR}>{fmt(dayReport.cashBalance)}</td>
               </tr>
             </tbody>
@@ -436,13 +423,19 @@ function SummaryContent() {
 
       {/* Day navigation, under the day's tables */}
       {report && <DayNav index={dayIndex} total={totalDays} onPrev={goPrev} onNext={goNext} />}
+
+      {dayReport && <BalancesSheet open={balancesOpen} onClose={() => setBalancesOpen(false)} balances={dayReport.balances} orgId={orgId} date={dayReport.date} />}
+      <AgoSheet open={agoOpen} onClose={() => setAgoOpen(false)} orgId={orgId} sales={liveSales} />
     </div>
       )}
     </AccessGate>
   )
 }
 
-/** Renders closing meter readings for one fuel type + dispensed minus consumed */
+/** A price as typed: whole naira, or with its kobo when it has some. */
+const fmtPrice = (n) => Number(n || 0).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+
+/** Renders closing meter readings for one fuel type: dispensed − consumption = sales @ price (amount) */
 function ClosingReadings({ fuelType, rows, totals, dayTotals, cell, cellR, subHdr }) {
   // Use day-level totals from consumption_entries when available (last entry group)
   const src = dayTotals || totals
@@ -472,7 +465,7 @@ function ClosingReadings({ fuelType, rows, totals, dayTotals, cell, cellR, subHd
       {dayTotals ? (
         <tr className={`${REPORT_TOTAL_FILL} font-bold`}>
           <td className={cell} colSpan={4}>
-            {fmt(dispensed)} &minus; {fmt(adjustment)} = {fmt(actual)}
+            {fmt(dispensed)} &minus; {fmt(adjustment)} = {fmt(actual)} @{fmtPrice(dayTotals.price)} ({fmt(dayTotals.amount)})
           </td>
         </tr>
       ) : (
