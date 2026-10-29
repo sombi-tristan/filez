@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useSearchParams } from '@/lib/nav'
-import { Check, ChevronDown, ClipboardPaste, Plus, Trash2, X } from 'lucide-react'
+import { Check, ChevronDown, Plus, Trash2, X } from 'lucide-react'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { db } from '@/lib/db'
 import { lodgementsRepo } from '@/lib/repositories/lodgements'
@@ -18,7 +18,6 @@ import {
 import { EntryWithDayList, DayEntries } from '@/components/entries/DayEntries'
 import { dayTotalSales } from '@/lib/salesCalculations'
 import { sortBanks } from '@/lib/lodgementCalculations'
-import { readPosLines } from '@/lib/posPaste'
 
 /** What distinguishes two accounts at the same bank: the POS terminal, or the type (with its terminal, if it has one). */
 function bankSub(b) {
@@ -79,8 +78,6 @@ export default function LodgementsFormPage() {
   // Which deposit row's bank picker is open, by its key. A bottom sheet, the same as the
   // daily-sales consumption picker: chosen one-handed on a phone, so the options are in thumb reach.
   const [bankSheet, setBankSheet] = useState(null)
-  // The Paste POS lines sheet: what was pasted (Bedbug copies one line per slip amount), or null when closed.
-  const [pasted, setPasted] = useState(null)
   const [originalIds, setOriginalIds] = useState([])
   const [allDates, setAllDates] = useState([])
   const submittingRef = useRef(false)
@@ -257,12 +254,6 @@ export default function LodgementsFormPage() {
 
         {!subLoading && !isSubscribed && <SubscribeNotice />}
 
-        {!isEditing && (
-          <button type="button" onClick={() => setPasted('')} className="mb-3 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-500/[0.12] hover:bg-primary-500/[0.2]">
-            <ClipboardPaste className="w-4 h-4" /> Paste POS lines
-          </button>
-        )}
-
         <EntryCard title={isEditing ? 'Editing entry' : 'New lodgements'}>
           {/* Each account on two lines: its bank and the amount, then its terminal and type. */}
           {rows.map((row) => {
@@ -355,58 +346,6 @@ export default function LodgementsFormPage() {
       </form>
       </EntryWithDayList>
 
-      {/* Paste POS lines: each line's amount goes into the row of the account whose terminal and
-          type it matches (two slips from one terminal add up), and the lines' date becomes the
-          sales date. The rest stay listed here in red with the reason. */}
-      {pasted !== null && (() => {
-        const { entries: found, problems } = readPosLines(pasted, banks)
-        const fill = () => {
-          const byBank = new Map()
-          for (const f of found) byBank.set(f.bankId, (byBank.get(f.bankId) || 0) + Number(f.amount))
-          setRows((prev) => prev.map((r) => (r.fixed && byBank.has(r.bankId) ? { ...r, amount: byBank.get(r.bankId).toFixed(2) } : r)))
-          if (found[0]?.salesDate) setSalesDate(found[0].salesDate)
-          setPasted(null)
-        }
-        return (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setPasted(null)}>
-            <div className="bg-surface w-full sm:max-w-md max-h-[80vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-line flex-shrink-0">
-                <div>
-                  <h3 className="text-sm font-semibold text-content">Paste POS lines</h3>
-                  <p className="text-xs text-content-muted">From Bedbug: date, POS or TRANSFER, terminal, amount</p>
-                </div>
-                <button type="button" onClick={() => setPasted(null)} aria-label="Close" className="text-content-faint hover:text-content-muted p-1">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="overflow-y-auto px-4 py-3 flex flex-col gap-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
-                <textarea
-                  aria-label="POS lines"
-                  value={pasted}
-                  onChange={(e) => setPasted(e.target.value)}
-                  rows={6}
-                  autoFocus
-                  placeholder={'2026-10-25	POS	2039DDE3	471980.00'}
-                  className={`${ENTRY_INPUT} font-mono text-sm`}
-                />
-                {problems.length > 0 && (
-                  <ul className="flex flex-col gap-1 text-sm text-red-600 dark:text-red-400">
-                    {problems.map((p, i) => (
-                      <li key={i} className="flex gap-1.5">
-                        <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                        <span><span className="font-mono">{p.line}</span>: {p.reason}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <button type="button" disabled={found.length === 0} onClick={fill} className="px-4 py-2.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40">
-                  {`Fill ${found.length} ${found.length === 1 ? 'amount' : 'amounts'}`}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* The deposit's bank: a deposit goes to the bank, not a terminal, so only the banks with
           a deposit account are offered, by name. */}

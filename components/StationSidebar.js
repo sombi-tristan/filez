@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import RestoreBackup from '@/components/RestoreBackup'
 import { usePathname, useRouter } from '@/lib/nav'
-import { IonIcon } from '@ionic/react'
 import { menuController } from '@ionic/core/components'
 import {
   bookOutline, cardOutline, cubeOutline, documentTextOutline, gridOutline,
@@ -18,6 +17,7 @@ import {
 } from '@/design'
 import { supabase } from '@/lib/supabaseClient'
 import { buildStationNav } from '@/lib/stationNav'
+import { db } from '@/lib/db'
 
 /**
  * Section switcher for the pages inside a station, so moving from Daily Sales to Lodgements
@@ -32,8 +32,8 @@ import { buildStationNav } from '@/lib/stationNav'
  * the open station, read by the shell from the address.
  *
  * It renders buildStationNav(), the same source the station hub reads, so the two cannot
- * offer different destinations. Blocked destinations are shown dimmed rather than hidden,
- * matching the hub: that tells a member the feature exists and who to ask.
+ * offer different destinations. A destination this member may not open is left out, as on the
+ * station home, and a group left empty goes with it.
  */
 
 /**
@@ -78,19 +78,6 @@ function groupFor(pathname, stationId) {
   return hit ? hit.heading : null
 }
 
-/**
- * A destination this member may not open: the house row's look, dimmed, and inert. The house
- * row has no disabled state, so this is the one row drawn here rather than by SidebarNavRow.
- */
-function BlockedRow({ label, icon }) {
-  return (
-    <button type="button" className="house-side-row" disabled aria-disabled="true" style={{ opacity: 0.45, cursor: 'not-allowed' }}>
-      {icon ? <IonIcon icon={icon} aria-hidden="true" /> : null}
-      <span>{label}</span>
-    </button>
-  )
-}
-
 export default function StationSidebar({ stationId }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -112,6 +99,15 @@ export default function StationSidebar({ stationId }) {
   useEffect(() => {
     if (!stationId) return
     let alive = true
+    // No answer (offline): the station's permissions saved by any screen opened online
+    // (lib/hooks/usePageAccess.js), so an owner keeps the whole menu. Nothing saved: unrestricted,
+    // and each screen still checks for itself (components/AccessGate.js).
+    const useSaved = async () => {
+      const saved = await db.accessCache.filter((c) => c.key.startsWith(`${stationId}:`)).first().catch(() => null)
+      if (!alive || !saved) return
+      setIsOwner(saved.isOwner)
+      setVisiblePages(saved.isOwner ? null : saved.visiblePages || [])
+    }
     ;(async () => {
       try {
         // The unscoped list, not ?org_id=: the switcher needs every station this person can
@@ -136,8 +132,12 @@ export default function StationSidebar({ stationId }) {
         // is why isOwner carries the decision instead.
         const perm = await fetch(`/api/invites?org_id=${stationId}`)
           .then((r) => (r.ok ? r.json() : null)).catch(() => null)
-        if (alive) setVisiblePages(perm?.visiblePages || null) // null = unrestricted
-      } catch { /* offline: the nav still renders, just without permission dimming */ }
+        if (!alive) return
+        if (perm?.visiblePages) setVisiblePages(perm.visiblePages)
+        else await useSaved()
+      } catch {
+        await useSaved()
+      }
     })()
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,7 +166,7 @@ export default function StationSidebar({ stationId }) {
     router.root(href)
   }
 
-  const row = (link) => (link.allowed ? (
+  const row = (link) => (
     <SidebarNavRow
       key={link.href}
       href={link.href}
@@ -176,9 +176,7 @@ export default function StationSidebar({ stationId }) {
       badge={link.badge}
       onClick={go(link.href)}
     />
-  ) : (
-    <BlockedRow key={link.href} label={link.label} icon={ICONS[link.pageKey] || documentTextOutline} />
-  ))
+  )
 
   const brandMark = (
     <Image src="/icon-192.png" alt="" aria-hidden width={32} height={32} className="w-8 h-8 shrink-0 rounded-house" />
@@ -202,7 +200,7 @@ export default function StationSidebar({ stationId }) {
 
       {/* Each group is an accordion, one open at a time. */}
       <SidebarSections value={openGroup} onChange={setOpenGroup}>
-        {sections.map((section) => (
+        {sections.map((section) => ({ ...section, links: section.links.filter((l) => l.allowed) })).filter((s) => s.links.length).map((section) => (
           <SidebarSection key={section.heading} value={section.heading} label={section.heading}>
             {section.links.map(row)}
           </SidebarSection>

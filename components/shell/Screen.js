@@ -12,6 +12,7 @@ import { AreaContext, ScreenLocationContext } from '@/lib/nav'
 import AdminViewingBanner from '@/components/AdminViewingBanner'
 import Footer from '@/components/Footer'
 import { recordReportPath } from '@/lib/recentReports'
+import AccessGate from '@/components/AccessGate'
 
 /**
  * One screen of the Ionic app: an IonPage with the house top bar and the screen's content in
@@ -33,8 +34,8 @@ function DesktopOnly() {
   return (
     <div className="max-w-md mx-auto px-4 py-12">
       <EmptyState icon={desktopOutline} title="In the desktop app">
-        This report is in StationMGR for Windows. On the web: Summary, Analytics, Inventory Log
-        and Account Ledger.
+        This report is in StationMGR for Windows. On the phone: Summary,
+        Consumption &amp; Fuel Stock, Account Ledger and Lube Report.
       </EmptyState>
     </div>
   )
@@ -67,9 +68,10 @@ export default function Screen({ screen }) {
       <IonPage>
         <IonHeader className="house-header">
           <IonToolbar>
+            {/* Home (the station home, or the area's own page) has the menu and no back arrow;
+                every other screen has the back arrow and no menu. */}
             <IonButtons slot="start">
-              <IonMenuButton />
-              {held.pathname !== area && <IonBackButton defaultHref={atHome ? area : home} text="" />}
+              {atHome ? <IonMenuButton /> : <IonBackButton defaultHref={home} text="" />}
             </IonButtons>
             <IonTitle>{screen.title || 'StationMGR'}</IonTitle>
             <IonButtons slot="end">
@@ -95,7 +97,10 @@ export default function Screen({ screen }) {
                   (app/globals.css .screen-ink), as in the desktop build. */}
               <div className={screen.report || screen.path.startsWith('/dashboard/entries') ? 'screen-ink' : undefined}>
                 <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
-                  {screen.desktopOnly ? <DesktopOnly /> : <Page key={held.key} />}
+                  {screen.desktopOnly ? <DesktopOnly /> : screen.pageKey ? (
+                    // An entry: only for the owner, or staff the owner gave this page.
+                    <AccessGate orgId={stationId} pageKey={screen.pageKey}><Page key={held.key} /></AccessGate>
+                  ) : <Page key={held.key} />}
                 </Suspense>
               </div>
             </div>

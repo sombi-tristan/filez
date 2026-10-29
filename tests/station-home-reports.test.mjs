@@ -57,12 +57,14 @@ check('Screen records a report as it opens', shell.includes("import { recordRepo
 
 console.log('\nStation home')
 const home = read('screens/dashboard/stations/[stationId]/page.js')
-const panel = home.slice(home.indexOf('{/* Reports: the ones'), home.indexOf('{/* Manage Station'))
+const panel = home.slice(home.indexOf('{/* Reports: Summary'), home.indexOf('{/* Manage Station'))
 check('a full-width Reports panel like the Entries one', /<section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">/.test(panel))
 check('report widgets two a row, each half the panel wide, 96px tall (112px in the Android app)', panel.includes('<div className="grid grid-cols-2 gap-3">') && /function Widget[\s\S]*?className="w-full h-28 compact:h-24 flex flex-col/.test(home))
 check('report widgets are orange: the tile and its round chip (house orange)', /function Widget[\s\S]*?bg-\[rgb\(245_125_0\/0\.12\)\][\s\S]*?rounded-full w-10 h-10 bg-\[rgb\(245_125_0\/0\.2\)\]/.test(home))
-check('two widgets, recently opened first', panel.includes('homeReports(reportLinks, stationId, canAccess, 2)') && panel.includes('<Widget'))
-check('under Reports', panel.indexOf('{staffSection}') > panel.indexOf('homeReports('))
+check('four widgets: Summary, Consumption & Fuel Stock, Account Ledger, Lube Report', home.includes("const HOME_REPORTS = ['report-summary', 'report-audit-consumption', 'report-account-ledger', 'report-lube']") && panel.includes('HOME_REPORTS.map(') && panel.includes('<Widget'))
+check('only the ones this person may open', panel.includes('.filter((l) => l && canAccess(l.pageKey))'))
+check('staff with no answer from the server see none', home.includes('setVisiblePages(permData.visiblePages || [])'))
+check('under Reports', panel.indexOf('{staffSection}') > panel.indexOf('HOME_REPORTS.map('))
 check('the grouped rows are gone from home', !home.includes('REPORT_COLUMNS.map'))
 check('Staff is a full-width panel of its own', /const staffSection = isOwner \? \(\s*<section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">\s*<h2[^>]*>Staff<\/h2>/.test(home) && !/const staffSection[\s\S]{0,400}\$\{CARD\}/.test(home))
 
