@@ -11,6 +11,7 @@ import {
 import InstallPWABanner from '@/components/InstallPWABanner'
 import { supabase } from '@/lib/supabaseClient'
 import { INPUT, BTN_PRIMARY, BTN_FRAMED, CARD_HOVER, CARD } from '@/components/ui'
+import { StationsSkeleton } from '@/components/Skeletons'
 
 // One uniform card look for every station/link (no per-card colours), matching
 // store-portal/app/businesses/page.js. The icon tile is the solid accent square there,
@@ -107,13 +108,7 @@ export default function DashboardPage() {
     setAdding(false)
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-      </div>
-    )
-  }
+  if (loading) return <StationsSkeleton />
 
   // Admin — redirect to admin panel
   if (isAdmin) {

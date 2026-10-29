@@ -10,6 +10,7 @@ import { isReceipt } from '@/lib/lubeEntries'
 import {
   EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager, SubscribeNotice,
 } from '@/components/entries/EntryListParts'
+import { ListSkeleton } from '@/components/Skeletons'
 
 export default function LubeListPage() {
   const searchParams = useSearchParams()
@@ -23,7 +24,7 @@ export default function LubeListPage() {
     setReady(true)
   }, [orgId])
 
-  if (!ready) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-line border-t-blue-600 rounded-full animate-spin" /></div>
+  if (!ready) return <ListSkeleton />
 
   return (
     <EntryListScreen

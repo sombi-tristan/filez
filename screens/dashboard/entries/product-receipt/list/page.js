@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/lib/db'
-import { Spinner } from '@/design'
 import {
   EntryListScreen, EntryListEmpty, DayRows, DayRow, ListPager,
 } from '@/components/entries/EntryListParts'
+import { ListSkeleton } from '@/components/Skeletons'
 
 export default function ProductReceiptListPage() {
   const searchParams = useSearchParams()
@@ -56,7 +56,7 @@ export default function ProductReceiptListPage() {
   const totalPages = Math.ceil(total / limit)
   const pageGroups = groupedEntries.slice((page - 1) * limit, page * limit)
 
-  if (!ready) return <div className="flex justify-center py-20"><Spinner /></div>
+  if (!ready) return <ListSkeleton />
 
   return (
     <EntryListScreen newHref={`/dashboard/entries/product-receipt?${qs}`}>

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PoweredBy } from '@/design'
+import Image from 'next/image'
 
 /**
  * `app` is the signed-in variant, rendered by AppShell at the foot of every dashboard screen.
@@ -7,6 +7,9 @@ import { PoweredBy } from '@/design'
  * It drops the link row. Login is plainly wrong once you are signed in, and Feedback is
  * already a quick link on the station picker and reachable from the header, so repeating it
  * on all thirty screens is noise. What is left is the copyright and the house credit.
+ *
+ * The credit is drawn here with Premeval's own logo (public/premeval-logo.svg, the "p" and its
+ * orange dot) rather than the design system's one-colour PoweredBy mark.
  */
 export default function Footer({ app = false }) {
   return (
@@ -19,7 +22,11 @@ export default function Footer({ app = false }) {
           </div>
         )}
         <span>&copy; {new Date().getFullYear()} StationMGR</span>
-        <PoweredBy />
+        <p className="house-credit">
+          <span>Powered by</span>
+          <Image src="/premeval-logo.svg" alt="" aria-hidden width={17} height={24} className="h-6 w-auto mx-0.5" />
+          <b>Premeval</b>
+        </p>
       </div>
     </footer>
   )

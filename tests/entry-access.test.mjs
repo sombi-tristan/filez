@@ -23,7 +23,7 @@ for (const key of ['daily-sales', 'product-receipt', 'lodgements', 'lube', 'cust
   check(`${key}: form and list carry pageKey '${key}'`, lines.length === 2 && lines.every((l) => l.includes(`pageKey: '${key}'`)))
 }
 const shell = read('components/shell/Screen.js')
-check('Screen wraps a keyed screen in AccessGate', shell.includes("import AccessGate from '@/components/AccessGate'") && shell.includes('<AccessGate orgId={stationId} pageKey={screen.pageKey}><Page key={held.key} /></AccessGate>'))
+check('Screen wraps a keyed screen in AccessGate', shell.includes("import AccessGate from '@/components/AccessGate'") && shell.includes('<AccessGate orgId={stationId} pageKey={screen.pageKey}') && shell.includes('><Page key={held.key} /></AccessGate>'))
 
 console.log('\nOffline')
 const hook = read('lib/hooks/usePageAccess.js')

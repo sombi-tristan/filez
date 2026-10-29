@@ -219,6 +219,9 @@
         },
         "station_group_id": {
           "type": "uuid"
+        },
+        "ago_reset_date": {
+          "type": "date"
         }
       },
       "fks": {

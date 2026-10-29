@@ -13,6 +13,7 @@ import DateInput from '@/components/DateInput'
 import { ENTRY_INPUT, ENTRY_DATE, ENTRY_LINE } from '@/components/ui'
 
 import { adjacentDates, cleanNumber } from '@/lib/entryInput'
+import { FormSkeleton } from '@/components/Skeletons'
 
 export { SubscribeNotice } from '@/components/entries/EntryListParts'
 
@@ -253,7 +254,7 @@ export function Figures({ items }) {
 
 /** The screen while an entry form reads the day from the device. */
 export function EntryLoading() {
-  return <div className="flex justify-center py-20"><Spinner /></div>
+  return <FormSkeleton />
 }
 
 /** The station has nothing to enter against yet (no tanks, no banks). */

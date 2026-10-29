@@ -50,7 +50,7 @@ console.log('summary: credit balances')
   const src = read('screens/dashboard/reports/summary/page.js')
   check('builds with the customers and their payments', /customers: liveCustomers \|\| \[\],\n\s*customerPayments: livePayments \|\| \[\],/.test(src), true)
   check('lube on account counts, as in the daily sales report', /lubeOnAccount\(/.test(src), true)
-  check('shows the Balances table', /colSpan=\{3\}>Balances<\/th>/.test(src) && /dayReport\.balances\.rows\.map/.test(src), true)
+  check('shows the Balances card, opening the sheet', /onClick=\{\(\) => setBalancesOpen\(true\)\}/.test(src) && /<BalancesSheet /.test(src), true)
 }
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1) }

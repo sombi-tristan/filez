@@ -1,7 +1,8 @@
 'use client'
 
-import { Loader2, ShieldX } from 'lucide-react'
+import { ShieldX } from 'lucide-react'
 import { usePageAccess } from '@/lib/hooks/usePageAccess'
+import { ReportSkeleton, FormSkeleton } from '@/components/Skeletons'
 
 /**
  * Wraps page content with a permission check.
@@ -11,18 +12,14 @@ import { usePageAccess } from '@/lib/hooks/usePageAccess'
  * @param {string} pageKey - The permission key (e.g. 'report-summary', 'imprest')
  * @param {React.ReactNode} children - The page content (can be a render function receiving { isOwner })
  */
-export default function AccessGate({ orgId, pageKey, children }) {
+export default function AccessGate({ orgId, pageKey, skeleton, children }) {
   const { loading, allowed, isOwner } = usePageAccess(orgId, pageKey)
 
   if (!orgId) return null
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-      </div>
-    )
-  }
+  // A placeholder in the screen's shape while access is checked: `skeleton`, or a report's or
+  // an entry form's by the key.
+  if (loading) return skeleton || (pageKey.startsWith('report') || pageKey === 'imprest' ? <ReportSkeleton /> : <FormSkeleton />)
 
   if (!allowed) {
     return (

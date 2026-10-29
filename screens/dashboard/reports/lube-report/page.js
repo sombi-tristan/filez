@@ -3,7 +3,6 @@
 import { Suspense, useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import DateRange from '@/components/reports/DateRange'
 import AccessGate from '@/components/AccessGate'
@@ -11,6 +10,7 @@ import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD, INPUT_BASE } from '@/components/ui'
 import { isDefaultAccount } from '@/lib/defaultAccounts'
 import Toggle from '@/components/Toggle'
+import { ReportSkeleton, ReportTablesSkeleton } from '@/components/Skeletons'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -24,7 +24,7 @@ function fmtDec(n) {
 
 export default function LubeReportPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>}>
+    <Suspense fallback={<ReportSkeleton />}>
       <LubeReportContent />
     </Suspense>
   )
@@ -264,7 +264,7 @@ function LubeReportContent() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+    return <ReportSkeleton />
   }
 
   const hdr = REPORT_HEAD
@@ -343,7 +343,7 @@ function LubeReportContent() {
 }
 
 function DailyLogTable({ data, cell, cellR, hdr }) {
-  if (!data) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+  if (!data) return <ReportTablesSkeleton tables={1} />
   if (data.rows.length === 0) return <div className="flex items-center justify-center py-20"><p className="text-content-faint text-sm">No lube sales or lodgements in this date range.</p></div>
 
   let prevDate = null
@@ -398,7 +398,7 @@ function DailyLogTable({ data, cell, cellR, hdr }) {
 }
 
 function SummaryTable({ data, cell, cellR, hdr }) {
-  if (!data) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-content-faint" /></div>
+  if (!data) return <ReportTablesSkeleton tables={1} />
   if (data.rows.length === 0) return <div className="flex items-center justify-center py-20"><p className="text-content-faint text-sm">No lube products configured.</p></div>
 
   return (
