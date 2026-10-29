@@ -9,7 +9,6 @@ import {
   ChevronRight, ChevronDown, BarChart3, Plus, Pencil, Trash2, AlertTriangle,
   FileText, BookOpen, ShieldX, Lock, Truck, Wallet, TrendingUp, Boxes, LineChart, Activity
 } from 'lucide-react'
-import { homeReports } from '@/lib/recentReports'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Modal from '@/components/Modal'
 import { differenceInDays } from 'date-fns'
@@ -29,6 +28,9 @@ import {
   ENTRY_PERMISSION_OPTIONS as ENTRY_PAGE_OPTIONS,
   REPORT_PERMISSION_OPTIONS as REPORT_PAGE_OPTIONS,
 } from '@/lib/stationNav'
+
+/** The station home's report widgets, in this order. */
+const HOME_REPORTS = ['report-summary', 'report-audit-consumption', 'report-account-ledger', 'report-lube']
 
 export default function StationPage() {
   const router = useRouter()
@@ -187,12 +189,11 @@ export default function StationPage() {
           setSubscription(dashData.subscription || null)
         }
       } else {
-        // Staff — fetch their visible_pages
-        const permRes = await fetch(`/api/invites?org_id=${stationId}`)
-        if (permRes.ok) {
-          const permData = await permRes.json()
-          if (permData.visiblePages) setVisiblePages(permData.visiblePages)
-        }
+        // Staff — fetch their visible_pages. No answer opens nothing, as the screens
+        // themselves do (lib/hooks/usePageAccess.js), rather than leaving every report showing.
+        const permRes = await fetch(`/api/invites?org_id=${stationId}`).catch(() => null)
+        const permData = permRes?.ok ? await permRes.json() : {}
+        setVisiblePages(permData.visiblePages || [])
       }
       setLoading(false)
     }
@@ -562,13 +563,13 @@ export default function StationPage() {
           </section>
         )}
 
-        {/* Reports: the ones this person opened most recently here first (lib/recentReports.js),
-            only ones they may open, two of them, in orange (Widget). Full width, like the Staff
-            panel under it. */}
+        {/* Reports: Summary, Consumption & Fuel Stock, Account Ledger and Lube Report, in orange
+            (Widget), only the ones this person may open (the owner's page access for staff).
+            Full width, like the Staff panel under it. */}
         <section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">
           <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Reports</h2>
           <div className="grid grid-cols-2 gap-3">
-            {homeReports(reportLinks, stationId, canAccess, 2).map((link) => (
+            {HOME_REPORTS.map((key) => reportLinks.find((l) => l.pageKey === key)).filter((l) => l && canAccess(l.pageKey)).map((link) => (
               <Widget key={link.href} href={link.href} icon={link.icon} label={link.label} desc={link.desc} />
             ))}
           </div>
