@@ -11,9 +11,12 @@ import { INPUT, LABEL, BTN_PRIMARY, BTN_DANGER, IconChip } from '@/components/ui
  * renaming it, and deleting it. The owner's alone, so it shows nothing to staff.
  */
 
-/** The station and whether the person signed in owns it: { station, isOwner } (null until known). */
+/**
+ * The station and who is looking: { station, isOwner, isAdmin, known }. `known` turns true once
+ * both answers are in (or failed), so a screen can wait before deciding who may see it.
+ */
 function useStation(stationId) {
-  const [state, setState] = useState({ station: null, isOwner: false })
+  const [state, setState] = useState({ station: null, isOwner: false, isAdmin: false, known: false })
   useEffect(() => {
     let alive = true
     Promise.all([
@@ -22,16 +25,22 @@ function useStation(stationId) {
     ]).then(([orgs, me]) => {
       if (!alive) return
       const s = (orgs.stations || [])[0] || null
-      setState({ station: s, isOwner: !!s && !!me?.user?.id && s.owner_id === me.user.id })
-    }).catch(() => {})
+      setState({ station: s, isOwner: !!s && !!me?.user?.id && s.owner_id === me.user.id, isAdmin: me?.user?.role === 'admin', known: true })
+    }).catch(() => { if (alive) setState((st) => ({ ...st, known: true })) })
     return () => { alive = false }
   }, [stationId])
   return state
 }
 
-/** Whether the person signed in owns the station: Settings hides its Station tab from staff. */
+/** Whether the person signed in owns the station. */
 export function useStationOwner(stationId) {
   return useStation(stationId).isOwner
+}
+
+/** Who may open the station's Settings: { known, isOwner, isAdmin } (the owner, or a platform admin helping). */
+export function useStationAccess(stationId) {
+  const { known, isOwner, isAdmin } = useStation(stationId)
+  return { known, isOwner, isAdmin }
 }
 
 export default function ManageStation({ stationId }) {

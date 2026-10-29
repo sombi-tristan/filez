@@ -14,6 +14,7 @@ import { ENTRY_INPUT, ENTRY_DATE, ENTRY_LINE } from '@/components/ui'
 
 import { adjacentDates, cleanNumber } from '@/lib/entryInput'
 import { FormSkeleton } from '@/components/Skeletons'
+import { useStationAccess } from '@/components/station/ManageStation'
 
 export { SubscribeNotice } from '@/components/entries/EntryListParts'
 
@@ -260,18 +261,21 @@ export function EntryLoading() {
 /** The station has nothing to enter against yet (no tanks, no banks). */
 export function NotConfigured({ orgId }) {
   const router = useRouter()
+  // Settings is the owner's: staff are told who to ask instead of being sent there.
+  const { isOwner, isAdmin } = useStationAccess(orgId)
+  const canSetUp = isOwner || isAdmin
   return (
     <EntryScreen>
       <EmptyState
         icon={documentTextOutline}
         title="Station not configured"
-        action={(
+        action={canSetUp ? (
           <Button onClick={(e) => { e.preventDefault(); router.push(`/dashboard/stations/${orgId}/settings`) }}>
             Go to Settings
           </Button>
-        )}
+        ) : null}
       >
-        Set up your station in Settings before creating entries.
+        {canSetUp ? 'Set up your station in Settings before creating entries.' : 'Ask the station owner to set the station up before creating entries.'}
       </EmptyState>
     </EntryScreen>
   )

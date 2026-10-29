@@ -6,11 +6,13 @@ import Link from '@/lib/nav'
 import {
   Loader2, Fuel, Plus, Trash2, ArrowRight, Landmark,
   CreditCard, Banknote, MapPin, Save, Droplets, Users, Lock, Cylinder,
-  ChevronDown, Monitor, ChevronRight, Building2, LogOut
+  ChevronDown, Monitor, ChevronRight, Building2
 } from 'lucide-react'
 import { DEFAULT_PHONE } from '@/lib/defaultAccounts'
-import { INPUT_BASE, INPUT, BTN_PRIMARY, BTN_FRAMED, CARD_LINE, IconChip } from '@/components/ui'
-import ManageStation, { useStationOwner } from '@/components/station/ManageStation'
+import { INPUT_BASE, INPUT, BTN_PRIMARY, CARD_LINE, IconChip } from '@/components/ui'
+import ManageStation, { useStationAccess } from '@/components/station/ManageStation'
+import { Restricted } from '@/components/AccessGate'
+import { PageSkeleton } from '@/components/Skeletons'
 
 const FUEL_TYPES = ['PMS', 'AGO', 'DPK']
 const LODGEMENT_TYPES = [
@@ -78,7 +80,9 @@ export default function StationSettingsPage() {
   const router = useRouter()
   const params = useParams()
   const stationId = params.stationId
-  const isOwner = useStationOwner(stationId)
+  // The owner's, or a platform admin's helping out; staff get Access Restricted.
+  const access = useStationAccess(stationId)
+  const isOwner = access.isOwner
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -233,29 +237,6 @@ export default function StationSettingsPage() {
     setCustomers((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  // Staff leave the station from its Station tab (the owner cannot leave their own).
-  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
-  const [leaving, setLeaving] = useState(false)
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setIsPlatformAdmin(data?.user?.role === 'admin'))
-      .catch(() => {})
-  }, [])
-  const leaveStation = async () => {
-    if (!confirm('Leave this station? You will lose access to its entries and data.')) return
-    setLeaving(true)
-    const res = await fetch('/api/invites/leave', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ org_id: stationId }),
-    })
-    if (res.ok) {
-      router.push('/dashboard')
-    }
-    setLeaving(false)
-  }
-
   const submittingRef = useRef(false)
   const handleSave = async () => {
     if (submittingRef.current) return
@@ -301,36 +282,17 @@ export default function StationSettingsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-content-faint" />
-      </div>
-    )
-  }
+  if (!access.known) return <PageSkeleton />
+  if (!access.isOwner && !access.isAdmin) return <Restricted>Only the station owner can open Settings.</Restricted>
+  if (loading) return <PageSkeleton />
 
   return (
     <div className="w-full px-4 sm:px-8 py-8">
       <Tabs>
-      {/* The station itself. The owner sets it up, renames it or deletes it (always open); staff
-          leave it here. A platform admin on a station that is not theirs gets no tab: leaving
-          goes through membership, which they never had. */}
-      <Pane icon={Building2} title="Station" hidden={!isOwner && isPlatformAdmin}>
-        {isOwner ? (
-          <ManageStation stationId={stationId} />
-        ) : (
-          <div>
-            <p className="text-sm text-content-muted mb-3">Leaving loses your access to this station&apos;s entries and data.</p>
-            <button
-              onClick={leaveStation}
-              disabled={leaving}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 ${BTN_FRAMED}`}
-            >
-              {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-              Leave Station
-            </button>
-          </div>
-        )}
+      {/* The station itself: the owner sets it up, renames it or deletes it (always open). A
+          platform admin on a station that is not theirs gets no tab. */}
+      <Pane icon={Building2} title="Station" hidden={!isOwner}>
+        <ManageStation stationId={stationId} />
       </Pane>
 
       {/* Location */}

@@ -29,6 +29,13 @@ console.log('\nOffline')
 const hook = read('lib/hooks/usePageAccess.js')
 check('falls back to the station\'s saved permissions from any page', hook.includes('db.accessCache.filter((c) => c.key.startsWith(`${orgId}:`)).first()') && hook.includes('setAllowed(cached.isOwner || pages.includes(pageKey))'))
 
+console.log('\nSettings and Subscription are the owner\'s')
+const sidebar = read('components/StationSidebar.js')
+check('the sidebar shows Settings to the owner or a platform admin only', sidebar.includes("{(isOwner || user?.role === 'admin') && (") && sidebar.indexOf("{(isOwner || user?.role === 'admin') && (") < sidebar.indexOf('label="Settings"'))
+check('Settings turns staff away', read('screens/dashboard/stations/[stationId]/settings/page.js').includes('if (!access.isOwner && !access.isAdmin) return <Restricted>'))
+check('Subscription turns away anyone not owning the station', read('screens/dashboard/subscribe/page.js').includes('if (!ownsIt) return <Restricted>'))
+check('"Station not configured" sends only the owner to Settings', read('components/entries/EntryParts.js').includes('action={canSetUp ? ('))
+
 console.log('\nNo Paste POS lines')
 const lodgements = read('screens/dashboard/entries/lodgements/page.js')
 check('the lodgement entry has no Paste POS lines', !/paste/i.test(lodgements) && !/bedbug/i.test(lodgements))
