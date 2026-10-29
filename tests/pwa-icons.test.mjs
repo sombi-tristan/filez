@@ -27,6 +27,8 @@ for (const name of ['icon-192.png', 'icon-512.png']) {
 }
 const svg = readFileSync(url('app/icon.svg'), 'utf8')
 check('the favicon is #0093DD', svg.includes('fill="#0093dd"') && !svg.toLowerCase().includes('#2563eb'))
+// The favicon is the app's logo, the pump (as in scripts/android-icons.mjs), not the old StationVA "S".
+check('the favicon is the pump', svg.includes('M27 20 H70.75 V88 H27 Z') && !svg.includes('M50.3335 113.333'))
 if (existsSync(url('public/manifest.json'))) {
   const manifest = JSON.parse(readFileSync(url('public/manifest.json'), 'utf8'))
   check('the manifest theme colour is #0093DD', manifest.theme_color.toLowerCase() === '#0093dd')
