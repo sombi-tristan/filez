@@ -10,6 +10,7 @@ import AccessGate from '@/components/AccessGate'
 import { fmtDate } from '@/lib/formatDate'
 import { REPORT_HEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD, INPUT_BASE } from '@/components/ui'
 import { isDefaultAccount } from '@/lib/defaultAccounts'
+import Toggle from '@/components/Toggle'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -46,6 +47,8 @@ function LubeReportContent() {
   const [activeTab, setActiveTab] = useState('daily-log')
   // One account's lube sales in the daily log ('' is every sale, with the lodgements).
   const [accountId, setAccountId] = useState('')
+  // Stock Summary: hide the products whose closing stock is 0.
+  const [hideEmpty, setHideEmpty] = useState(false)
 
   const [products, setProducts] = useState([])
 
@@ -238,7 +241,7 @@ function LubeReportContent() {
         actualClosing,
         variance,
       }
-    })
+    }).filter((r) => !hideEmpty || (r.actualClosing ?? r.expectedClosing) !== 0)
 
     const totals = {
       opening: rows.reduce((s, r) => s + r.opening, 0),
@@ -251,7 +254,7 @@ function LubeReportContent() {
     }
 
     return { rows, totals }
-  }, [generated, reportStart, reportEnd, loading, orgId, liveLubeSales, liveLubeStock, products, productMap])
+  }, [generated, reportStart, reportEnd, loading, orgId, liveLubeSales, liveLubeStock, products, productMap, hideEmpty])
 
   const handleGenerate = () => {
     if (!startDate || !endDate) return
@@ -289,6 +292,7 @@ function LubeReportContent() {
               {(accounts || []).map((c) => <option key={c.id} value={c.id}>{c.name || 'Unnamed'}</option>)}
             </select>
           )}
+          {activeTab === 'summary' && <Toggle checked={hideEmpty} onChange={setHideEmpty} label="Hide empty" />}
           <DateRange
             start={startDate}
             end={endDate}

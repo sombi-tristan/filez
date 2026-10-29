@@ -10,7 +10,7 @@ import {
   bookOutline, cardOutline, cubeOutline, documentTextOutline, gridOutline,
   homeOutline, logOutOutline, pulseOutline, receiptOutline, settingsOutline, statsChartOutline,
   trendingUpOutline, carOutline, walletOutline, waterOutline, peopleOutline, clipboardOutline,
-  analyticsOutline, flameOutline, beakerOutline,
+  analyticsOutline, flameOutline,
 } from 'ionicons/icons'
 import {
   Sidebar, SidebarBrand, SidebarSwitcher, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter,
@@ -52,7 +52,6 @@ const ICONS = {
   'report-sales-overview': trendingUpOutline,
   'report-inventory-log': cubeOutline,
   'report-audit-consumption': flameOutline,
-  'report-audit-stock-summary': beakerOutline,
   'report-analytics': analyticsOutline,
   'report-audit': receiptOutline,
   'report-account-ledger': bookOutline,

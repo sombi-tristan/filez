@@ -3,14 +3,14 @@
 import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildDailyReport } from '@/lib/buildDailyReport'
 import { lubeOnAccount } from '@/lib/accountBalance'
-import { fmtDate } from '@/lib/formatDate'
 import DateRange from '@/components/reports/DateRange'
+import DayNav, { DayTitle } from '@/components/reports/DayNav'
 import AccessGate from '@/components/AccessGate'
-import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
+import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -198,29 +198,8 @@ function SummaryContent() {
         </div>
       </div>
 
-      {/* Day navigation */}
-      {report && totalDays > 1 && dayReport && (
-        <div className="flex items-center justify-between shrink-0 mb-2 px-1 sm:px-[15%]">
-          <button
-            onClick={goPrev}
-            disabled={dayIndex <= 0}
-            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium disabled:opacity-30 ${BTN_FRAMED}`}
-          >
-            <ChevronLeft className="w-4 h-4" /> Prev
-          </button>
-          <span className="text-sm text-content-muted font-medium">
-            {fmtDate(dayReport.date)}
-            <span className="text-content-faint ml-1">({dayIndex + 1} of {totalDays})</span>
-          </span>
-          <button
-            onClick={goNext}
-            disabled={dayIndex >= totalDays - 1}
-            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium disabled:opacity-30 ${BTN_FRAMED}`}
-          >
-            Next <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      {/* The day on screen, above its tables; Prev / Next are under them */}
+      {report && <DayTitle date={dayReport?.date} />}
 
       {/* Content */}
       {!generated ? (
@@ -421,6 +400,7 @@ function SummaryContent() {
               <tr className={subHdr}>
                 <th className={`${cell} text-left font-bold`}></th>
                 <th className={`${cellR} font-bold`}>Sales</th>
+                <th className={`${cellR} font-bold`}>Price</th>
                 <th className={`${cellR} font-bold`}>Amount</th>
               </tr>
             </thead>
@@ -429,29 +409,33 @@ function SummaryContent() {
                 <tr key={ft}>
                   <td className={`${cell} font-bold`}>{ft}</td>
                   <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.actual)}</td>
+                  <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.price)}</td>
                   <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.amount)}</td>
                 </tr>
               ))}
               <tr className={`${subHdr} font-bold`}>
-                <td colSpan={2} className={cell}>SALES</td>
+                <td colSpan={3} className={cell}>SALES</td>
                 <td className={cellR}>{fmt(dayReport.totalSales)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={2} className={cell}>TOTAL POS</td>
+                <td colSpan={3} className={cell}>TOTAL POS</td>
                 <td className={cellR}>{fmt(dayReport.lodgement.totalPOS)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
+                <td colSpan={3} className={cell}>TOTAL TRANSFER</td>
                 <td className={cellR}>{fmt(dayReport.lodgement.totalTransfer)}</td>
               </tr>
               <tr className={`${subHdr} font-bold`}>
-                <td colSpan={2} className={cell}>CASH</td>
+                <td colSpan={3} className={cell}>CASH</td>
                 <td className={cellR}>{fmt(dayReport.cashBalance)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Day navigation, under the day's tables */}
+      {report && <DayNav index={dayIndex} total={totalDays} onPrev={goPrev} onNext={goNext} />}
     </div>
       )}
     </AccessGate>
