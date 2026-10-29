@@ -1,6 +1,6 @@
 {
   "name": "stationmgr-android",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "private": true,
   "description": "StationMGR Android app: the screens from npm run build:android, carried in the app",
   "scripts": {
