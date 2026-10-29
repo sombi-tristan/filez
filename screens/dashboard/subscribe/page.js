@@ -9,6 +9,7 @@ import SubscriptionBadge from '@/components/SubscriptionBadge'
 import { fmtDate } from '@/lib/formatDate'
 import { INPUT_BASE, BTN_PRIMARY, CARD } from '@/components/ui'
 import { PageSkeleton } from '@/components/Skeletons'
+import { Restricted } from '@/components/AccessGate'
 
 export default function SubscribePage() {
   return (
@@ -140,6 +141,11 @@ function SubscribeContent() {
       <PageSkeleton />
     )
   }
+
+  // The owner's page: /api/dashboard/data lists only the stations this person owns, so staff
+  // (the station asked for is not among them) get Access Restricted rather than the form.
+  const ownsIt = initialOrgId ? stations.some((s) => String(s.id) === String(initialOrgId)) : stations.length > 0
+  if (!ownsIt) return <Restricted>Only the station owner can view or change this station&apos;s subscription.</Restricted>
 
   // Show active subscription info
   const daysLeft = subscription?.end_date

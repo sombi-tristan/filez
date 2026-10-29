@@ -24,8 +24,11 @@ export default function Footer({ app = false }) {
         <span>&copy; {new Date().getFullYear()} StationMGR</span>
         <p className="house-credit">
           <span>Powered by</span>
-          <Image src="/premeval-logo.svg" alt="" aria-hidden width={17} height={24} className="h-6 w-auto mx-0.5" />
-          <b>Premeval</b>
+          {/* The logo and the name together on a white rectangle, the same in light and dark. */}
+          <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5">
+            <Image src="/premeval-logo.svg" alt="" aria-hidden width={17} height={24} className="h-6 w-auto" />
+            <b className="text-[#0b1220]">Premeval</b>
+          </span>
         </p>
       </div>
     </footer>

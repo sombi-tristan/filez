@@ -23,8 +23,8 @@ const manage = read('components/station/ManageStation.js')
 
 console.log('Manage Station')
 check('no longer on the station home', !home.includes('Manage Station') && !home.includes('setShowManage') && !home.includes('updateStation') && !home.includes('deleteStation'))
-check('in Settings, in the Station tab', /import ManageStation(, \{ useStationOwner \})? from '@\/components\/station\/ManageStation'/.test(settings) && /title="Station"[^>]*>\s*(\{\/\*[^*]*\*\/\}\s*)?(\{isOwner \? \(\s*)?<ManageStation stationId=\{stationId\} \/>/.test(settings))
-check('Leave Station in the Station tab, for staff, not for a platform admin', /title="Station" hidden=\{!isOwner && isPlatformAdmin\}>[\s\S]*?<ManageStation stationId=\{stationId\} \/>\s*\) : \([\s\S]*?onClick=\{leaveStation\}[\s\S]*?Leave Station/.test(settings) && settings.includes("fetch('/api/invites/leave'"))
+check('in Settings, in the Station tab, for the owner', settings.includes("import ManageStation, { useStationAccess } from '@/components/station/ManageStation'") && settings.includes('<Pane icon={Building2} title="Station" hidden={!isOwner}>') && settings.includes('<ManageStation stationId={stationId} />'))
+check('no Leave Station: Settings is closed to staff', !settings.includes('Leave Station') && !settings.includes("fetch('/api/invites/leave'") && settings.includes('if (!access.isOwner && !access.isAdmin) return <Restricted>'))
 check('always open: no fold', !manage.includes('showManage') && !manage.includes('ChevronDown'))
 // In the Settings tabs' Station tab now, whose box frames it: no frame of its own.
 check('its heading inside, no frame of its own (the Station tab frames it)', /<section className="mb-4">\s*<h2[^>]*>Manage station<\/h2>/.test(manage))

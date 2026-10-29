@@ -208,7 +208,10 @@ export default function StationSidebar({ stationId }) {
 
         <SidebarSection value={STATION_GROUP} label="Station">
           {/* No Notifications row: who did what is shown under each entry instead. */}
-          <SidebarNavRow href={`${home}/settings`} label="Settings" icon={settingsOutline} active={pathname === `${home}/settings`} onClick={go(`${home}/settings`)} />
+          {/* Settings: the owner's (or a platform admin's helping out), not staff's. */}
+          {(isOwner || user?.role === 'admin') && (
+            <SidebarNavRow href={`${home}/settings`} label="Settings" icon={settingsOutline} active={pathname === `${home}/settings`} onClick={go(`${home}/settings`)} />
+          )}
           <SidebarNavRow
             label={signingOut ? 'Signing out…' : 'Sign out'}
             icon={logOutOutline}
