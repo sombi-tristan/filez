@@ -3,13 +3,14 @@
 import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from '@/lib/nav'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { buildDailyReport } from '@/lib/buildDailyReport'
-import { fmtDate } from '@/lib/formatDate'
+import { lubeOnAccount } from '@/lib/accountBalance'
 import DateRange from '@/components/reports/DateRange'
+import DayNav, { DayTitle } from '@/components/reports/DayNav'
 import AccessGate from '@/components/AccessGate'
-import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_FRAMED, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
+import { REPORT_HEAD, REPORT_SUBHEAD, REPORT_LINE, REPORT_TOTAL_FILL, OUTLINE_WITHIN, BTN_PRIMARY, REPORT_CARD } from '@/components/ui'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return ''
@@ -91,6 +92,18 @@ function SummaryContent() {
     [orgId]
   )
 
+  // The accounts' own entries, with their lube sales on credit, for the balances (as the daily
+  // sales report does).
+  const livePayments = useLiveQuery(
+    async () => orgId
+      ? [
+          ...await db.customerPayments.where('orgId').equals(orgId).toArray(),
+          ...lubeOnAccount(await db.lubeSales.where('orgId').equals(orgId).toArray(), await db.lubeProducts.where('orgId').equals(orgId).toArray()),
+        ]
+      : [],
+    [orgId]
+  )
+
   const customerMap = useMemo(() => {
     if (!liveCustomers) return {}
     return Object.fromEntries(liveCustomers.map(c => [c.id, c.name || 'Unknown']))
@@ -106,10 +119,12 @@ function SummaryContent() {
       nozzles,
       tanks,
       banks,
+      customers: liveCustomers || [],
+      customerPayments: livePayments || [],
       startDate: reportStart,
       endDate: reportEnd,
     })
-  }, [generated, reportStart, reportEnd, loading, orgId, nozzles, tanks, banks, liveSales, liveReceipts, liveLodgements])
+  }, [generated, reportStart, reportEnd, loading, orgId, nozzles, tanks, banks, liveSales, liveReceipts, liveLodgements, liveCustomers, livePayments])
 
   // Current day index and report
   const dayIndex = useMemo(() => {
@@ -183,29 +198,8 @@ function SummaryContent() {
         </div>
       </div>
 
-      {/* Day navigation */}
-      {report && totalDays > 1 && dayReport && (
-        <div className="flex items-center justify-between shrink-0 mb-2 px-1 sm:px-[15%]">
-          <button
-            onClick={goPrev}
-            disabled={dayIndex <= 0}
-            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium disabled:opacity-30 ${BTN_FRAMED}`}
-          >
-            <ChevronLeft className="w-4 h-4" /> Prev
-          </button>
-          <span className="text-sm text-content-muted font-medium">
-            {fmtDate(dayReport.date)}
-            <span className="text-content-faint ml-1">({dayIndex + 1} of {totalDays})</span>
-          </span>
-          <button
-            onClick={goNext}
-            disabled={dayIndex >= totalDays - 1}
-            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium disabled:opacity-30 ${BTN_FRAMED}`}
-          >
-            Next <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      {/* The day on screen, above its tables; Prev / Next are under them */}
+      {report && <DayTitle date={dayReport?.date} />}
 
       {/* Content */}
       {!generated ? (
@@ -229,7 +223,7 @@ function SummaryContent() {
                 <table className="w-full border-collapse text-sm">
                   <tbody>
                     <tr className={hdr}>
-                      <td className={cell} colSpan={3}>Entry {group.entryIndex}</td>
+                      <td className={cell} colSpan={4}>Entry {group.entryIndex}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -325,7 +319,8 @@ function SummaryContent() {
               </tr>
             </thead>
             <tbody>
-              {dayReport.lodgement.bankRows.filter(r => r.deposited > 0).map(row => (
+              {/* Every account, nothing lodged as 0, A to Z (sortBanks). */}
+              {dayReport.lodgement.bankRows.map(row => (
                 <tr key={row.bankId}>
                   <td className={cell}>
                     <span className="font-bold">{row.bankName}{row.terminalId ? ` - ${row.terminalId}` : ''}</span>
@@ -334,10 +329,10 @@ function SummaryContent() {
                   <td className={cellR}>{fmt(row.deposited)}</td>
                 </tr>
               ))}
-              {dayReport.lodgement.totalAll === 0 && (
+              {dayReport.lodgement.bankRows.length === 0 && (
                 <tr><td colSpan={2} className={`${cell} text-content-faint`}>No lodgements</td></tr>
               )}
-              {dayReport.lodgement.totalAll > 0 && (
+              {dayReport.lodgement.bankRows.length > 0 && (
                 <tr className={`${subHdr} font-bold`}>
                   <td className={cell}>Total Lodged</td>
                   <td className={cellR}>{fmt(dayReport.lodgement.totalAll)}</td>
@@ -345,6 +340,35 @@ function SummaryContent() {
               )}
             </tbody>
           </table>
+
+          {/* Credit customers' balances at the end of the day, the ones not at zero, as in the
+              daily sales report. */}
+          {dayReport.balances.rows.length > 0 && (
+            <table className="w-full border-collapse text-sm mb-4">
+              <tbody>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`} colSpan={3}>Balances</th>
+                </tr>
+                <tr className={subHdr}>
+                  <th className={`${cell} text-left font-bold`}>Customer</th>
+                  <th className={`${cellR} font-bold`}>Owes station</th>
+                  <th className={`${cellR} font-bold`}>Station owes</th>
+                </tr>
+                {dayReport.balances.rows.map((b) => (
+                  <tr key={b.customerId}>
+                    <td className={cell}>{b.name}</td>
+                    <td className={cellR}>{b.owesStation ? fmt(b.owesStation) : ''}</td>
+                    <td className={cellR}>{b.stationOwes ? fmt(b.stationOwes) : ''}</td>
+                  </tr>
+                ))}
+                <tr className="font-bold">
+                  <td className={cell}>Total</td>
+                  <td className={cellR}>{fmt(dayReport.balances.totalOwesStation)}</td>
+                  <td className={cellR}>{fmt(dayReport.balances.totalStationOwes)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
 
           {/* 4. Product Received */}
           {report.fuelTypes.some(ft => (dayReport.tanksByFuel?.[ft]?.totalSupply || 0) > 0) && (
@@ -376,6 +400,7 @@ function SummaryContent() {
               <tr className={subHdr}>
                 <th className={`${cell} text-left font-bold`}></th>
                 <th className={`${cellR} font-bold`}>Sales</th>
+                <th className={`${cellR} font-bold`}>Price</th>
                 <th className={`${cellR} font-bold`}>Amount</th>
               </tr>
             </thead>
@@ -384,29 +409,33 @@ function SummaryContent() {
                 <tr key={ft}>
                   <td className={`${cell} font-bold`}>{ft}</td>
                   <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.actual)}</td>
+                  <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.price)}</td>
                   <td className={cellR}>{fmt(dayReport.dayFuelTotals[ft]?.amount)}</td>
                 </tr>
               ))}
               <tr className={`${subHdr} font-bold`}>
-                <td colSpan={2} className={cell}>SALES</td>
+                <td colSpan={3} className={cell}>SALES</td>
                 <td className={cellR}>{fmt(dayReport.totalSales)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={2} className={cell}>TOTAL POS</td>
+                <td colSpan={3} className={cell}>TOTAL POS</td>
                 <td className={cellR}>{fmt(dayReport.lodgement.totalPOS)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={2} className={cell}>TOTAL TRANSFER</td>
+                <td colSpan={3} className={cell}>TOTAL TRANSFER</td>
                 <td className={cellR}>{fmt(dayReport.lodgement.totalTransfer)}</td>
               </tr>
               <tr className={`${subHdr} font-bold`}>
-                <td colSpan={2} className={cell}>CASH</td>
+                <td colSpan={3} className={cell}>CASH</td>
                 <td className={cellR}>{fmt(dayReport.cashBalance)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Day navigation, under the day's tables */}
+      {report && <DayNav index={dayIndex} total={totalDays} onPrev={goPrev} onNext={goNext} />}
     </div>
       )}
     </AccessGate>
@@ -425,24 +454,30 @@ function ClosingReadings({ fuelType, rows, totals, dayTotals, cell, cellR, subHd
 
   return (
     <>
+      {/* Each nozzle: its opening and closing meter, and what it dispensed between them. */}
       <tr className={subHdr}>
-        <td className={`${cell} font-bold`} colSpan={2}>{fuelType}</td>
+        <td className={`${cell} font-bold`}>{fuelType}</td>
+        <td className={`${cellR} font-bold`}>Opening</td>
+        <td className={`${cellR} font-bold`}>Closing</td>
+        <td className={`${cellR} font-bold`}>Dispensed</td>
       </tr>
       {rows.map((r, i) => (
         <tr key={r.label}>
           <td className={`${cell} font-bold`}>{fuelType} {i + 1}</td>
+          <td className={cellR}>{fmt(r.opening)}</td>
           <td className={cellR}>{fmt(r.closing)}</td>
+          <td className={cellR}>{fmt(r.dispensed)}</td>
         </tr>
       ))}
       {dayTotals ? (
         <tr className={`${REPORT_TOTAL_FILL} font-bold`}>
-          <td className={cell} colSpan={2}>
+          <td className={cell} colSpan={4}>
             {fmt(dispensed)} &minus; {fmt(adjustment)} = {fmt(actual)}
           </td>
         </tr>
       ) : (
         <tr className={`${REPORT_TOTAL_FILL} font-bold`}>
-          <td className={cell} colSpan={2}>
+          <td className={cell} colSpan={4}>
             Dispensed: {fmt(totals.dispensed)}
           </td>
         </tr>

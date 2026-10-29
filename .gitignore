@@ -11,7 +11,11 @@
 
 # next.js
 /.next/
+/.next-json/
 /out/
+
+# The JSON datastore's working data (npm run dev:json); jsondb/schema.json is tracked
+/jsondb/data/
 
 # production
 /build

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only: lets the app reach a PC on the local network over plain http, for the
+  JSON datastore test build (npm run build:android:json). Merged into the main manifest for
+  assembleDebug; release builds never see it.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>

@@ -15,7 +15,9 @@ export default function InstallPWABanner() {
       setDismissed(true)
     }
 
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    // Already installed: the PWA, or the Android app itself (Capacitor), which is no browser
+    // to install from.
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || window.Capacitor?.isNativePlatform?.()) {
       setInstalled(true)
       return
     }

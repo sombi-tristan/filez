@@ -22,11 +22,11 @@ const check = (label, ok) => {
 }
 const KEY = 'report-sales-operation'
 
-console.log('On the website too')
-check('one of the reports the website keeps', nav.REPORT_LINKS('x').some((l) => l.pageKey === KEY))
+console.log('Desktop only: Consumption and Fuel Stock replace it on the phone (tests/consumption-fuel-stock.test.mjs)')
+check('not one of the reports the website keeps', !nav.REPORT_LINKS('x').some((l) => l.pageKey === KEY))
 const routes = read('screens/routes.js')
 const soRoute = routes.split('\n').find((l) => l.includes("path: '/dashboard/reports/sales-operation'")) || ''
-check('no longer desktop only', soRoute && !soRoute.includes('desktopOnly: true'))
+check('desktop only', soRoute.includes('desktopOnly: true'))
 
 const page = read('screens/dashboard/reports/sales-operation/page.js')
 console.log('\nAudit-style screen')

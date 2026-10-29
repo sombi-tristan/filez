@@ -568,34 +568,39 @@ export default function DailySalesFormPage() {
     }
   })
 
-  // The litres field beside an account button: the button only once there are litres to book.
-  const litresWithAccount = (idx, r, type) => {
+  // The consumption or pour-back litres field. Its account button sits on the line under the
+  // nozzle row (accountButton), beside what it's booked to.
+  const litresField = (idx, r, type) => {
     const field = type === 'pour_back' ? 'pour_back' : 'consumption'
-    const hasValue = Number(r[field]) > 0
-    const custId = type === 'pour_back' ? r.pour_back_customer_id : r.consumption_customer_id
-    const custName = hasValue && custId ? customers.find(c => c.id === custId)?.name : null
     return (
-      <div className="flex items-center">
-        <NumberInput
-          data-skip-enter
-          aria-label={`${r.label} ${type === 'pour_back' ? 'pour back' : 'consumption'} (litres)`}
-          value={r[field]}
-          onValue={(v) => updateNozzleReading(activeTab, idx, field, v)}
-          onBlur={() => maybePromptAccount(activeTab, idx, type)}
-          placeholder="0"
-        />
-        {hasValue && (
-          <button
-            type="button"
-            onClick={() => setConsModal({ entryIdx: activeTab, nozzleIdx: idx, type })}
-            className={`flex-shrink-0 flex items-center justify-center w-11 h-11 ${custName ? 'text-primary-600 dark:text-primary-400' : 'text-content-faint hover:text-content-muted'}`}
-            aria-label={custName ? `Account: ${custName}` : 'Attach account'}
-            title={custName || 'Attach account'}
-          >
-            <User className="w-5 h-5" />
-          </button>
-        )}
-      </div>
+      <NumberInput
+        data-skip-enter
+        aria-label={`${r.label} ${type === 'pour_back' ? 'pour back' : 'consumption'} (litres)`}
+        value={r[field]}
+        onValue={(v) => updateNozzleReading(activeTab, idx, field, v)}
+        onBlur={() => maybePromptAccount(activeTab, idx, type)}
+        placeholder="0"
+      />
+    )
+  }
+  // On the line under a nozzle row, once there are litres to book: the account they're booked
+  // to (or "add account"), as a button that opens the account sheet.
+  const accountButton = (idx, r, type) => {
+    const field = type === 'pour_back' ? 'pour_back' : 'consumption'
+    if (!(Number(r[field]) > 0)) return null
+    const custId = type === 'pour_back' ? r.pour_back_customer_id : r.consumption_customer_id
+    const custName = custId ? customers.find(c => c.id === custId)?.name : null
+    const word = type === 'pour_back' ? 'Pour back' : 'Consumption'
+    return (
+      <button
+        type="button"
+        onClick={() => setConsModal({ entryIdx: activeTab, nozzleIdx: idx, type })}
+        aria-label={`${r.label} ${word.toLowerCase()} account: ${custName || 'none'}`}
+        className={`inline-flex items-center gap-1.5 min-h-[44px] ${custName ? 'text-primary-600 dark:text-primary-400' : 'text-content-faint hover:text-content-muted'}`}
+      >
+        <User className="w-4 h-4 flex-shrink-0" />
+        <span>{word}: {custName || 'add account'}</span>
+      </button>
     )
   }
 
@@ -646,12 +651,6 @@ export default function DailySalesFormPage() {
                     </div>
                     {current.nozzleReadings.map((r, idx) => {
                       if (r.fuel_type !== fuel) return null
-                      const consCustName = Number(r.consumption) > 0 && r.consumption_customer_id
-                        ? customers.find(c => c.id === r.consumption_customer_id)?.name
-                        : null
-                      const pbCustName = Number(r.pour_back) > 0 && r.pour_back_customer_id
-                        ? customers.find(c => c.id === r.pour_back_customer_id)?.name
-                        : null
                       return (
                         <div key={r.pump_id} className="border-t border-line">
                           <div className={NOZZLE_GRID}>
@@ -664,8 +663,8 @@ export default function DailySalesFormPage() {
                                 placeholder={prevClosing[r.pump_id] != null ? String(prevClosing[r.pump_id]) : ''}
                               />
                             </div>
-                            <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'consumption')}</div>
-                            <div className="min-w-0 border-l border-line">{litresWithAccount(idx, r, 'pour_back')}</div>
+                            <div className="min-w-0 border-l border-line">{litresField(idx, r, 'consumption')}</div>
+                            <div className="min-w-0 border-l border-line">{litresField(idx, r, 'pour_back')}</div>
                             <output
                               aria-label={`${r.label} actual sales (litres)`}
                               className={`min-w-0 self-center px-3 text-right text-[13px] font-semibold tabular-nums truncate ${actualOf(r) < 0 ? 'text-red-600 dark:text-red-400' : 'text-content'}`}
@@ -673,10 +672,10 @@ export default function DailySalesFormPage() {
                               {figure(actualOf(r))}
                             </output>
                           </div>
-                          {(consCustName || pbCustName) && (
-                            <div className="px-3 pb-1 flex flex-wrap gap-x-3 text-[13px] text-primary-600 dark:text-primary-400">
-                              {consCustName && <span>Consumption: {consCustName}</span>}
-                              {pbCustName && <span>Pour back: {pbCustName}</span>}
+                          {(Number(r.consumption) > 0 || Number(r.pour_back) > 0) && (
+                            <div className="px-3 flex flex-wrap gap-x-4 text-[13px]">
+                              {accountButton(idx, r, 'consumption')}
+                              {accountButton(idx, r, 'pour_back')}
                             </div>
                           )}
                         </div>
