@@ -102,7 +102,7 @@ export default function StationSidebar({ stationId }) {
     // No answer (offline): the station's permissions saved by any screen opened online
     // (lib/hooks/usePageAccess.js), so an owner keeps the whole menu. Nothing saved: unrestricted,
     // and each screen still checks for itself (components/AccessGate.js).
-    const useSaved = async () => {
+    const loadSaved = async () => {
       const saved = await db.accessCache.filter((c) => c.key.startsWith(`${stationId}:`)).first().catch(() => null)
       if (!alive || !saved) return
       setIsOwner(saved.isOwner)
@@ -134,9 +134,9 @@ export default function StationSidebar({ stationId }) {
           .then((r) => (r.ok ? r.json() : null)).catch(() => null)
         if (!alive) return
         if (perm?.visiblePages) setVisiblePages(perm.visiblePages)
-        else await useSaved()
+        else await loadSaved()
       } catch {
-        await useSaved()
+        await loadSaved()
       }
     })()
     return () => { alive = false }
