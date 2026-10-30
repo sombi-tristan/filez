@@ -7,9 +7,9 @@ import { IonIcon } from '@ionic/react'
 import { menuController } from '@ionic/core/components'
 import {
   bookOutline, cardOutline, cubeOutline, documentTextOutline, gridOutline,
-  homeOutline, logOutOutline, pulseOutline, receiptOutline, settingsOutline, statsChartOutline,
+  homeOutline, logOutOutline, receiptOutline, settingsOutline, statsChartOutline,
   trendingUpOutline, carOutline, walletOutline, waterOutline, peopleOutline, clipboardOutline,
-  analyticsOutline,
+  analyticsOutline, flameOutline,
 } from 'ionicons/icons'
 import {
   Sidebar, SidebarBrand, SidebarSwitcher, SidebarSections, SidebarSection, SidebarNavRow, SidebarUserFooter,
@@ -47,7 +47,7 @@ const ICONS = {
   'customer-payments': peopleOutline,
   'report-summary': documentTextOutline,
   'report-daily-sales': statsChartOutline,
-  'report-sales-operation': pulseOutline,
+  'report-audit-consumption': flameOutline,
   'report-sales-overview': trendingUpOutline,
   'report-inventory-log': cubeOutline,
   'report-analytics': analyticsOutline,
