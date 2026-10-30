@@ -494,10 +494,10 @@ export default function StationPage() {
 
         {/* Reports: Summary, Consumption & Fuel Stock, Account Ledger and Lube Report, in orange
             (Widget), only the ones this person may open (the owner's page access for staff).
-            Full width, like the Staff panel under it. */}
+            Full width, like the Staff panel under it, one widget a row. */}
         <section className="mt-6 w-full bg-surface border-card border-line rounded-house p-3">
           <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide mb-3">Reports</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2">
             {HOME_REPORTS.map((key) => reportLinks.find((l) => l.pageKey === key)).filter((l) => l && canAccess(l.pageKey)).map((link) => (
               <Widget key={link.href} href={link.href} icon={link.icon} label={link.label} desc={link.desc} />
             ))}
@@ -697,19 +697,22 @@ export default function StationPage() {
 }
 
 /**
- * A report widget on the station home: half the panel wide (two a row), pale, a soft blue round
- * icon, the name and a short description under it, like the Entries widgets above it.
+ * A report widget on the station home: a full-width row in solid house orange (#f57d00, the
+ * Premeval logo's orange), the reports' colour there, apart from the blue Entries. A white icon
+ * in a faint white circle on the left, the name and its description (one line) beside it, an
+ * arrow on the right. text-white on the row keeps the bold-ink rule (app/globals.css) off it.
  */
-// A report on the station home: an orange tile with an orange round chip (house orange #f57d00),
-// the reports' colour there, apart from the blue Entries.
 function Widget({ href, icon: Icon, label, desc }) {
   return (
-    <Link href={href} className="w-full h-28 compact:h-24 flex flex-col items-center justify-center gap-1 p-2 text-center bg-[rgb(245_125_0/0.12)] rounded-house transition-colors hover:bg-[rgb(245_125_0/0.2)]">
-      <div className="flex items-center justify-center shrink-0 rounded-full w-10 h-10 bg-[rgb(245_125_0/0.2)] text-[#d86e00] dark:text-[#f68a1a]">
+    <Link href={href} className="w-full flex items-center gap-3 px-3 py-3 text-left text-white bg-[#f57d00] rounded-house transition-colors hover:bg-[#e06f00] active:bg-[#cc6500]">
+      <div className="flex items-center justify-center shrink-0 rounded-full w-10 h-10 bg-white/20">
         <Icon className="w-5 h-5" />
       </div>
-      <p className="text-sm font-medium text-content leading-tight">{label}</p>
-      <p className="text-xs text-content-muted leading-snug line-clamp-2">{desc}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold leading-tight">{label}</p>
+        <p className="text-xs text-white/85 leading-snug truncate">{desc}</p>
+      </div>
+      <ChevronRight className="w-5 h-5 shrink-0" />
     </Link>
   )
 }
