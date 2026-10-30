@@ -24,10 +24,14 @@ const check = (label, ok) => {
 const KEY = 'report-sales-operation'
 const keysIn = (sections) => sections.flatMap((s) => (s.links || s.items || []).map((l) => l.pageKey))
 
-console.log('Every station has it')
-check('not marked Rainoil only', !nav.REPORT_LINKS('x').find((l) => l.pageKey === KEY)?.rainoilOnly)
-check('in the sidebar of any station', keysIn(nav.buildStationNav('x', { isOwner: true, groupName: 'Other Group' })).includes(KEY) && keysIn(nav.buildStationNav('x', { isOwner: true })).includes(KEY))
-check('on any station\'s home and in its staff permissions', keysIn(nav.REPORT_SECTIONS('x', 'Other Group')).includes(KEY) && nav.reportPermissionOptions('Other Group').some((o) => o.key === KEY))
+// Desktop build: Consumption & Fuel Stock replaced it, as on the phone. The screen stays in the
+// tree, reachable from nowhere.
+console.log('Replaced by Consumption & Fuel Stock')
+check('not in REPORT_LINKS', !nav.REPORT_LINKS('x').some((l) => l.pageKey === KEY))
+check('not in any station\'s sidebar', !keysIn(nav.buildStationNav('x', { isOwner: true, groupName: 'Other Group' })).includes(KEY) && !keysIn(nav.buildStationNav('x', { isOwner: true })).includes(KEY))
+check('not on the home or in staff permissions', !keysIn(nav.REPORT_SECTIONS('x', 'Other Group')).includes(KEY) && !nav.reportPermissionOptions('Other Group').some((o) => o.key === KEY))
+check('Consumption & Fuel Stock in the sidebar and on the home', keysIn(nav.buildStationNav('x', { isOwner: true })).includes('report-audit-consumption') && keysIn(nav.REPORT_SECTIONS('x', 'Other Group')).includes('report-audit-consumption'))
+check('no route to it', !read('screens/routes.js').includes('/dashboard/reports/sales-operation') && read('screens/routes.js').includes('/dashboard/reports/consumption-fuel-stock'))
 
 const page = read('screens/dashboard/reports/sales-operation/page.js')
 console.log('\nAudit-style screen')

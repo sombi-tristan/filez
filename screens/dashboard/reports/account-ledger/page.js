@@ -51,9 +51,13 @@ function AccountLedgerContent() {
   const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
   const monthStartStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`
 
-  const [startDate, setStartDate] = useState(monthStartStr)
-  const [endDate, setEndDate] = useState(todayStr)
-  const [selectedAccounts, setSelectedAccounts] = useState([])
+  // Opened from the Summary's Balances sheet: ?account= picks that customer and ?to= ends the
+  // range on the Summary's day, so the closing figure is the balance that was tapped.
+  const linkedAccount = searchParams.get('account')
+  const linkedTo = searchParams.get('to')
+  const [startDate, setStartDate] = useState(linkedTo && linkedTo < monthStartStr ? `${linkedTo.slice(0, 8)}01` : monthStartStr)
+  const [endDate, setEndDate] = useState(linkedTo || todayStr)
+  const [selectedAccounts, setSelectedAccounts] = useState(linkedAccount ? [linkedAccount] : [])
   const [page, setPage] = useState(0)
 
   // Account form (shared for create and edit)
