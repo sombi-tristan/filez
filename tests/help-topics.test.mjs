@@ -49,6 +49,18 @@ const config = readFileSync(new URL('../next.config.mjs', import.meta.url), 'utf
 check('next.config.mjs leaves help/videos out of the precache', config.includes("'!help/videos/**/*'"))
 check('next.config.mjs never caches the videos at run time either', /help\\\/videos[^\n]*\n\s*handler: 'NetworkOnly'/.test(config))
 
+// lib/helpContent.js carries lucide icons, so it is read as text rather than imported.
+console.log('The Backups guide, on the website only')
+const content = readFileSync(new URL('../lib/helpContent.js', import.meta.url), 'utf8')
+const backups = content.slice(content.indexOf("id: 'backups'"), content.indexOf("id: 'staff'"))
+check('lib/helpContent.js has a Backups guide', content.includes("id: 'backups'") && backups.includes("title: 'Backups'"))
+check('it is marked web-only', backups.includes('webOnly: true'))
+check('it names the buttons as the apps show them (This computer, Back up data, Restore from backup, Linked computers)',
+  ['This computer', 'Back up data', 'Restore from backup', 'Linked computers'].every((s) => backups.includes(s)))
+check('it says to back up every day', /every day/i.test(backups))
+const page = readFileSync(new URL('../screens/dashboard/feedback/page.js', import.meta.url), 'utf8')
+check('the Help page leaves web-only guides out of the Android app (IS_APP)', /IS_APP && s\.webOnly/.test(page))
+
 const demos = new URL('../../stationmgr-videos/src/demos.js', import.meta.url)
 if (existsSync(demos)) {
   console.log('Steps match the videos')

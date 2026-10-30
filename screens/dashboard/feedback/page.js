@@ -9,6 +9,7 @@ import {
 import { INPUT, BTN_PRIMARY, BTN_FRAMED, CARD, CARD_LINE, SectionHeader, IconChip } from '@/components/ui'
 import { HELP_SECTIONS } from '@/lib/helpContent'
 import { HELP_TOPICS } from '@/lib/helpTopics'
+import { IS_APP } from '@/lib/platform'
 import { HelpBlock } from '@/components/HelpBlocks'
 
 // The walkthrough tiles: each topic's name as the app shows it, with its icon from the station
@@ -149,7 +150,8 @@ export default function FeedbackPage() {
           when closed, which is what makes a detailed page usable. Nothing is open by default,
           so the whole list is visible on arrival. */}
       <div className="space-y-2 mb-10">
-        {HELP_SECTIONS.map((section) => (
+        {/* A webOnly guide (Backups) is for the website: the Android app leaves it out. */}
+        {HELP_SECTIONS.filter((s) => !(IS_APP && s.webOnly)).map((section) => (
           <HelpSection key={section.id} section={section} />
         ))}
       </div>
