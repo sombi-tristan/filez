@@ -1,11 +1,52 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from '@/lib/nav'
-import { Star, Loader2, CheckCircle, ChevronDown, MessageSquare } from 'lucide-react'
+import { useRouter, Link } from '@/lib/nav'
+import {
+  Star, Loader2, CheckCircle, ChevronDown, PlayCircle,
+  Home, FileSpreadsheet, CreditCard, FileText, Fuel, Droplets, BookOpen,
+} from 'lucide-react'
 import { INPUT, BTN_PRIMARY, BTN_FRAMED, CARD, CARD_LINE, SectionHeader, IconChip } from '@/components/ui'
 import { HELP_SECTIONS } from '@/lib/helpContent'
+import { HELP_TOPICS } from '@/lib/helpTopics'
+import { HelpBlock } from '@/components/HelpBlocks'
 
+// The walkthrough tiles: each topic's name as the app shows it, with its icon from the station
+// home (lib/stationNav.js).
+const TILES = {
+  home: ['Station home', Home],
+  'daily-sales': ['Daily Sales', FileSpreadsheet],
+  lodgements: ['Lodgements', CreditCard],
+  summary: ['Summary', FileText],
+  'consumption-fuel-stock': ['Consumption & Fuel Stock', Fuel],
+  lube: ['Lube', Droplets],
+  'account-ledger': ['Account Ledger', BookOpen],
+}
+
+/** The video walkthroughs, one tile each, opening the topic's video and its detailed help. */
+function Walkthroughs() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-8">
+      {HELP_TOPICS.map((t) => {
+        const [label, Icon] = TILES[t.id] || [t.title, PlayCircle]
+        return (
+          <Link
+            key={t.id}
+            href={`/dashboard/feedback/${t.id}`}
+            className={`${CARD_LINE} flex flex-col items-start gap-2 p-3 hover:bg-subtle transition-colors`}
+          >
+            <div className="flex items-center gap-2 w-full">
+              <IconChip icon={Icon} className="w-8 h-8" iconClass="w-4 h-4" />
+              <PlayCircle className="w-4 h-4 text-content-faint ml-auto shrink-0" />
+            </div>
+            <span className="text-sm font-semibold text-content leading-tight">{label}</span>
+            <span className="text-xs text-content-muted leading-snug line-clamp-2">{t.subtitle}</span>
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
 
 /** One collapsible help section. Closed on arrival so the page opens as a contents list. */
 function HelpSection({ section }) {
@@ -30,46 +71,6 @@ function HelpSection({ section }) {
       )}
     </section>
   )
-}
-
-/** One block inside a section. The shapes are documented in lib/helpContent.js. */
-function HelpBlock({ block }) {
-  if (block.p) return <p className="text-sm text-content-strong leading-relaxed">{block.p}</p>
-  if (block.list) {
-    return (
-      <ul className="list-disc ml-5 space-y-1.5">
-        {block.list.map((item, i) => <li key={i} className="text-sm text-content-strong leading-relaxed">{item}</li>)}
-      </ul>
-    )
-  }
-  if (block.steps) {
-    return (
-      <ol className="list-decimal ml-5 space-y-1.5">
-        {block.steps.map((item, i) => <li key={i} className="text-sm text-content-strong leading-relaxed">{item}</li>)}
-      </ol>
-    )
-  }
-  if (block.defs) {
-    return (
-      <dl className="space-y-2.5">
-        {block.defs.map(([term, meaning], i) => (
-          <div key={i}>
-            <dt className="text-sm font-semibold text-content">{term}</dt>
-            <dd className="text-sm text-content-muted leading-relaxed">{meaning}</dd>
-          </div>
-        ))}
-      </dl>
-    )
-  }
-  if (block.note) {
-    return (
-      <div className="flex items-start gap-2.5 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50">
-        <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-300 shrink-0 mt-0.5" />
-        <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">{block.note}</p>
-      </div>
-    )
-  }
-  return null
 }
 
 export default function FeedbackPage() {
@@ -140,6 +141,10 @@ export default function FeedbackPage() {
         How the station portal works, and how to reach us when it does not.
       </p>
 
+      <SectionHeader>Video walkthroughs</SectionHeader>
+      <Walkthroughs />
+
+      <SectionHeader>Guides</SectionHeader>
       {/* Accordions rather than one long scroll: nine sections read as a table of contents
           when closed, which is what makes a detailed page usable. Nothing is open by default,
           so the whole list is visible on arrival. */}

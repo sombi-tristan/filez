@@ -56,6 +56,9 @@ const withPWA = withPWAInit({
   fallbacks: {
     document: '/~offline',
   },
+  // Everything in public/ is precached unless excluded. The Help page's videos (~16 MB) are
+  // fetched when one is played, not on install.
+  publicExcludes: ['!noprecache/**/*', '!help/videos/**/*'],
   // MUST be nested under workboxOptions. A top-level `runtimeCaching` key is silently
   // ignored by @ducanh2912/next-pwa v10, and the worker falls back to its default cache,
   // which caches pages, RSC payloads AND api responses. That is what this config was
@@ -81,6 +84,12 @@ const withPWA = withPWAInit({
           },
           networkTimeoutSeconds: 5,
         },
+      },
+      {
+        // The Help page's videos: played in ranges (206), which a cache cannot hold, and too
+        // big for the 100-entry static cache below anyway.
+        urlPattern: /\/help\/videos\//,
+        handler: 'NetworkOnly',
       },
       {
         // Static assets only (images, fonts, etc.) — exclude page navigations

@@ -30,6 +30,7 @@ export const DASHBOARD_SCREENS = [
   { path: '/dashboard/entries/product-receipt', title: 'Product Receipt', Page: lazy(() => import('@/screens/dashboard/entries/product-receipt/page')), pageKey: 'product-receipt' },
   { path: '/dashboard/entries/product-receipt/list', title: 'Receipt Entries', Page: lazy(() => import('@/screens/dashboard/entries/product-receipt/list/page')), pageKey: 'product-receipt' },
   { path: '/dashboard/feedback', title: 'Help & feedback', Page: lazy(() => import('@/screens/dashboard/feedback/page')) },
+  { path: '/dashboard/feedback/:topic', title: 'Help', Page: lazy(() => import('@/screens/dashboard/feedback/[topic]/page')) },
   { path: '/dashboard/invites', title: 'Invites', Page: lazy(() => import('@/screens/dashboard/invites/page')) },
   { path: '/dashboard/reports/account-ledger', title: 'Account Ledger', Page: lazy(() => import('@/screens/dashboard/reports/account-ledger/page')), report: true },
   { path: '/dashboard/reports/analytics', title: 'Analytics', Page: lazy(() => import('@/screens/dashboard/reports/analytics/page')), report: true, desktopOnly: true },
