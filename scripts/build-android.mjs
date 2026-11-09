@@ -3,7 +3,7 @@
  *
  * A static export cannot hold the server's parts, so they are moved aside for the build and put
  * back after it, whatever happens: the API routes and the sign-in callbacks stay on the site
- * (the app calls https://www.stationmgr.site), middleware.js's checks are the app's own, and
+ * (the app calls https://filez-brown.vercel.app), middleware.js's checks are the app's own, and
  * the admin area is website-only.
  *
  * If a build is killed before it can put them back, the next run refuses to start and says
