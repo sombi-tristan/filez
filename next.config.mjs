@@ -158,7 +158,7 @@ const nextConfig = {
 const androidConfig = {
   output: 'export',
   images: { ...nextConfig.images, unoptimized: true },
-  env: { NEXT_PUBLIC_API_ORIGIN: 'https://www.stationmgr.site' },
+  env: { NEXT_PUBLIC_API_ORIGIN: 'https://filez-brown.vercel.app' },
 }
 
 export default process.env.STATIONMGR_TARGET === 'android'
