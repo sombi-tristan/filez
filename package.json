@@ -87,7 +87,6 @@
   },
   "stationmgr": {
     "webOrigin": [
-      "https://stationmgr.site",
       "https://filez-brown.vercel.app"
     ],
     "licencePublicKey": "-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+oi+8sMjVp6bvaleOlEO2mqLOZxu\\nKAEbOTQaZ43FWZvcBtwYEGqk1tczF7+ZAvAdhLT9gC3VGquli0fksPKTtA==\\n-----END PUBLIC KEY-----"
