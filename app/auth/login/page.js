@@ -75,7 +75,7 @@ export default function LoginPage() {
       </button>
       <p className="text-xs text-content-faint text-center mt-2">
         The first sign-in on this computer needs the internet. After that it works offline.
-        {!creating && ' Forgot your password? Reset it on stationmgr.site.'}
+        {!creating && ' Forgot your password? Reset it on filez-brown.vercel.app.'}
       </p>
     </div>
   )
